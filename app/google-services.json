@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "158091313964",
+    "project_id": "persistencia-57466",
+    "storage_bucket": "persistencia-57466.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158091313964:android:c9edc084c94b9664636289",
+        "android_client_info": {
+          "package_name": "com.example.persistencia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiSaUVnAzD3uE8YViZwFakUXKNQpt5fkc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
