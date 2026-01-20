@@ -20,6 +20,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        /*ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }*/
     }
 
     buildTypes {
@@ -44,6 +47,9 @@ android {
 }
 
 dependencies {
+    implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha") // Para notificaciones
+    implementation("com.composables:icons-lucide:1.0.0")
+
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
 

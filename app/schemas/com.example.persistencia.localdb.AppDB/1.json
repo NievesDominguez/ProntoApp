@@ -1,0 +1,228 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "0ca3b10203a7ebbbf3072751ffae7043",
+    "entities": [
+      {
+        "tableName": "USUARIOS",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idUsuario` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nombreUsuario` TEXT NOT NULL, `apellidosUsuario` TEXT NOT NULL, `incorporacionUsuario` TEXT NOT NULL, `email` TEXT NOT NULL, `sexo` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idUsuario",
+            "columnName": "idUsuario",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreUsuario",
+            "columnName": "nombreUsuario",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apellidosUsuario",
+            "columnName": "apellidosUsuario",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "incorporacionUsuario",
+            "columnName": "incorporacionUsuario",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sexo",
+            "columnName": "sexo",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idUsuario"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_USUARIOS_email",
+            "unique": true,
+            "columnNames": [
+              "email"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_USUARIOS_email` ON `${TABLE_NAME}` (`email`)"
+          }
+        ]
+      },
+      {
+        "tableName": "SESIONES",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idSesion` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `idUsuario` INTEGER NOT NULL, `fechaInicio` TEXT NOT NULL, FOREIGN KEY(`idUsuario`) REFERENCES `USUARIOS`(`idUsuario`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "idSesion",
+            "columnName": "idSesion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idUsuario",
+            "columnName": "idUsuario",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaInicio",
+            "columnName": "fechaInicio",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idSesion"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "USUARIOS",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "idUsuario"
+            ],
+            "referencedColumns": [
+              "idUsuario"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "AMISTAD",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idUsuario1` INTEGER NOT NULL, `idUsuario2` INTEGER NOT NULL, PRIMARY KEY(`idUsuario1`))",
+        "fields": [
+          {
+            "fieldPath": "idUsuario1",
+            "columnName": "idUsuario1",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idUsuario2",
+            "columnName": "idUsuario2",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idUsuario1"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_AMISTAD_idUsuario1",
+            "unique": true,
+            "columnNames": [
+              "idUsuario1"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_AMISTAD_idUsuario1` ON `${TABLE_NAME}` (`idUsuario1`)"
+          }
+        ]
+      },
+      {
+        "tableName": "INMUEBLES",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idInmueble` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tituloInmueble` TEXT NOT NULL, `descripcionInmueble` TEXT NOT NULL, `imagenInmueble` TEXT NOT NULL, `precioInmueble` TEXT NOT NULL, `contratoInmueble` TEXT NOT NULL, `propietarioInmueble` TEXT NOT NULL, FOREIGN KEY(`propietarioInmueble`) REFERENCES `USUARIOS`(`idUsuario`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "idInmueble",
+            "columnName": "idInmueble",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tituloInmueble",
+            "columnName": "tituloInmueble",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcionInmueble",
+            "columnName": "descripcionInmueble",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imagenInmueble",
+            "columnName": "imagenInmueble",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precioInmueble",
+            "columnName": "precioInmueble",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contratoInmueble",
+            "columnName": "contratoInmueble",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "propietarioInmueble",
+            "columnName": "propietarioInmueble",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idInmueble"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_INMUEBLES_idInmueble",
+            "unique": true,
+            "columnNames": [
+              "idInmueble"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_INMUEBLES_idInmueble` ON `${TABLE_NAME}` (`idInmueble`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "USUARIOS",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "propietarioInmueble"
+            ],
+            "referencedColumns": [
+              "idUsuario"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0ca3b10203a7ebbbf3072751ffae7043')"
+    ]
+  }
+}

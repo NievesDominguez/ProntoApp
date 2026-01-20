@@ -11,7 +11,12 @@ interface SesionDao {
     //Iniciar sesion
     @Insert
     fun nuevaSesion(user: SesionData)
+
     //Consultar inicio de sesión
     @Query("SELECT * FROM ${Estructura.Sesion.TABLE_NAME}")
     fun getEstadoSesion(): SesionData?
+
+    @Query("SELECT idUsuario FROM ${Estructura.Sesion.TABLE_NAME} ORDER BY idSesion DESC LIMIT 1")
+    fun getDatosSesion() : Int?
+
 }

@@ -9,18 +9,26 @@ import androidx.room.RoomDatabase
     // Indica que la estructura de la base de datos se exportará a un archivo para mantener un historial de esquemas.
     entities = [
         UsuarioData::class, // Tabla Usuario
-        SesionData::class   // Tabla Sesion
+        SesionData::class,   // Tabla Sesion
+        AmistadData ::class,   // Tabla Sesion
+        InmuebleData ::class   // Tabla Sesion
     ],
-    version = 2,
+    version = 1,
     exportSchema = true
 )
 
 //AppDB hereda de RoomDatabase, que es la clase base para bases de datos Room.
-abstract class AppDB: RoomDatabase() {
+abstract class AppDB : RoomDatabase() {
     // Metodo abstracto usuariosDao() para proporcionar instancias de acceso a las operaciones definidas en la interfaz UsuarioDao. Room genera la implementación automáticamente. Implementar este metodo para proporcionar la instancia funcional de acceso a los datos.
     abstract fun usuarioDao(): UsuarioDao
 
     // Metodo abstracto sesionDao() para proporcionar instancias de acceso a las operaciones definidas en la interfaz SesionDao. Room genera la implementación automáticamente. Implementar este metodo para proporcionar la instancia funcional de acceso a los datos.
     abstract fun sesionDao(): SesionDao
+
+    // Metodo abstracto amistadDao() para proporcionar instancias de acceso a las operaciones definidas en la interfaz AmistadDao. Room genera la implementación automáticamente. Implementar este metodo para proporcionar la instancia funcional de acceso a los datos.
+    abstract fun amistadDao(): AmistadDao
+
+    // Metodo abstracto inmuebleDao() para proporcionar instancias de acceso a las operaciones definidas en la interfaz InmuebleDao. Room genera la implementación automáticamente. Implementar este metodo para proporcionar la instancia funcional de acceso a los datos.
+    abstract fun inmuebleDao(): InmuebleDao
 
 }

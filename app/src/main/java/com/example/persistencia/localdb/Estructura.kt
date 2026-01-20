@@ -16,6 +16,7 @@ class Estructura {
         const val APELLIDOS = "apellidosUsuario"
         const val INCORPORACION = "incorporacionUsuario"
         const val EMAIL = "email"
+        const val SEXO = "sexo"
     }
 
     //TABLA 2: Sesion
@@ -24,5 +25,28 @@ class Estructura {
         const val IDSESION = "idSesion"
         const val IDUSUARIO = "idUsuario"
         const val FECHA_INICIO = "fechaInicio"
+    }
+
+    //TABLA 3: Amistad
+    object Amistad {
+        const val TABLE_NAME = "AMISTAD" // Nombre de la tabla
+
+        // Nombre de los atributos/campos
+        const val IDUSUARIO1 = "idUsuario1"
+        const val IDUSUARIO2 = "idUsuario2"
+    }
+
+    //TABLA 4: Inmueble
+    object Inmueble {
+        const val TABLE_NAME = "INMUEBLES" // Nombre de la tabla
+
+        // Nombre de los atributos/campos
+        const val IDINMUEBLE = "idInmueble"
+        const val TITULO = "tituloInmueble"
+        const val DESCRIPCION = "descripcionInmueble"
+        const val IMAGEN = "imagenInmueble"
+        const val PRECIO = "precioInmueble"
+        const val CONTRATO = "contratoInmueble"
+        const val PROPIETARIO = "propietarioInmueble"
     }
 }
