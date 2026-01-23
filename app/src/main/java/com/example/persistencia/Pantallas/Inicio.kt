@@ -1,13 +1,13 @@
-package com.example.persistencia
+package com.example.persistencia.Pantallas
 
-import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,30 +20,21 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.KebabDining
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,20 +46,29 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.room.Room
+import androidx.room.util.TableInfo
 import com.example.persistencia.Navegacion.AppScreens
+import com.example.persistencia.R
 import com.example.persistencia.localdb.AppDB
 import com.example.persistencia.localdb.Estructura
 import com.example.persistencia.localdb.SesionData
-import com.example.persistencia.localdb.UsuarioDao
 import com.example.persistencia.localdb.UsuarioData
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.Firebase
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -88,10 +88,54 @@ fun Inicio(navController: NavController) {
 
     var usuarioid: UsuarioData?
 
+    // Degradado magenta a morado
     val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC)) // naranja → rosa
+        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
     )
 
+    val token = stringResource(R.string.default_web_client_id)
+    val googleSignInClient = remember {
+        val gso =
+            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(token)
+                .requestEmail()
+                .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                Firebase.auth.signInWithCredential(credential)
+                    .addOnSuccessListener { authResult ->
+                        val user = authResult.user
+                        if (user != null) {
+                            val db = FirebaseFirestore.getInstance()
+                            val datosUsuario = mapOf(
+                                "uid" to user.uid,
+                                "nombre" to user.displayName,
+                                "email" to user.email,
+                                "foto" to user.photoUrl?.toString(),
+                                "fechaRegistro" to FieldValue.serverTimestamp()
+                            )
+                            db.collection("usuarios")
+                                .document(user.uid)
+                                .set(datosUsuario, SetOptions.merge())
+                        }
+                        navController.navigate(AppScreens.PantallaPrincipal.route)
+                    }.addOnFailureListener { e ->
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Inicio cancelado", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+
+    // Da el color de fondo y permite que los elementos de dentro tengan un margen
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -117,7 +161,7 @@ fun Inicio(navController: NavController) {
                 color = Color.White
             )
 
-            Spacer(Modifier.height(10.dp))
+            //Spacer(Modifier.height(10.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -224,12 +268,47 @@ fun Inicio(navController: NavController) {
                     }
 
                     TextButton(onClick = {
-                        navController.navigate(AppScreens.Formulario.route)
+                        navController.navigate(AppScreens.Registro.route)
                     }) {
-                        Text("¿No tienes cuenta? Regístrate >", color = Color(0xFF973BEB))
+                        Text("¿No tienes cuenta? Regístrate >", color = Color(0xFFDCD9E0))
                     }
+
+
                 }
             }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // -----------------------------
+                // BOTÓN DE GOOGLE
+                // -----------------------------
+                Button(
+                    onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.google_logo),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Iniciar sesión con Google",
+                        color = Color.Black,
+                        fontSize = 15.sp
+                    )
+
+                }
+            }
+
+
         }
     }
 }

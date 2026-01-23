@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "158091313964",
-    "project_id": "persistencia-57466",
-    "storage_bucket": "persistencia-57466.firebasestorage.app"
+    "project_number": "551086859146",
+    "project_id": "pronto-a2e45",
+    "storage_bucket": "pronto-a2e45.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:158091313964:android:c9edc084c94b9664636289",
+        "mobilesdk_app_id": "1:551086859146:android:55d020176ffac481801e73",
         "android_client_info": {
           "package_name": "com.example.persistencia"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "551086859146-dhlg0gj5uh4i3vm4m3447oee0nuidp84.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.persistencia",
+            "certificate_hash": "fc6f8bf6cda4ea9340f8ee3be753f3b186ff05a1"
+          }
+        },
+        {
+          "client_id": "551086859146-8i7uoou93a48ume43atop7os5ehbiv24.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCiSaUVnAzD3uE8YViZwFakUXKNQpt5fkc"
+          "current_key": "AIzaSyBiksfAsWQwSr6yFjMhY57mKcGxlvKQ9Qs"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "551086859146-8i7uoou93a48ume43atop7os5ehbiv24.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

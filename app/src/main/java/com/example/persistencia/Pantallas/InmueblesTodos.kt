@@ -1,4 +1,4 @@
-package com.example.persistencia
+package com.example.persistencia.Pantallas
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.DividerDefaults
@@ -45,7 +43,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,7 +52,6 @@ import androidx.room.Room
 import coil.compose.AsyncImage
 import com.composables.icons.lucide.CircleUserRound
 import com.composables.icons.lucide.House
-import com.composables.icons.lucide.HousePlus
 import com.composables.icons.lucide.LogOut
 import com.composables.icons.lucide.Lucide
 import com.example.persistencia.Navegacion.AppScreens

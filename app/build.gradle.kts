@@ -52,6 +52,7 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
 
     //implementation("com.google.firebase:firebase-firestore:26.0.2")
     implementation("androidx.room:room-runtime:2.8.3")
@@ -63,6 +64,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.firestore)
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.googleid)
+    implementation(libs.play.services.auth)
     ksp("androidx.room:room-compiler:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation(libs.androidx.core.ktx)

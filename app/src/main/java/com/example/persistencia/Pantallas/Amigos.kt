@@ -1,4 +1,4 @@
-package com.example.persistencia
+package com.example.persistencia.Pantallas
 
 import android.widget.Toast
 import androidx.compose.foundation.background

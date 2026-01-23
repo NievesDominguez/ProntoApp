@@ -4,73 +4,162 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import androidx.room.Room
-import com.example.persistencia.Formulario
-import com.example.persistencia.Inicio
-import com.example.persistencia.Resultados
-import com.example.persistencia.Amigos
-import com.example.persistencia.InmueblesTodos
-import com.example.persistencia.MisInmuebles
-import com.example.persistencia.PantallaPrincipal
+import com.example.persistencia.Pantallas.Formulario
+import com.example.persistencia.Pantallas.Inicio
+import com.example.persistencia.Pantallas.Resultados
+import com.example.persistencia.Pantallas.Amigos
+import com.example.persistencia.Pantallas.Carrito
+import com.example.persistencia.Pantallas.Catalogo
+import com.example.persistencia.Pantallas.InmueblesTodos
+import com.example.persistencia.Pantallas.MisInmuebles
+import com.example.persistencia.Pantallas.PantallaPrincipal
+import com.example.persistencia.Pantallas.Perfil
+import com.example.persistencia.Pantallas.Registro
 import com.example.persistencia.localdb.AppDB
 import com.example.persistencia.localdb.Estructura
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 
 @Composable
-fun AppNavigation(){
+fun AppNavigation(destino: String?) { // Recibe la información del destino
+    val startDestination =
+        when (destino) { // Verifica con un when la información leída para determinar la ventana que se abrirá
+            "Inicio" -> AppScreens.Inicio.route
+            "Perfil" -> AppScreens.Perfil.route
+            "Carrito" -> AppScreens.Carrito.route
+            "Catalogo" -> AppScreens.Catalogo.route
+            "PantallaPrincipal" -> AppScreens.PantallaPrincipal.route
+            else -> AppScreens.PantallaPrincipal.route
+        }
+
     val context = LocalContext.current
-    val db = Room.databaseBuilder(context, AppDB::class.java, Estructura.DB.NAME).allowMainThreadQueries().build()
-    var estadoSesion = db.sesionDao().getEstadoSesion()
+    val db = Room.databaseBuilder(context, AppDB::class.java, Estructura.DB.NAME)
+        .allowMainThreadQueries().build()
+    val user = Firebase.auth.currentUser
+
+    val destinoFinal = when {
+        user == null -> AppScreens.Inicio.route
+        destino != null -> startDestination
+        else -> AppScreens.PantallaPrincipal.route
+    }
+
     val navController = rememberNavController()
     //NavHost(navController = navController, startDestination = AppScreens.Formulario.route) {
-    NavHost(navController = navController, startDestination = if(estadoSesion == null)AppScreens.Inicio.route else
-        AppScreens.PantallaPrincipal.route){
-        composable (route = AppScreens.Inicio.route){
+    NavHost(navController = navController, startDestination = destinoFinal) {
+        composable(route = AppScreens.Inicio.route) {
             Inicio(navController)
         }
-        composable (route = AppScreens.Formulario.route){
+        composable(route = AppScreens.Formulario.route) {
             BackHandler(true) {
-                Toast.makeText(context, "Presionaste atrás, pero está restringido volver atrás", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
             } // Sirve para interceptar y manejar el evento del botón físico Atrás del dispositivo. El parámetro true indica que el sistema no ejecutará su comportamiento predeterminado (cerrar la app o regresar a la pantalla anterior).
             Formulario(navController)
         }
-        composable (route = AppScreens.Resultados.route){
+        composable(route = AppScreens.Resultados.route) {
             BackHandler(true) {
-                Toast.makeText(context, "Presionaste atrás, pero está restringido volver atrás", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             Resultados(navController)
         }
-        composable (route = AppScreens.Amigos.route){
+        composable(route = AppScreens.Amigos.route) {
             BackHandler(true) {
-                Toast.makeText(context, "Presionaste atrás, pero está restringido volver atrás", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             Amigos(navController)
         }
 
-        composable (route = AppScreens.MisInmuebles.route){
+        composable(route = AppScreens.MisInmuebles.route) {
             BackHandler(true) {
-                Toast.makeText(context, "Presionaste atrás, pero está restringido volver atrás", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             MisInmuebles(navController)
         }
 
-        composable (route = AppScreens.InmueblesTodos.route){
+        composable(route = AppScreens.InmueblesTodos.route) {
             BackHandler(true) {
-                Toast.makeText(context, "Presionaste atrás, pero está restringido volver atrás", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             InmueblesTodos(navController)
         }
 
-        composable (route = AppScreens.PantallaPrincipal.route){
+        composable(route = AppScreens.PantallaPrincipal.route) {
             BackHandler(true) {
-                Toast.makeText(context, "Presionaste atrás, pero está restringido volver atrás", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             PantallaPrincipal(navController)
+        }
+
+        composable(route = AppScreens.Registro.route) {
+            BackHandler(true) {
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            Registro(navController)
+        }
+
+        composable(route = AppScreens.Perfil.route) {
+            BackHandler(true) {
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            Perfil(navController)
+        }
+
+        composable(route = AppScreens.Catalogo.route) {
+            BackHandler(true) {
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            Catalogo(navController)
+        }
+
+        composable(route = AppScreens.Carrito.route) {
+            BackHandler(true) {
+                Toast.makeText(
+                    context,
+                    "Presionaste atrás, pero está restringido volver atrás",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            Carrito(navController)
         }
     }
 }
