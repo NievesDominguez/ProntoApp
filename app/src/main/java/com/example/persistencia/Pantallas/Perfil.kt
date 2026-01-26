@@ -133,7 +133,7 @@ fun Perfil(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(0.dp,20.dp)
+                    .padding(0.dp,15.dp)
                     .height(50.dp),
                 shape = RoundedCornerShape(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)

@@ -22,7 +22,7 @@ fun MainScreen() {
     Scaffold(
         modifier = Modifier
             .fillMaxSize(),
-        bottomBar = { BottomNavigationBar(navController) }
+
     ) { innerPadding ->
 
         val graph =

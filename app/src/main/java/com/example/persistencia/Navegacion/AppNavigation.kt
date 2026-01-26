@@ -2,10 +2,15 @@ package com.example.persistencia.Navegacion
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.persistencia.Pantallas.Formulario
@@ -49,117 +54,143 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
     }
 
     val navController = rememberNavController()
-    //NavHost(navController = navController, startDestination = AppScreens.Formulario.route) {
-    NavHost(navController = navController, startDestination = destinoFinal) {
-        composable(route = AppScreens.Inicio.route) {
-            Inicio(navController)
-        }
-        composable(route = AppScreens.Formulario.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } // Sirve para interceptar y manejar el evento del botón físico Atrás del dispositivo. El parámetro true indica que el sistema no ejecutará su comportamiento predeterminado (cerrar la app o regresar a la pantalla anterior).
-            Formulario(navController)
-        }
-        composable(route = AppScreens.Resultados.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            Resultados(navController)
-        }
-        composable(route = AppScreens.Amigos.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            Amigos(navController)
-        }
 
-        composable(route = AppScreens.MisInmuebles.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            MisInmuebles(navController)
-        }
+    // Pantallas en las que aparece la barra inferior
+    val bottomBarScreens = listOf(
+        AppScreens.PantallaPrincipal.route,
+        AppScreens.Perfil.route,
+        AppScreens.Catalogo.route,
+        AppScreens.Carrito.route
+    )
 
-        composable(route = AppScreens.InmueblesTodos.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            InmueblesTodos(navController)
-        }
+    val navBackStackEntry by navController.currentBackStackEntryAsState() // Indica la pantalla actual
+    val currentRoute = navBackStackEntry?.destination?.route // Indica la ruta a la pantalla actual
 
-        composable(route = AppScreens.PantallaPrincipal.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
+    Scaffold(
+        // Muestra la barra inferior solo en las pantallas indicadas
+        bottomBar = {
+            if (currentRoute in bottomBarScreens) {
+                BottomBar(navController)
             }
-            PantallaPrincipal(navController)
         }
+    ) { innerPadding ->
 
-        composable(route = AppScreens.Registro.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
+        //NavHost(navController = navController, startDestination = AppScreens.Formulario.route) {
+        NavHost(
+            navController = navController,
+            startDestination = destinoFinal,
+            //modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(route = AppScreens.Inicio.route) {
+                Inicio(navController)
             }
-            Registro(navController)
-        }
+            composable(route = AppScreens.Formulario.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } // Sirve para interceptar y manejar el evento del botón físico Atrás del dispositivo. El parámetro true indica que el sistema no ejecutará su comportamiento predeterminado (cerrar la app o regresar a la pantalla anterior).
+                Formulario(navController)
+            }
+            composable(route = AppScreens.Resultados.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                Resultados(navController)
+            }
+            composable(route = AppScreens.Amigos.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                Amigos(navController)
+            }
 
-        composable(route = AppScreens.Perfil.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
+            composable(route = AppScreens.MisInmuebles.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                MisInmuebles(navController)
             }
-            Perfil(navController)
-        }
 
-        composable(route = AppScreens.Catalogo.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
+            composable(route = AppScreens.InmueblesTodos.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                InmueblesTodos(navController)
             }
-            Catalogo(navController)
-        }
 
-        composable(route = AppScreens.Carrito.route) {
-            BackHandler(true) {
-                Toast.makeText(
-                    context,
-                    "Presionaste atrás, pero está restringido volver atrás",
-                    Toast.LENGTH_SHORT
-                ).show()
+            composable(route = AppScreens.PantallaPrincipal.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                PantallaPrincipal(navController)
             }
-            Carrito(navController)
+
+            composable(route = AppScreens.Registro.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                Registro(navController)
+            }
+
+            composable(route = AppScreens.Perfil.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                Perfil(navController)
+            }
+
+            composable(route = AppScreens.Catalogo.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                Catalogo(navController)
+            }
+
+            composable(route = AppScreens.Carrito.route) {
+                BackHandler(true) {
+                    Toast.makeText(
+                        context,
+                        "Presionaste atrás, pero está restringido volver atrás",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                Carrito(navController)
+            }
         }
     }
 }
