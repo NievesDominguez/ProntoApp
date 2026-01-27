@@ -47,6 +47,13 @@ android {
 }
 
 dependencies {
+    // Dependencias del lector de código de barras y la cámara
+    implementation ("androidx.camera:camera-core:1.3.0")
+    implementation ("androidx.camera:camera-camera2:1.3.0")
+    implementation ("androidx.camera:camera-lifecycle:1.3.0")
+    implementation ("androidx.camera:camera-view:1.3.0")
+    implementation ("com.google.mlkit:barcode-scanning:17.2.0")
+
     implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha") // Para notificaciones
     implementation("com.composables:icons-lucide:1.0.0")
 
@@ -66,6 +73,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.googleid)
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.ui)
     ksp("androidx.room:room-compiler:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation(libs.androidx.core.ktx)

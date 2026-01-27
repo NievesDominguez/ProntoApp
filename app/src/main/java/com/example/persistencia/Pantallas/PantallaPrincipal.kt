@@ -187,6 +187,15 @@ fun PantallaPrincipal(navController: NavController) {
                 ) {
                     Text(text = "Clic para una notificación avanzada en la ventana perfil")
                 }
+
+                Button(
+                    onClick = {
+                        navController.navigate(route = AppScreens.Escaner.route)
+                        Toast.makeText(context, "Escanear producto", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text(text = "Escanear un producto")
+                }
             }
 
         }
