@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Button
@@ -39,11 +40,16 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,6 +89,8 @@ fun Perfil(navController: NavController) {
 
     val user = Firebase.auth.currentUser // Usuario actual con la sesión iniciada
 
+    var showDialog by remember { mutableStateOf(false) } // Variable que determina si se muestra el dialogo para salir o no
+
     // Da el color de fondo y permite que los elementos de dentro tengan un margen
     Box(
         modifier = Modifier
@@ -90,7 +98,10 @@ fun Perfil(navController: NavController) {
             .background(gradient)
             .padding(24.dp)
     ) {
+
         Column() {
+
+            // Card donde va el perfil del usuario
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,6 +117,8 @@ fun Perfil(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
+
+                    // Imagen del usuario, sacada de su cuenta de google
                     AsyncImage(
                         modifier = Modifier
                             .size(85.dp)
@@ -116,6 +129,7 @@ fun Perfil(navController: NavController) {
                         contentDescription = "Imagen del usuario"
                     )
 
+                    // Nombre del usuario, sacado de su cuenta de google
                     user?.displayName?.let {
                         Text(
                             text = it,
@@ -127,9 +141,11 @@ fun Perfil(navController: NavController) {
 
             }
 
+            // Botón para cerrar sesión
             Button(
                 onClick = {
-                    signOut(context, navController)
+                    showDialog = true
+
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -139,6 +155,35 @@ fun Perfil(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
                 Text("Cerrar sesión", fontSize = 18.sp, color = Color(0xFF6C3AEC))
+            }
+
+            // Diálogo para cerrar sesión
+            if (showDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        // Se ejecuta cuando el usuario toca fuera del diálogo o pulsa atrás
+                        showDialog = false
+                    },
+                    title = {
+                        Text(text = "Cerrar sesión")
+                    },
+                    text = {
+                        Text(text = "¿Estás seguro de que quieres cerrar sesión?")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDialog = false
+                            signOut(context, navController)
+                        }) {
+                            Text("Cerrar sesión")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
         }
 
