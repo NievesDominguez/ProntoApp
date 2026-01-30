@@ -1,5 +1,7 @@
 package com.example.persistencia.Modelos
 
+import com.google.firebase.Timestamp
+
 // Modelo de datos para un producto del catálogo
 data class Producto(
     val id: String = "",            // Código de barras (ID del documento en Firestore)
@@ -11,7 +13,7 @@ data class Producto(
     val stock: Int = 0,             // Unidades en stock
     val imagenUrl: String = "",     // URL de la imagen del producto
     val oferta: String? = null,     // ID de oferta opcional
-    val fecha: Long = 0L            // Fecha de subida (timestamp)
+    val fecha: Timestamp? = null    // Fecha de subida (timestamp)
 ) {
 
     // Conversión opcional a Map para subir a Firestore

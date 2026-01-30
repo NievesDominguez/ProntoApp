@@ -55,11 +55,14 @@ dependencies {
     implementation ("com.google.mlkit:barcode-scanning:17.2.0")
 
     implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha") // Para notificaciones
-    implementation("com.composables:icons-lucide:1.0.0")
+    implementation("com.composables:icons-lucide:1.0.0") // Iconos de lucide
 
-    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    // Dependencias de firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+    implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
+    implementation("com.google.android.gms:play-services-auth:21.5.0")
 
     //implementation("com.google.firebase:firebase-firestore:26.0.2")
     implementation("androidx.room:room-runtime:2.8.3")
@@ -74,6 +77,7 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.play.services.auth)
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.foundation)
     ksp("androidx.room:room-compiler:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation(libs.androidx.core.ktx)

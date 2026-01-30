@@ -1,6 +1,7 @@
 package com.example.persistencia.Navegacion
 
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -12,17 +13,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.persistencia.Escaner.BarcodeScannerScreen
-import com.example.persistencia.Pantallas.Formulario
-import com.example.persistencia.Pantallas.Inicio
-import com.example.persistencia.Pantallas.Resultados
 import com.example.persistencia.Pantallas.Amigos
 import com.example.persistencia.Pantallas.Carrito
 import com.example.persistencia.Pantallas.Catalogo
+import com.example.persistencia.Pantallas.Formulario
+import com.example.persistencia.Pantallas.Inicio
 import com.example.persistencia.Pantallas.InmueblesTodos
 import com.example.persistencia.Pantallas.MisInmuebles
 import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.Perfil
 import com.example.persistencia.Pantallas.Registro
+import com.example.persistencia.Pantallas.Resultados
 import com.example.persistencia.localdb.AppDB
 import com.example.persistencia.localdb.Estructura
 import com.google.firebase.Firebase
@@ -192,9 +193,16 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
             }
 
             composable(route = AppScreens.Escaner.route) {
-                BackHandler(true) {
-                    AppScreens.PantallaPrincipal.route
-                }
+//                BackHandler(true) {
+//                    AppScreens.PantallaPrincipal.route
+//                }
+                // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
+                val callback: OnBackPressedCallback =
+                    object : OnBackPressedCallback(true) {
+                        override fun handleOnBackPressed() {
+                            AppScreens.PantallaPrincipal.route
+                        }
+                    }
                 BarcodeScannerScreen(navController)
             }
         }
