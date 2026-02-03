@@ -80,7 +80,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                         snackbarHostState.showSnackbar(
                             message = codigo,
                             actionLabel = "Añadir al carrito", // Botón del snackbar
-                            duration = SnackbarDuration.Indefinite,
+                            duration = SnackbarDuration.Indefinite, // El snackbar dura hasta que se presiona la X o se escanea un nuevo código
                             withDismissAction = true
                         )
                     }

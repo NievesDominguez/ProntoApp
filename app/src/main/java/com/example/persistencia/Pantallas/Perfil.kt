@@ -44,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +89,35 @@ fun Perfil(navController: NavController) {
         colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
     )
 
-    val user = Firebase.auth.currentUser // Usuario actual con la sesión iniciada
+    //val user = Firebase.auth.currentUser // Usuario actual con la sesión iniciada
+
+    val authUser = Firebase.auth.currentUser// Usuario autenticado (solo UID y email)
+    val firestore =
+        FirebaseFirestore.getInstance() // Estado donde guardaremos los datos del usuario desde Firestore
+
+    var datosUsuario by remember {
+        mutableStateOf<Map<String, Any>?>(null)
+    }
+    // Cargar datos del usuario desde Firestore
+    LaunchedEffect(authUser?.uid) {
+        val uid = authUser?.uid
+        if (uid != null) {
+            firestore.collection("usuarios")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        datosUsuario = doc.data
+                    }
+                }.addOnFailureListener {
+                    Toast.makeText(
+                        context,
+                        "Error al cargar datos",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+        }
+    }
 
     var showDialog by remember { mutableStateOf(false) } // Variable que determina si se muestra el dialogo para salir o no
 
@@ -118,25 +148,34 @@ fun Perfil(navController: NavController) {
                     verticalArrangement = Arrangement.Center
                 ) {
 
-                    // Imagen del usuario, sacada de su cuenta de google
+                    // Imagen del usuario
                     AsyncImage(
                         modifier = Modifier
                             .size(85.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary),
-                        model = user?.photoUrl,
-                        contentScale = ContentScale.Crop,
+                        // Si no hubiera imagen, se usa una por defecto
+                        model = authUser?.photoUrl
+                            ?: datosUsuario?.get("foto")
+                            ?: "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1906669723.jpg",
+
+                            contentScale = ContentScale.Crop,
                         contentDescription = "Imagen del usuario"
                     )
 
-                    // Nombre del usuario, sacado de su cuenta de google
-                    user?.displayName?.let {
+                    // Nombre del usuario
+                    val nombre = datosUsuario?.get("nombre") as? String
+                    val apellidos =
+                        datosUsuario?.get("apellidos") as? String
+                    if (!nombre.isNullOrBlank()) {
                         Text(
-                            text = it,
+                            text = if (!apellidos.isNullOrBlank()) "$nombre $apellidos" else nombre,
                             fontSize = 25.sp,
                             modifier = Modifier.padding(10.dp)
                         )
                     }
+
+
                 }
 
             }
@@ -149,7 +188,7 @@ fun Perfil(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(0.dp,15.dp)
+                    .padding(0.dp, 15.dp)
                     .height(50.dp),
                 shape = RoundedCornerShape(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)

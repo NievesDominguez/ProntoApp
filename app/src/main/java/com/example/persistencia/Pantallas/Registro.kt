@@ -1,5 +1,6 @@
 package com.example.persistencia.Pantallas
 
+import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.R
@@ -56,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.persistencia.Navegacion.AppScreens
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +77,10 @@ fun Registro(navController: NavController) {
     val gradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
     )
+
+    // Inicializa las variables para la autenticación
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
 
     Box(
         modifier = Modifier
@@ -104,7 +111,7 @@ fun Registro(navController: NavController) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 200.dp, max = 500.dp), // límite visual
+                    .heightIn(min = 200.dp, max = 500.dp), // Límite visual
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(8.dp)
@@ -112,7 +119,7 @@ fun Registro(navController: NavController) {
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),   // ← AQUÍ EL SCROLL
+                        .verticalScroll(rememberScrollState()), // Para poder hacer scroll
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -172,7 +179,139 @@ fun Registro(navController: NavController) {
 
                     Button(
                         onClick = {
-                            Toast.makeText(context, "Usuario registrado", Toast.LENGTH_SHORT).show()
+                            // Se obtiene el email sin espacios
+                            val correo = email.trim()
+                            val pass = contrasena.text
+
+                            // Validación del nombre
+                            if (nombre.isBlank()) {
+                                Toast.makeText(
+                                    context,
+                                    "Introduce tu nombre",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button // Vuelve arriba
+                            }
+
+                            // Validación del correo
+                            if (correo.isEmpty()) {
+                                Toast.makeText(
+                                    context,
+                                    "Introduce un correo electrónico",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button // Vuelve arriba
+                            }
+
+                            // Validación del formato del correo
+                            val emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()
+                            if (!emailValido) {
+                                Toast.makeText(
+                                    context,
+                                    "Introduce un correo electrónico válido",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button // Vuelve arriba
+                            }
+
+                            // Validación de contraseña
+                            if (pass.isEmpty()) {
+                                Toast.makeText(
+                                    context,
+                                    "Introduce una contraseña",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button // Vuelve arriba
+                            }
+
+                            // Validación del formato de la contraseña
+//                            if (pass.length<6) {
+//                                Toast.makeText(
+//                                    context,
+//                                    "La contraseña debe tener al menos 6 caracteres",
+//                                    Toast.LENGTH_SHORT
+//                                ).show()
+//                                return@Button // Vuelve arriba
+//                            }
+
+                            // Validación del teléfono solo si el usuario ha escrito algo
+                            if (telefono.isNotEmpty()) {
+                                val telefonoValido = telefono.length >= 9 && telefono.all {
+                                    it.isDigit()
+                                }
+                                if (!telefonoValido) {
+                                    Toast.makeText(
+                                        context,
+                                        "Introduce un teléfono válido",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@Button
+                                }
+                            }
+
+                            // Se crea el usuario en Firebase Authentication con email y contraseña
+                            auth.createUserWithEmailAndPassword(correo, pass as String)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+
+                                        // Si el registro es correcto, se obtiene el UID del usuario autenticado
+                                        val uid = auth.currentUser?.uid
+
+                                        // Si el registro es correcto, se guardan los datos del usuario en firestore
+                                        if (uid != null) {
+                                            val datosUsuario = mapOf(
+                                                "nombre" to nombre,
+                                                "apellidos" to apellidos,
+                                                "email" to correo,
+                                                "telefono" to telefono
+                                            )
+
+                                            // Se crea el documento del usuario en la colección "usuarios"
+                                            firestore.collection("usuarios")
+                                                .document(uid)
+                                                .set(datosUsuario)
+                                                .addOnSuccessListener {
+                                                    // Se confirma que se ha registrado el usuario correctamente con un toast
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Usuario registrado correctamente",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+
+                                                    // Navegación a la pantalla de inicio
+                                                    navController.navigate(AppScreens.Inicio.route) {
+                                                        popUpTo(AppScreens.Registro.route) {
+                                                            inclusive = true
+                                                        }
+                                                    }
+                                                }
+                                                .addOnFailureListener {
+                                                    // Error al guardar los datos en Firestore
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Error al guardar datos",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+
+                                        } else {
+                                            // Error inesperado al obtener el UID del usuario
+                                            Toast.makeText(
+                                                context,
+                                                "Error al obtener usuario",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+
+                                    } else {
+                                        // Error al registrar en Firebase Authentication
+                                        val mensaje = task.exception?.localizedMessage
+                                            ?: "Error al registrar"
+                                        Toast.makeText(context, mensaje, Toast.LENGTH_SHORT)
+                                            .show()
+                                    }
+                                }
+
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -182,6 +321,7 @@ fun Registro(navController: NavController) {
                     ) {
                         Text("Registrarse", fontSize = 16.sp)
                     }
+
 
                     TextButton(onClick = {
                         navController.navigate(AppScreens.Inicio.route)

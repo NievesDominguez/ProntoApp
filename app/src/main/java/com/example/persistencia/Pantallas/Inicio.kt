@@ -203,60 +203,65 @@ fun Inicio(navController: NavController) {
 
                     Button(
                         onClick = {
-                            if (email.isBlank() || contrasena.text.isBlank()) {
+
+                            // Se obtiene el email sin espacios
+                            val correo = email.trim()
+                            val pass = contrasena.text
+
+                            // Validación del email
+                            if (correo.isEmpty()) {
+                                Toast.makeText(context, "Introduce un email", Toast.LENGTH_SHORT)
+                                    .show()
+                                return@Button
+                            }
+
+                            // Validación de formato de email
+                            val emailValido =
+                                android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()
+                            if (!emailValido) {
                                 Toast.makeText(
                                     context,
-                                    "No puede haber campos en blanco",
+                                    "Introduce un email válido",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                            } else {
-                                dbFirebase.collection("usuarios").document(email).get()
-                                    .addOnSuccessListener { usuario ->
-                                        val usr = usuario.data
-                                        val emailUsr = usr?.get("Email") as? String
-                                        val pwd = usr?.get("Password") as? String
-                                        if (emailUsr != null && pwd != null) {
-                                            usuarioid = dbl.usuarioDao().getUnUser(email)
-                                            if (pwd == contrasena.text && usuarioid != null) {
-                                                val fecha = SimpleDateFormat(
-                                                    "dd-MM-yyyy",
-                                                    Locale.getDefault()
-                                                ).format(Date())
-                                                val sesionData = SesionData(
-                                                    idUsuario = usuarioid!!.idUsuario,
-                                                    fechaInicio = fecha
-                                                )
+                                return@Button
+                            }
 
-                                                dbl.sesionDao().nuevaSesion(sesionData)
-                                                navController.navigate(AppScreens.Resultados.route)
-                                                Toast.makeText(
-                                                    context,
-                                                    "Usuario inició sesión",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            } else {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Credenciales inválidas",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                "Datos del usuario incompletos",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                    .addOnFailureListener {
+                            // Validación de contraseña
+                            if (pass.isEmpty()) {
+                                Toast.makeText(
+                                    context,
+                                    "Introduce una contraseña",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
+
+                            // Inicio de sesión en Firebase Authentication
+                            Firebase.auth.signInWithEmailAndPassword(correo, pass as String)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+
+                                        // Inicio de sesión correcto
                                         Toast.makeText(
                                             context,
-                                            "Error en la consulta",
+                                            "Inicio de sesión correcto",
                                             Toast.LENGTH_SHORT
                                         ).show()
+
+                                        // Navegación a la pantalla principal
+                                        navController.navigate(AppScreens.PantallaPrincipal.route) {
+                                            popUpTo(AppScreens.Inicio.route) { inclusive = true }
+                                        }
+
+                                    } else {
+                                        // Error al iniciar sesión
+                                        val mensaje = task.exception?.localizedMessage
+                                            ?: "Error al iniciar sesión"
+                                        Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
                                     }
-                            }
+                                }
+
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -266,6 +271,7 @@ fun Inicio(navController: NavController) {
                     ) {
                         Text("Iniciar sesión", fontSize = 16.sp)
                     }
+
 
                     TextButton(onClick = {
                         navController.navigate(AppScreens.Registro.route)
@@ -282,7 +288,7 @@ fun Inicio(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // -----------------------------
-                // BOTÓN DE GOOGLE
+                // INICIO DE SESIÓN CON GOOGLE
                 // -----------------------------
                 Button(
                     onClick = { launcher.launch(googleSignInClient.signInIntent) },

@@ -16,7 +16,7 @@ data class Producto(
     val fecha: Timestamp? = null    // Fecha de subida (timestamp)
 ) {
 
-    // Conversión opcional a Map para subir a Firestore
+    // Conversión a Map para subir a Firestore si fuera necesario
     fun toMap(): Map<String, Any?> {
         return mapOf(
             "nombre" to nombre,

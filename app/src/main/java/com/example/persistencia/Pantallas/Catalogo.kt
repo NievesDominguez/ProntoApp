@@ -1,5 +1,7 @@
 package com.example.persistencia.Pantallas
 
+import android.R.attr.query
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,18 +27,28 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollableArea
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,16 +57,24 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.persistencia.Firestore.CatalogoVistaModelo
 import com.example.persistencia.Modelos.Producto
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +127,19 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
     }
 
     // Observamos en tiempo real la lista de productos del ViewModel
+    //val productos by vistaModelo.productos.collectAsState()
+
+    // Observamos en tiempo real la lista de productos del ViewModel (pero la carga es solo una vez)
     val productos by vistaModelo.productos.collectAsState()
+    var query by remember { mutableStateOf("") }
+    var active by remember { mutableStateOf(false) }
+    // Filtrado local de productos según la búsqueda
+    val productosFiltrados by remember(query, productos) {
+        mutableStateOf(productos.filter { producto ->
+            producto.nombre.contains(query, ignoreCase = true)
+        })
+    }
+
 
     // Caja principal que ocupa toda la pantalla y aplica el fondo
     Box(
@@ -115,111 +147,140 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
             .fillMaxSize()
             .background(gradient2)
     ) {
+        Column() {
 
-        // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
-        // No usar Column infinito y dentro un LazyColumn
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-
-           // Novedades
-            item {
-                Text(
-                    modifier = Modifier.padding(24.dp, 30.dp, 24.dp, 24.dp),
-                    text = "Novedades",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // Carrusel
-            item {
-                HorizontalUncontainedCarousel(
-                    state = rememberCarouselState { carouselItems.count() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .padding(top = 16.dp, bottom = 16.dp),
-                    itemWidth = 186.dp,
-                    itemSpacing = 8.dp,
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                ) { i ->
-                    val item = carouselItems[i]
-                    AsyncImage(
-                        model = item.imgLink,
-                        contentDescription = item.contentDescription,
-                        modifier = Modifier
-                            .height(205.dp)
-                            .maskClip(MaterialTheme.shapes.extraLarge),
-                        contentScale = ContentScale.Crop
+            // Barra de búsqueda
+            SearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                onSearch = { active = false },
+                active = active,
+                onActiveChange = { active = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                placeholder = { Text("Buscar productos") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Search,
+                        contentDescription = null
+                    )
+                }
+            ) {
+                // Resultados dentro del panel desplegable del SearchBar
+                productosFiltrados.take(5).forEach { producto ->
+                    ListItem(
+                        headlineContent = { Text(producto.nombre) },
+                        supportingContent = { Text("${producto.precio} €") }
                     )
                 }
             }
 
-            // Alimentación
-            item {
-                Text(
-                    modifier = Modifier.padding(24.dp),
-                    text = "Alimentación",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
+            // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
+            // No usar Column infinito y dentro un LazyColumn
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
 
-            // Grid con dos columnas. No se usa grid porque entra el conflicto con el scroll de la pantalla
-            items(productos.chunked(2)) { fila ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                // Novedades
+                item {
+                    Text(
+                        modifier = Modifier.padding(24.dp, 30.dp, 24.dp, 24.dp),
+                        text = "Novedades",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-                    // Dibujamos los productos de la fila
-                    fila.forEach { producto ->
-                        TarjetaProducto(producto)
-                    }
-
-                    // Si la fila tiene solo 1 producto, rellenamos el hueco
-                    if (fila.size == 1) {
-                        Spacer(modifier = Modifier.width(170.dp))
+                // Carrusel
+                item {
+                    HorizontalUncontainedCarousel(
+                        state = rememberCarouselState { carouselItems.count() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .padding(top = 16.dp, bottom = 16.dp),
+                        itemWidth = 186.dp,
+                        itemSpacing = 8.dp,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) { i ->
+                        val item = carouselItems[i]
+                        AsyncImage(
+                            model = item.imgLink,
+                            contentDescription = item.contentDescription,
+                            modifier = Modifier
+                                .height(205.dp)
+                                .maskClip(MaterialTheme.shapes.extraLarge),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
-            }
 
-            // Textil
-            item {
-                Text(
-                    modifier = Modifier.padding(24.dp),
-                    text = "Textil",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+                // Alimentación
+                item {
+                    Text(
+                        modifier = Modifier.padding(24.dp),
+                        text = "Alimentación",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            // Electrónica
-            item {
-                Text(
-                    modifier = Modifier.padding(24.dp),
-                    text = "Electrónica",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
-            // Espacio final para que el ultimo elemento no quede pegado al borde
-            item {
-                Spacer(modifier = Modifier.height(40.dp))
+                // Grid con dos columnas. No se usa grid porque entra el conflicto con el scroll de la pantalla
+                items(productosFiltrados.chunked(2)) { fila ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+
+                        // Dibujamos los productos de la fila
+                        fila.forEach { producto ->
+                            TarjetaProducto(producto)
+                        }
+
+                        // Si la fila tiene solo 1 producto, rellenamos el hueco
+                        if (fila.size == 1) {
+                            Spacer(modifier = Modifier.width(170.dp))
+                        }
+                    }
+                }
+
+                // Textil
+                item {
+                    Text(
+                        modifier = Modifier.padding(24.dp),
+                        text = "Textil",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Electrónica
+                item {
+                    Text(
+                        modifier = Modifier.padding(24.dp),
+                        text = "Electrónica",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Espacio final para que el ultimo elemento no quede pegado al borde
+                item {
+                    Spacer(Modifier.height(40.dp))
+                }
             }
         }
     }
 }
-
 
 
 @Composable
@@ -228,8 +289,8 @@ fun TarjetaProducto(producto: Producto) {
     // Tarjeta blanca redondeada
     Column(
         modifier = Modifier
-            .width(170.dp)
-            .height(170.dp)
+            .width(190.dp)
+            .height(190.dp)
             .background(
                 Color.White.copy(alpha = 0.9f),
                 shape = RoundedCornerShape(16.dp)
@@ -250,16 +311,16 @@ fun TarjetaProducto(producto: Producto) {
 
         Spacer(Modifier.height(8.dp))
 
-        // Nombre del producto (maximo 2 lineas)
+        // Nombre del producto (maximo 1 lineas)
         Text(
             text = producto.nombre,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
 
-        Spacer(Modifier.height(4.dp))
+        //Spacer(Modifier.height(4.dp))
 
         // Precio del producto destacado en color
         Text(
@@ -270,3 +331,27 @@ fun TarjetaProducto(producto: Producto) {
         )
     }
 }
+
+class CatalogoVistaModelo : ViewModel() {
+
+    private val firestore = FirebaseFirestore.getInstance()
+
+    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
+    val productos: StateFlow<List<Producto>> = _productos
+
+    init {
+        cargarProductos()
+    }
+
+    private fun cargarProductos() {
+        firestore.collection("productos")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                _productos.value = snapshot.toObjects(Producto::class.java)
+            }
+            .addOnFailureListener { e ->
+                Log.e("CatalogoVM", "Error cargando productos", e)
+            }
+    }
+}
+
