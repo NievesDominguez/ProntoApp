@@ -196,6 +196,8 @@ fun PantallaPrincipal(navController: NavController) {
                 ) {
                     Text(text = "Escanear un producto")
                 }
+
+
             }
 
         }
@@ -204,4 +206,3 @@ fun PantallaPrincipal(navController: NavController) {
     }
 
 }
-

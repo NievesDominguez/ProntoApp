@@ -10,8 +10,8 @@ import androidx.room.RoomDatabase
     entities = [
         UsuarioData::class, // Tabla Usuario
         SesionData::class,   // Tabla Sesion
-        AmistadData ::class,   // Tabla Sesion
-        InmuebleData ::class   // Tabla Sesion
+        AmistadData::class,   // Tabla Sesion
+        InmuebleData::class   // Tabla Sesion
     ],
     version = 1,
     exportSchema = true

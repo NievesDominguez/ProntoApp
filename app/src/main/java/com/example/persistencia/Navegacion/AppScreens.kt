@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class AppScreens (val route: String, val icon: ImageVector) {
@@ -22,7 +23,6 @@ sealed class AppScreens (val route: String, val icon: ImageVector) {
     object Catalogo: AppScreens("Catalogo",Icons.Default.LibraryBooks)
     object BottomNavigationBar: AppScreens("BottomNavigationBar",Icons.Default.LibraryBooks)
     object Escaner: AppScreens("BarcodeScannerScreen",Icons.Default.Camera)
-
 
     companion object {
     }

@@ -49,4 +49,5 @@ class Estructura {
         const val CONTRATO = "contratoInmueble"
         const val PROPIETARIO = "propietarioInmueble"
     }
+
 }
