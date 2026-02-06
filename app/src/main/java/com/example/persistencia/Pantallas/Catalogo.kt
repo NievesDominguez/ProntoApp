@@ -103,6 +103,7 @@ import com.composables.icons.lucide.Shirt
 import com.composables.icons.lucide.Store
 import com.example.persistencia.Firestore.CatalogoVistaModelo
 import com.example.persistencia.Modelos.Producto
+import com.example.persistencia.Navegacion.AppScreens
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -183,7 +184,6 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
             unselectedIcon = Lucide.Plug
         )
     )
-
 
     // Lista de productos del ViewModel
     val productos by vistaModelo.productos.collectAsState()
@@ -299,7 +299,9 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                     onSearch = { active = false },
                     active = active,
                     onActiveChange = { active = it },
-                    modifier = Modifier.fillMaxWidth().padding(top = 40.dp, bottom = 5.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp, bottom = 5.dp),
                     placeholder = { Text("Buscar productos") },
                     leadingIcon = {
                         Icon(Icons.Outlined.Search, contentDescription = null)
@@ -380,7 +382,8 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                             fila.forEach { producto ->
                                 TarjetaProducto(
                                     producto,
-                                    modifier = Modifier.weight(1f) // Deben repartirse el ancho por igual
+                                    modifier = Modifier.weight(1f), // Deben repartirse el ancho por igual
+                                    navController
                                 )
                             }
 
@@ -428,16 +431,23 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
 
 
 @Composable
-fun TarjetaProducto(producto: Producto, modifier: Modifier = Modifier) {
+fun TarjetaProducto(
+    producto: Producto,
+    modifier: Modifier = Modifier,
+    navController: NavController
+) {
 
-    Column(
+    Card(
         modifier = modifier
             .height(190.dp)
-            .background(
-                Color.White.copy(alpha = 0.9f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(12.dp)
+            .padding(12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.9f)
+        ),
+        onClick = {
+            navController.navigate(route = AppScreens.PantallaProducto.route+ "/$producto")
+        }
     ) {
         AsyncImage(
             model = producto.imagenUrl,
