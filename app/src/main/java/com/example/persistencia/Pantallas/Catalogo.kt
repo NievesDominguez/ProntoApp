@@ -32,8 +32,15 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.outlined.Checkroom
+import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.ShoppingBasket
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -45,7 +52,9 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
@@ -70,6 +79,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -84,7 +94,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.room.util.copy
 import coil.compose.AsyncImage
+import com.composables.icons.lucide.Globe
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plug
+import com.composables.icons.lucide.Shirt
+import com.composables.icons.lucide.Store
 import com.example.persistencia.Firestore.CatalogoVistaModelo
 import com.example.persistencia.Modelos.Producto
 import com.google.firebase.firestore.FirebaseFirestore
@@ -143,6 +159,31 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
         )
     }
 
+    //Lista de items para la barra lateral de navegación
+    val categorias = listOf(
+        NavigationItems(
+            title = "Todo",
+            selectedIcon = Lucide.Store,
+            unselectedIcon = Lucide.Store
+        ),
+        NavigationItems(
+            title = "Alimentación",
+            selectedIcon = Icons.Filled.Restaurant,
+            unselectedIcon = Icons.Outlined.Restaurant
+        ),
+        NavigationItems(
+            title = "Textil",
+            selectedIcon = Lucide.Shirt,
+            unselectedIcon = Lucide.Shirt,
+            badgeCount = 105
+        ),
+        NavigationItems(
+            title = "Electrónica",
+            selectedIcon = Lucide.Plug,
+            unselectedIcon = Lucide.Plug
+        )
+    )
+
 
     // Lista de productos del ViewModel
     val productos by vistaModelo.productos.collectAsState()
@@ -160,75 +201,96 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
     // Para el panel lateral de navegación
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
-    // Barra horizontal de navegación, permite navegar por categorías
-    // El Drawer debe envolver al Scaffold para que el botón del TopBar pueda abrirlo
+    var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
 
 
-    // El Drawer envuelve la pantalla completa
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            Box(modifier = Modifier.width(200.dp)) {
-                ModalDrawerSheet {
-                    Text("Categorías", modifier = Modifier.padding(16.dp))
-                    HorizontalDivider()
-                    NavigationDrawerItem(
-                        label = { Text("Alimentación") },
-                        selected = false,
-                        onClick = { }
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Textil") },
-                        selected = false,
-                        onClick = { }
-                    )
-                }
-            }
-        }
+    // Fondo degradado de la pantalla
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(gradient2)
     ) {
 
-        // Fondo degradado de la pantalla
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradient2)
-        ) {
 
+        // TopBar transparente
+        TopAppBar(
+            modifier = Modifier.height(56.dp),
+            title = { Text("Catálogo") },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent, // Transparente para que se vea el fondo
+                titleContentColor = Color.White
+            ),
+            // Abre o cierra el menú lateral
+            navigationIcon = {
+                IconButton(onClick = {
+                    scope.launch {
+                        if (drawerState.isClosed) drawerState.open()
+                        else drawerState.close()
+                    }
+                }) {
+                    Icon(Icons.Default.Menu, contentDescription = "Barra lateral")
+                }
+            }
+        )
+
+        // Barra horizontal de navegación, permite navegar por categorías
+        // El Drawer envuelve la pantalla principal, pero no el topbar
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                // Lo metemos dentro de un box para modificar el tamaño
+                Box(modifier = Modifier.width(220.dp)) {
+                    ModalDrawerSheet {
+                        Spacer(modifier = Modifier.height(16.dp)) //space (margin) from top
+                        categorias.forEachIndexed { index, item ->
+                            NavigationDrawerItem(
+                                label = { Text(text = item.title) },
+                                selected = index == selectedItemIndex,
+                                onClick = {
+                                    //  navController.navigate(item.route)
+
+                                    selectedItemIndex = index
+                                    scope.launch {
+                                        drawerState.close()
+                                    }
+                                },
+                                // Icono correspondiente al item
+                                icon = {
+                                    Icon(
+                                        imageVector = if (index == selectedItemIndex) {
+                                            item.selectedIcon
+                                        } else item.unselectedIcon,
+                                        contentDescription = item.title
+                                    )
+                                },
+                                // Colores del item, cuando está seleccionado o no
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF6C3AEC),
+                                    unselectedIconColor = Color.Black,
+                                    selectedTextColor = Color(0xFF6C3AEC),
+                                    unselectedTextColor = Color.Black,
+                                    selectedContainerColor = Color(0xFF6C3AEC).copy(alpha = 0.15f),
+                                    unselectedContainerColor = Color.Transparent
+                                ),
+
+                                // Muestra badge al lateral si el item lo tiene
+                                badge = {
+                                    item.badgeCount?.let {
+                                        Text(text = item.badgeCount.toString())
+                                    }
+                                },
+                                modifier = Modifier
+                                    .padding(NavigationDrawerItemDefaults.ItemPadding) //padding between items
+                            )
+                        }
+
+                    }
+                }
+            },
+            gesturesEnabled = true // Permite abrir y cerrar con gestos
+        ) {
             Column {
 
-                // TopBar transparente
-                TopAppBar(
-                    modifier = Modifier.height(70.dp),
-                    title = { Text("Catálogo") },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = Color.White
-                    ),
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch {
-                                if (drawerState.isClosed) drawerState.open()
-                                else drawerState.close()
-                            }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Barra lateral")
-                        }
-                    }
-                )
-
-                // Barra horizontal entre TopBar y contenido
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text("Alimentación", color = Color.White)
-                    Text("Textil", color = Color.White)
-                    Text("Electrónica", color = Color.White)
-                }
 
                 // SearchBar
                 SearchBar(
@@ -237,7 +299,7 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                     onSearch = { active = false },
                     active = active,
                     onActiveChange = { active = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 40.dp, bottom = 5.dp),
                     placeholder = { Text("Buscar productos") },
                     leadingIcon = {
                         Icon(Icons.Outlined.Search, contentDescription = null)
@@ -430,3 +492,11 @@ class CatalogoVistaModelo : ViewModel() {
     }
 }
 
+
+// Clase Navigation Items para items de la barra lateral
+data class NavigationItems(
+    val title: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val badgeCount: Int? = null
+)
