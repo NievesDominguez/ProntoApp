@@ -441,8 +441,8 @@ fun TarjetaProducto(
 
     Card(
         modifier = modifier
-            .height(190.dp)
-            .padding(12.dp),
+            .height(190.dp),
+            //.padding(12.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White.copy(alpha = 0.9f)
@@ -453,32 +453,36 @@ fun TarjetaProducto(
         }
 
     ) {
-        AsyncImage(
-            model = producto.imagenUrl,
-            contentDescription = producto.nombre,
-            modifier = Modifier
-                .height(120.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Fit
-        )
+        Column(
+            modifier = Modifier.padding(12.dp),
+        ) {
+            AsyncImage(
+                model = producto.imagenUrl,
+                contentDescription = producto.nombre,
+                modifier = Modifier
+                    .height(120.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Fit
+            )
 
-        Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
-        Text(
-            text = producto.nombre,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+            Text(
+                text = producto.nombre,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
-        Text(
-            text = "${producto.precio} €",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF6C3AEC)
-        )
+            Text(
+                text = "${producto.precio} €",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6C3AEC)
+            )
+        }
     }
 }
 

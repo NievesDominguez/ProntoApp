@@ -216,7 +216,9 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
                     navArgument("idProducto") { type = NavType.IntType }
                 )
             ) { backStackEntry ->
-                BackHandler(true) {} // El usuario puede volver atras
+                BackHandler {
+                    navController.popBackStack()
+                }
                 val id = backStackEntry.arguments?.getInt("idProducto") ?: return@composable
 
                 PantallaProducto(idProducto = id.toString())
