@@ -1,6 +1,7 @@
 package com.example.persistencia.Modelos
 
 import com.google.firebase.Timestamp
+import kotlinx.serialization.Serializable
 
 // Modelo de datos para un producto del catálogo
 data class Producto(

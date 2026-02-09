@@ -189,6 +189,7 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
     val productos by vistaModelo.productos.collectAsState()
     var query by remember { mutableStateOf("") }
     var active by remember { mutableStateOf(false) }
+
     // Filtrado local de productos según la búsqueda
     val productosFiltrados by remember(query, productos) {
         mutableStateOf(productos.filter { producto ->
@@ -289,12 +290,12 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
             },
             gesturesEnabled = true // Permite abrir y cerrar con gestos
         ) {
+
+
             Column {
-
-
-                // SearchBar
+                // Barra de búsqueda
                 SearchBar(
-                    query = query,
+                    query = query, // Query, producto buscado
                     onQueryChange = { query = it },
                     onSearch = { active = false },
                     active = active,
@@ -307,7 +308,8 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                         Icon(Icons.Outlined.Search, contentDescription = null)
                     }
                 ) {
-                    productosFiltrados.take(5).forEach { producto ->
+                    // Toma los 10 productos más similares  y los muestra
+                    productosFiltrados.take(10).forEach { producto ->
                         ListItem(
                             headlineContent = { Text(producto.nombre) },
                             supportingContent = { Text("${producto.precio} €") }
@@ -446,8 +448,10 @@ fun TarjetaProducto(
             containerColor = Color.White.copy(alpha = 0.9f)
         ),
         onClick = {
-            navController.navigate(route = AppScreens.PantallaProducto.route+ "/$producto")
+            // Se navega a la pantalla de detalle del producto, mandando el id
+            navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
         }
+
     ) {
         AsyncImage(
             model = producto.imagenUrl,

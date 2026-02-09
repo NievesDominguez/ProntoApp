@@ -7,12 +7,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.room.Room
 import com.example.persistencia.Escaner.BarcodeScannerScreen
+import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Pantallas.Amigos
 import com.example.persistencia.Pantallas.Carrito
 import com.example.persistencia.Pantallas.Catalogo
@@ -21,6 +24,7 @@ import com.example.persistencia.Pantallas.Inicio
 import com.example.persistencia.Pantallas.InmueblesTodos
 import com.example.persistencia.Pantallas.MisInmuebles
 import com.example.persistencia.Pantallas.PantallaPrincipal
+import com.example.persistencia.Pantallas.PantallaProducto
 import com.example.persistencia.Pantallas.Perfil
 import com.example.persistencia.Pantallas.Registro
 import com.example.persistencia.Pantallas.Resultados
@@ -206,17 +210,18 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
                 BarcodeScannerScreen(navController)
             }
 
-            composable(route = AppScreens.PantallaProducto.route) {
-                // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
-                val callback: OnBackPressedCallback =
-                    object : OnBackPressedCallback(true) {
-                        override fun handleOnBackPressed() {
-                            navController.popBackStack()
-                        }
-                    }
-                BarcodeScannerScreen(navController)
+            composable(
+                route = AppScreens.PantallaProducto.route + "/{idProducto}",
+                arguments = listOf(
+                    navArgument("idProducto") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                BackHandler(true) {} // El usuario puede volver atras
+                val id = backStackEntry.arguments?.getInt("idProducto") ?: return@composable
+
+                PantallaProducto(idProducto = id.toString())
             }
+
         }
     }
 }
-
