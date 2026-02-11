@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,11 +35,16 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Checkroom
 import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.Checkroom
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Search
@@ -44,11 +52,14 @@ import androidx.compose.material.icons.outlined.ShoppingBasket
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -97,6 +108,7 @@ import androidx.navigation.NavController
 import androidx.room.util.copy
 import coil.compose.AsyncImage
 import com.composables.icons.lucide.Globe
+import com.composables.icons.lucide.ListCheck
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plug
 import com.composables.icons.lucide.Shirt
@@ -134,28 +146,28 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
         listOf(
             CarouselItem(
                 0,
-                "https://static.wikia.nocookie.net/stormlightarchive/images/7/74/DYKTW_AI.jpg/revision/latest?cb=20200907042721",
-                "Kaladin Stormblessed"
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg",
+                "Oferta 1"
             ),
             CarouselItem(
                 1,
-                "https://preview.redd.it/druxluzse9251.jpg?auto=webp&s=94df46fa03e0c806d7c34960c8a7f01e13ff68c3",
-                "Shallan Davar"
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg",
+                "Oferta 2"
             ),
             CarouselItem(
                 2,
-                "https://mir-s3-cdn-cf.behance.net/project_modules/hd_webp/a7604883668543.5d4333d984f3d.jpg",
-                "Dalinar Kholin"
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg",
+                "Oferta 3"
             ),
             CarouselItem(
                 3,
-                "https://i.redd.it/bfo6og6cj69b1.jpg",
-                "Jasnah Kholin"
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg",
+                "Oferta 4"
             ),
             CarouselItem(
                 4,
-                "https://uploads.coppermind.net/thumb/Skybreaker_by_Petar_Penev.jpg/800px-Skybreaker_by_Petar_Penev.jpg",
-                "Szeth"
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg",
+                "Oferta 5"
             )
         )
     }
@@ -217,7 +229,7 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
         TopAppBar(
             modifier = Modifier.height(56.dp),
             title = { Text("Catálogo") },
-            colors = TopAppBarDefaults.topAppBarColors(
+            colors = topAppBarColors(
                 containerColor = Color.Transparent, // Transparente para que se vea el fondo
                 titleContentColor = Color.White
             ),
@@ -293,29 +305,18 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
 
 
             Column {
+
                 // Barra de búsqueda
-                SearchBar(
-                    query = query, // Query, producto buscado
+                var query by remember { mutableStateOf("") }
+
+                SearchBarProductos(
+                    query = query,
                     onQueryChange = { query = it },
-                    onSearch = { active = false },
-                    active = active,
-                    onActiveChange = { active = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 40.dp, bottom = 5.dp),
-                    placeholder = { Text("Buscar productos") },
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Search, contentDescription = null)
+                    productosFiltrados = productosFiltrados,
+                    onProductoClick = { producto ->
+                        navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
                     }
-                ) {
-                    // Toma los 10 productos más similares  y los muestra
-                    productosFiltrados.take(10).forEach { producto ->
-                        ListItem(
-                            headlineContent = { Text(producto.nombre) },
-                            supportingContent = { Text("${producto.precio} €") }
-                        )
-                    }
-                }
+                )
 
 
                 // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
@@ -359,11 +360,12 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                         }
                     }
 
-                    // Alimentación
+
+                    // Todos los productos
                     item {
                         Text(
                             modifier = Modifier.padding(24.dp),
-                            text = "Alimentación",
+                            text = "Todos los productos",
                             color = Color.Black,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
@@ -397,26 +399,16 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                         }
                     }
 
-                    // Textil
-                    item {
-                        Text(
-                            modifier = Modifier.padding(24.dp),
-                            text = "Textil",
-                            color = Color.Black,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Electrónica
-                    item {
-                        Text(
-                            modifier = Modifier.padding(24.dp),
-                            text = "Electrónica",
-                            color = Color.Black,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    if (productosFiltrados.isEmpty()) {
+                        item {
+                            Text(
+                                modifier = Modifier.padding(24.dp),
+                                text = "No hay productos que coincidan con la búsqueda",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     // Espacio final para que el ultimo elemento no quede pegado al borde
@@ -438,50 +430,117 @@ fun TarjetaProducto(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
+    val context = LocalContext.current // Para acceder al sistema
+    // Permite abrir y cerrar el dropdown
+    var expanded by remember { mutableStateOf(false) }
 
-    Card(
+    // Contenedor que permite superponer el dropdown sobre el Card
+    Box(
         modifier = modifier
-            .height(190.dp),
-            //.padding(12.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.9f)
-        ),
-        onClick = {
-            // Se navega a la pantalla de detalle del producto, mandando el id
-            navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
+            .height(190.dp)
+    ) {
+
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White.copy(alpha = 0.9f)
+            ),
+            onClick = {
+                navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
+            }
+        ) {
+
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+
+                Spacer(Modifier.height(4.dp)) // deja espacio para el botón flotante
+
+                // Imagen del producto
+                AsyncImage(
+                    model = producto.imagenUrl,
+                    contentDescription = producto.nombre,
+                    modifier = Modifier
+                        .height(120.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                // Nombre
+                Text(
+                    text = producto.nombre,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // Precio
+                Text(
+                    text = "${producto.precio} €",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF6C3AEC)
+                )
+            }
         }
 
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
+        // Botón del dropdown menu
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
         ) {
-            AsyncImage(
-                model = producto.imagenUrl,
-                contentDescription = producto.nombre,
-                modifier = Modifier
-                    .height(120.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Fit
-            )
 
-            Spacer(Modifier.height(8.dp))
+            // Al pulsar abre o cierra el dropdown
+            IconButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+            }
 
-            Text(
-                text = producto.nombre,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
 
-            Text(
-                text = "${producto.precio} €",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6C3AEC)
-            )
+                // Botón añadir al carrito
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                    },
+                    text = { Text("Añadir al carrito") },
+                    onClick = {
+                        Toast.makeText(
+                            context,
+                            "${producto.nombre} añadido al carrito",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        expanded = false
+                    }
+                )
+
+                // Botón añadir a la lista
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Icon(Lucide.ListCheck, contentDescription = null)
+                    },
+                    text = { Text("Añadir a la lista") },
+                    onClick = {
+                        Toast.makeText(
+                            context,
+                            "${producto.nombre} añadido a la lista",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }
@@ -518,3 +577,92 @@ data class NavigationItems(
     val unselectedIcon: ImageVector,
     val badgeCount: Int? = null
 )
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchBarProductos(
+    query: String, // Búsqueda del usuario
+    onQueryChange: (String) -> Unit, // Comportamiento cuando cambia el texto
+    productosFiltrados: List<Producto>, // Lista filtrada según la búsqueda
+    onProductoClick: (Producto) -> Unit, // Acción al pulsar un producto
+    modifier: Modifier = Modifier
+) {
+    // Controla si el SearchBar está expandido (si muestra resultados)
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    // IMPORTANTE: este Box NO usa fillMaxSize()
+    // Así evitamos que el menú se expanda hacia arriba.
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { isTraversalGroup = true } // Mejora accesibilidad
+    ) {
+
+        // Barra de búsqueda
+        SearchBar(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 40.dp, bottom = 5.dp)
+                .semantics { traversalIndex = 0f }, // Orden de navegación accesible
+
+            // Campo de texto del buscador (nuevo API no deprecado)
+            inputField = {
+                SearchBarDefaults.InputField(
+                    query = query, // Texto actual de búsqueda
+
+                    onQueryChange = {
+                        onQueryChange(it) // Actualiza el texto
+                        expanded = true // Abre el menú al escribir
+                    },
+
+                    onSearch = {
+                        expanded = false // Cierra al pulsar buscar
+                    },
+
+                    expanded = expanded, // Estado del menú abierto o cerrado
+                    onExpandedChange = { expanded = it },
+
+                    // Placeholder dentro del campo
+                    placeholder = { Text("Buscar productos") },
+
+                    // Icono de lupa
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Search, contentDescription = null)
+                    }
+                )
+            },
+
+            expanded = expanded, // Controla si se muestran resultados
+            onExpandedChange = { expanded = it }
+        ) {
+
+            // Lista de resultados de la búsqueda
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp) // Limita la altura → evita expandirse hacia arriba
+            ) {
+                items(productosFiltrados.take(10)) { producto ->
+
+                    // Cada resultado de búsqueda
+                    ListItem(
+                        headlineContent = { Text(producto.nombre) }, // Nombre del producto
+                        supportingContent = { Text("${producto.precio} €") }, // Precio
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onProductoClick(producto) // Acción al pulsar
+                                expanded = false // Cierra el menú
+                            }
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+
+

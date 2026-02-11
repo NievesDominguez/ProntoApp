@@ -29,11 +29,13 @@ class NotificationHandler(private val context: Context) {
         val notification = NotificationCompat.Builder(context, channelId)
             .setContentTitle(titulo)
             .setContentText(cuerpo)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.pronto_icono)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
         notificationManager.notify(notificationId, notification)
     }
+
+
 }

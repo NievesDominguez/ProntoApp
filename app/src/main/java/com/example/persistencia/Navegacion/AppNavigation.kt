@@ -1,8 +1,10 @@
 package com.example.persistencia.Navegacion
 
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +36,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun AppNavigation(destino: String?) { // Recibe la información del destino
     val startDestination =

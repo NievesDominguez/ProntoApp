@@ -1,6 +1,10 @@
 package com.example.persistencia.Pantallas
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,12 +17,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Modelos.Producto
+import com.example.persistencia.Notificacion.NotificationHandler
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // ---------------------------------------------------------
 // 1. EFECTO SHIMMER (para la carga)
@@ -97,6 +108,10 @@ fun ProductoSkeleton() {
 // ---------------------------------------------------------
 // 3. PANTALLA DE PRODUCTO
 // ---------------------------------------------------------
+@RequiresApi(Build.VERSION_CODES.TIRAMISU) // Sólo Android 13 o superior (API 33)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun PantallaProducto(idProducto: String) {
 
@@ -120,6 +135,17 @@ fun PantallaProducto(idProducto: String) {
     val gradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
     )
+
+    val scope = rememberCoroutineScope() // Para ejecutar corrutinas
+    val context = LocalContext.current // Para acceder al sistema
+    val postNotificationPermission =
+        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS) // Control de permisos
+    val notificationHandler = NotificationHandler(context) // La clase de notificaciones
+    LaunchedEffect(key1 = true) { // Al cargar la ventana pide permiso POST_NOTIFICATIONS si no se pidió. Sólo la primera vez en la primera recomposición. Pide el permiso automáticamente.
+        if (!postNotificationPermission.status.isGranted) {
+            postNotificationPermission.launchPermissionRequest() // Popup de permiso si no está concedido
+        }
+    }
 
     // Da el color de fondo y permite que los elementos de dentro tengan un margen
     Box(
@@ -200,13 +226,29 @@ fun PantallaProducto(idProducto: String) {
             ) {
 
                 // Botón añadir al carrito
-                Box(
+                Button(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(55.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF6C3AEC)),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(14.dp)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF6C3AEC),
+                        contentColor = Color.White
+                    ),
+                    onClick = {
+                        scope.launch { // Ejecuta la corrutina
+                            Toast.makeText(
+                                context,
+                                "Producto añadido al carrito",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            notificationHandler.showSimpleNotification(
+                                "Producto añadido al carrito",
+                                "Has añadido ${p.nombre} al carrito. Haz click aquí para verlo. (Pronto se almacenarán ahí todos los productos añadidos).",
+                                "Carrito",
+                            ) // Luego notifica el mensaje creado
+                        }
+                    }
                 ) {
                     Text(
                         text = "Añadir al carrito",
