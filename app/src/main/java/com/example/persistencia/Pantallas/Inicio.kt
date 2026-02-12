@@ -64,6 +64,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
@@ -237,21 +238,37 @@ fun Inicio(navController: NavController) {
                                 return@Button
                             }
 
+
                             // Inicio de sesión en Firebase Authentication
                             Firebase.auth.signInWithEmailAndPassword(correo, pass as String)
                                 .addOnCompleteListener { task ->
                                     if (task.isSuccessful) {
 
-                                        // Inicio de sesión correcto
-                                        Toast.makeText(
-                                            context,
-                                            "Inicio de sesión correcto",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        val user = FirebaseAuth.getInstance().currentUser
+                                        // Solo puede iniciar sesión si el correo está verificado
+                                        if (user == null || !user.isEmailVerified) {
+                                            Toast.makeText(
+                                                context,
+                                                "Valida tu correo electrónico",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            // Cerrar sesión de Firebase Authentication
+                                            Firebase.auth.signOut()
+                                        } else {
+                                            // Inicio de sesión correcto
+                                            Toast.makeText(
+                                                context,
+                                                "Inicio de sesión correcto",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
 
-                                        // Navegación a la pantalla principal
-                                        navController.navigate(AppScreens.PantallaPrincipal.route) {
-                                            popUpTo(AppScreens.Inicio.route) { inclusive = true }
+                                            // Navegación a la pantalla principal
+                                            navController.navigate(AppScreens.PantallaPrincipal.route) {
+                                                popUpTo(AppScreens.Inicio.route) {
+                                                    inclusive = true
+                                                }
+                                            }
+
                                         }
 
                                     } else {
@@ -287,9 +304,8 @@ fun Inicio(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // -----------------------------
+
                 // INICIO DE SESIÓN CON GOOGLE
-                // -----------------------------
                 Button(
                     onClick = { launcher.launch(googleSignInClient.signInIntent) },
                     modifier = Modifier

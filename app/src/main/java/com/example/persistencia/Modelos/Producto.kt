@@ -15,20 +15,4 @@ data class Producto(
     val imagenUrl: String = "",     // URL de la imagen del producto
     val oferta: String? = null,     // ID de oferta opcional
     val fecha: Timestamp? = null    // Fecha de subida (timestamp)
-) {
-
-    // Conversión a Map para subir a Firestore si fuera necesario
-    fun toMap(): Map<String, Any?> {
-        return mapOf(
-            "nombre" to nombre,
-            "descripcion" to descripcion,
-            "precio" to precio,
-            "categoria" to categoria,
-            "subcategoria" to subcategoria,
-            "stock" to stock,
-            "imagenUrl" to imagenUrl,
-            "oferta" to oferta,
-            "fecha" to fecha
-        )
-    }
-}
+)

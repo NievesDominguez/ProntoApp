@@ -57,7 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.persistencia.Navegacion.AppScreens
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -257,6 +259,9 @@ fun Registro(navController: NavController) {
                                         // Si el registro es correcto, se obtiene el UID del usuario autenticado
                                         val uid = auth.currentUser?.uid
 
+                                        // Se envía un correo de verificación
+                                        FirebaseAuth.getInstance().currentUser?.sendEmailVerification()
+
                                         // Si el registro es correcto, se guardan los datos del usuario en firestore
                                         if (uid != null) {
                                             val datosUsuario = mapOf(
@@ -274,16 +279,15 @@ fun Registro(navController: NavController) {
                                                     // Se confirma que se ha registrado el usuario correctamente con un toast
                                                     Toast.makeText(
                                                         context,
-                                                        "Usuario registrado correctamente",
+                                                        "Usuario registrado correctamente. Comprueba tu correo electrónico.",
                                                         Toast.LENGTH_SHORT
                                                     ).show()
 
-                                                    // Navegación a la pantalla de inicio
-                                                    navController.navigate(AppScreens.Inicio.route) {
-                                                        popUpTo(AppScreens.Registro.route) {
-                                                            inclusive = true
-                                                        }
-                                                    }
+                                                    // Cerrar sesión de Firebase Authentication
+                                                    Firebase.auth.signOut()
+
+                                                    // Navegación a la pantalla de inicio de sesión
+                                                    navController.navigate("Inicio")
                                                 }
                                                 .addOnFailureListener {
                                                     // Error al guardar los datos en Firestore

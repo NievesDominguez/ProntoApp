@@ -12,7 +12,6 @@ class ProductosDao {
     private val db = FirebaseFirestore.getInstance()
 
     // Referencia directa a la colección "productos"
-    // Evita repetir db.collection("productos") en cada función
     private val coleccion = db.collection("productos")
 
 
@@ -52,8 +51,6 @@ class ProductosDao {
             val snapshot = coleccion
                 // Filtra en Firestore antes de traer los datos, es más eficiente que filtrar en memoria
                 .whereEqualTo("categoria", categoria)
-                // Se ordena en Firestore por subcategoria
-                .orderBy("subcategoria", Query.Direction.ASCENDING)
                 .get()
                 .await()
 
@@ -103,4 +100,18 @@ class ProductosDao {
             emptyList()
         }
     }
+
+    // Actualiza un producto en Firestore
+    suspend fun actualizarProducto(id: String, nombre: String, precio: Double, descripcion: String) {
+        coleccion
+            .document(id)
+            .update(
+                mapOf(
+                    "nombre" to nombre,
+                    "precio" to precio,
+                    "descripcion" to descripcion
+                )
+            )
+    }
+
 }

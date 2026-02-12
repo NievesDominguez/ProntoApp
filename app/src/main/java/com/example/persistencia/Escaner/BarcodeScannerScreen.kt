@@ -10,7 +10,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import com.example.persistencia.Herramientas.CameraScannerView
 import kotlinx.coroutines.launch
 
 @Composable
@@ -72,7 +72,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
             ) { codigo ->
 
                 // Solo se ejecuta si el código detectado no es igual al que ya hay en el snackbar
-                if(!codigo.equals(snackbarHostState.currentSnackbarData?.visuals?.message)){
+                if (!codigo.equals(snackbarHostState.currentSnackbarData?.visuals?.message)) {
                     snackbarHostState.currentSnackbarData?.dismiss()
 
                     // Mostramos el Snackbar

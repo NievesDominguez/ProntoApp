@@ -216,15 +216,15 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
             composable(
                 route = AppScreens.PantallaProducto.route + "/{idProducto}",
                 arguments = listOf(
-                    navArgument("idProducto") { type = NavType.IntType }
+                    navArgument("idProducto") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
                 BackHandler {
                     navController.popBackStack()
                 }
-                val id = backStackEntry.arguments?.getInt("idProducto") ?: return@composable
+                val id = backStackEntry.arguments?.getString("idProducto") ?: return@composable
+                PantallaProducto(idProducto = id, navController)
 
-                PantallaProducto(idProducto = id.toString())
             }
 
         }

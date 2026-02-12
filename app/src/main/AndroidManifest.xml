@@ -16,7 +16,7 @@
         android:roundIcon="@mipmap/pronto_icon_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Persistencia"
-        android:name=".Notificacion.NotificationApplication"
+        android:name=".Herramientas.NotificationApplication"
         android:resource="@mipmap/pronto_icon">
         <activity
             android:name=".MainActivity"

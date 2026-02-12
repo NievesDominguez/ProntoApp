@@ -69,6 +69,7 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -77,6 +78,7 @@ import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -111,9 +113,11 @@ import com.composables.icons.lucide.Globe
 import com.composables.icons.lucide.ListCheck
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plug
+import com.composables.icons.lucide.Popcorn
 import com.composables.icons.lucide.Shirt
 import com.composables.icons.lucide.Store
-import com.example.persistencia.Firestore.CatalogoVistaModelo
+import com.composables.icons.lucide.Wine
+import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
 import com.google.firebase.firestore.FirebaseFirestore
@@ -124,7 +128,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = viewModel()) {
+fun Catalogo(navController: NavController) {
 
     // Clase local para los elementos del carousel
     data class CarouselItem(
@@ -141,73 +145,55 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
         )
     )
 
-    // Lista fija de imagenes que se muestran en el carousel
-    val carouselItems = remember {
-        listOf(
-            CarouselItem(
-                0,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg",
-                "Oferta 1"
-            ),
-            CarouselItem(
-                1,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg",
-                "Oferta 2"
-            ),
-            CarouselItem(
-                2,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg",
-                "Oferta 3"
-            ),
-            CarouselItem(
-                3,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg",
-                "Oferta 4"
-            ),
-            CarouselItem(
-                4,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg",
-                "Oferta 5"
-            )
+    // Degradado magenta a morado
+    val gradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFD13CF2),
+            Color(0xFF6C3AEC)
         )
-    }
+    )
 
     //Lista de items para la barra lateral de navegación
     val categorias = listOf(
         NavigationItems(
-            title = "Todo",
+            title = "Todos",
             selectedIcon = Lucide.Store,
             unselectedIcon = Lucide.Store
         ),
         NavigationItems(
-            title = "Alimentación",
-            selectedIcon = Icons.Filled.Restaurant,
-            unselectedIcon = Icons.Outlined.Restaurant
+            title = "Bebidas",
+            selectedIcon = Lucide.Wine,
+            unselectedIcon = Lucide.Wine
         ),
         NavigationItems(
             title = "Textil",
             selectedIcon = Lucide.Shirt,
             unselectedIcon = Lucide.Shirt,
-            badgeCount = 105
+            //badgeCount = 105
         ),
         NavigationItems(
-            title = "Electrónica",
-            selectedIcon = Lucide.Plug,
-            unselectedIcon = Lucide.Plug
+            title = "Aperitivos",
+            selectedIcon = Lucide.Popcorn,
+            unselectedIcon = Lucide.Popcorn
         )
     )
 
-    // Lista de productos del ViewModel
-    val productos by vistaModelo.productos.collectAsState()
+    val dao = ProductosDao() // Dao de la base de datos
+    var productos by remember { mutableStateOf<List<Producto>>(emptyList()) }
+
+    // Cargar productos al entrar en la pantalla
+    LaunchedEffect(Unit) {
+        productos = dao.getTodos()
+    }
+
     var query by remember { mutableStateOf("") }
-    var active by remember { mutableStateOf(false) }
 
     // Filtrado local de productos según la búsqueda
-    val productosFiltrados by remember(query, productos) {
-        mutableStateOf(productos.filter { producto ->
-            producto.nombre.contains(query, ignoreCase = true)
-        })
+    productos.filter { producto ->
+        producto.nombre.contains(query, ignoreCase = true)
     }
+
+    var categoriaSeleccionada by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current // Para acceder al sistema
 
@@ -221,11 +207,11 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradient2)
+            .background(gradient)
     ) {
 
-
         // TopBar transparente
+        // Va aquí porque si lo pongo arriba el SearchBar se va para abajo
         TopAppBar(
             modifier = Modifier.height(56.dp),
             title = { Text("Catálogo") },
@@ -247,24 +233,41 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
         )
 
         // Barra horizontal de navegación, permite navegar por categorías
-        // El Drawer envuelve la pantalla principal, pero no el topbar
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
                 // Lo metemos dentro de un box para modificar el tamaño
                 Box(modifier = Modifier.width(220.dp)) {
                     ModalDrawerSheet {
-                        Spacer(modifier = Modifier.height(16.dp)) //space (margin) from top
+                        Spacer(modifier = Modifier.height(16.dp))
                         categorias.forEachIndexed { index, item ->
                             NavigationDrawerItem(
                                 label = { Text(text = item.title) },
                                 selected = index == selectedItemIndex,
                                 onClick = {
-                                    //  navController.navigate(item.route)
-
                                     selectedItemIndex = index
+                                    if (item.title == "Todos") {
+                                        categoriaSeleccionada = null
+                                        scope.launch {
+                                            productos = dao.getTodos()
+                                            drawerState.close()
+                                        }
+
+                                    } else {
+                                        categoriaSeleccionada =
+                                            item.title // Guardamos la categoría seleccionada
+                                        scope.launch {
+                                            drawerState.close()
+
+                                            // Filtrar productos por categoría
+                                            productos = dao.getPorCategoria(item.title)
+                                        }
+                                    }
                                     scope.launch {
                                         drawerState.close()
+
+                                        // Filtrar productos por categoría
+                                        productos = dao.getPorCategoria(item.title)
                                     }
                                 },
                                 // Icono correspondiente al item
@@ -306,13 +309,41 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
 
             Column {
 
-                // Barra de búsqueda
-                var query by remember { mutableStateOf("") }
+                // BARRA DE BÚSQUEDA
+                var query by remember { mutableStateOf("") } // Texto a buscar
+
+                var productosFiltrados by remember { mutableStateOf(emptyList<Producto>()) }
+
+                // Sugerencias mientras se escribe
+                val sugerencias = remember(query, productos) {
+                    if (query.isBlank()) emptyList()
+                    else productos.filter { it.nombre.contains(query, ignoreCase = true) }
+                }
+
+                // Cuando los productos cambian (por primera carga o recarga), actualizamos la lista principal para que muestre todos los productos.
+                LaunchedEffect(productos) {
+                    productosFiltrados = productos
+                }
 
                 SearchBarProductos(
                     query = query,
                     onQueryChange = { query = it },
-                    productosFiltrados = productosFiltrados,
+
+                    // Al pulsar buscar filtra la lista de productos de abajo
+                    onSearchConfirmed = {
+                        productosFiltrados =
+                            if (query.isBlank()) productos
+                            else productos.filter {
+                                it.nombre.contains(
+                                    query,
+                                    ignoreCase = true
+                                )
+                            }
+                    },
+
+                    sugerencias = sugerencias,
+
+                    // Al hacer click en una sugerencia lleva a la página del producto
                     onProductoClick = { producto ->
                         navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
                     }
@@ -325,51 +356,17 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                     modifier = Modifier.fillMaxSize()
                 ) {
 
-                    // Novedades
+                    // Si hay una categoría seleccionada, muestra el nombre
                     item {
-                        Text(
-                            modifier = Modifier.padding(24.dp, 30.dp, 24.dp, 24.dp),
-                            text = "Novedades",
-                            color = Color.Black,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Carrusel
-                    item {
-                        HorizontalUncontainedCarousel(
-                            state = rememberCarouselState { carouselItems.count() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight()
-                                .padding(top = 16.dp, bottom = 16.dp),
-                            itemWidth = 186.dp,
-                            itemSpacing = 8.dp,
-                            contentPadding = PaddingValues(horizontal = 16.dp)
-                        ) { i ->
-                            val item = carouselItems[i]
-                            AsyncImage(
-                                model = item.imgLink,
-                                contentDescription = item.contentDescription,
-                                modifier = Modifier
-                                    .height(205.dp)
-                                    .maskClip(MaterialTheme.shapes.extraLarge),
-                                contentScale = ContentScale.Crop
+                        categoriaSeleccionada?.let {
+                            Text(
+                                modifier = Modifier.padding(24.dp),
+                                text = it,
+                                color = Color.Black,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
-                    }
-
-
-                    // Todos los productos
-                    item {
-                        Text(
-                            modifier = Modifier.padding(24.dp),
-                            text = "Todos los productos",
-                            color = Color.Black,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
 
 
@@ -411,9 +408,9 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
                         }
                     }
 
-                    // Espacio final para que el ultimo elemento no quede pegado al borde
+                    // Espacio final para que el ultimo elemento no quede cortado por el bottombar
                     item {
-                        Spacer(Modifier.height(40.dp))
+                        Spacer(Modifier.height(150.dp))
                     }
                 }
             }
@@ -421,9 +418,10 @@ fun Catalogo(navController: NavController, vistaModelo: CatalogoVistaModelo = vi
 
     }
 
+
 }
 
-
+// Tarjeta, estructura de un producto
 @Composable
 fun TarjetaProducto(
     producto: Producto,
@@ -545,31 +543,6 @@ fun TarjetaProducto(
     }
 }
 
-
-class CatalogoVistaModelo : ViewModel() {
-
-    private val firestore = FirebaseFirestore.getInstance()
-
-    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
-    val productos: StateFlow<List<Producto>> = _productos
-
-    init {
-        cargarProductos()
-    }
-
-    private fun cargarProductos() {
-        firestore.collection("productos")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                _productos.value = snapshot.toObjects(Producto::class.java)
-            }
-            .addOnFailureListener { e ->
-                Log.e("CatalogoVM", "Error cargando productos", e)
-            }
-    }
-}
-
-
 // Clase Navigation Items para items de la barra lateral
 data class NavigationItems(
     val title: String,
@@ -579,81 +552,80 @@ data class NavigationItems(
 )
 
 
+// Barra de búsqueda
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBarProductos(
-    query: String, // Búsqueda del usuario
-    onQueryChange: (String) -> Unit, // Comportamiento cuando cambia el texto
-    productosFiltrados: List<Producto>, // Lista filtrada según la búsqueda
-    onProductoClick: (Producto) -> Unit, // Acción al pulsar un producto
+    query: String, // Texto escrito por el usuario
+    onQueryChange: (String) -> Unit, // Actualiza el texto y filtra sugerencias
+    onSearchConfirmed: () -> Unit, // Acción al pulsar buscar (filtrar lista principal)
+    sugerencias: List<Producto>, // Lista filtrada para sugerencias
+    onProductoClick: (Producto) -> Unit, // Acción al pulsar una sugerencia
     modifier: Modifier = Modifier
 ) {
-    // Controla si el SearchBar está expandido (si muestra resultados)
+    // Controla si el SearchBar está expandido (si muestra sugerencias)
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    // IMPORTANTE: este Box NO usa fillMaxSize()
-    // Así evitamos que el menú se expanda hacia arriba.
+    // Contenedor que evita que el menú se expanda hacia arriba
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .semantics { isTraversalGroup = true } // Mejora accesibilidad
+            .semantics { isTraversalGroup = true }
     ) {
 
         // Barra de búsqueda
         SearchBar(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 40.dp, bottom = 5.dp)
-                .semantics { traversalIndex = 0f }, // Orden de navegación accesible
+                .padding(top = 40.dp, bottom = 5.dp),
 
-            // Campo de texto del buscador (nuevo API no deprecado)
+            // Campo de texto del buscador
             inputField = {
                 SearchBarDefaults.InputField(
-                    query = query, // Texto actual de búsqueda
+                    query = query, // Texto actual
 
                     onQueryChange = {
-                        onQueryChange(it) // Actualiza el texto
-                        expanded = true // Abre el menú al escribir
+                        onQueryChange(it) // Actualiza texto y filtra sugerencias
+                        expanded = true // Abre sugerencias
                     },
 
                     onSearch = {
-                        expanded = false // Cierra al pulsar buscar
+                        expanded = false // Cierra sugerencias
+                        onSearchConfirmed() // Filtra la lista de productos
                     },
 
-                    expanded = expanded, // Estado del menú abierto o cerrado
+                    expanded = expanded,
                     onExpandedChange = { expanded = it },
 
-                    // Placeholder dentro del campo
                     placeholder = { Text("Buscar productos") },
 
-                    // Icono de lupa
                     leadingIcon = {
                         Icon(Icons.Outlined.Search, contentDescription = null)
                     }
                 )
             },
 
-            expanded = expanded, // Controla si se muestran resultados
+            expanded = expanded,
             onExpandedChange = { expanded = it }
         ) {
 
-            // Lista de resultados de la búsqueda
+            // Sugerencias
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 300.dp) // Limita la altura → evita expandirse hacia arriba
             ) {
-                items(productosFiltrados.take(10)) { producto ->
+                // Muestra solo 10 sugerencias
+                items(sugerencias.take(10)) { producto ->
 
-                    // Cada resultado de búsqueda
                     ListItem(
-                        headlineContent = { Text(producto.nombre) }, // Nombre del producto
-                        supportingContent = { Text("${producto.precio} €") }, // Precio
+                        headlineContent = { Text(producto.nombre) },
+                        supportingContent = { Text("${producto.precio} €") },
                         modifier = Modifier
                             .fillMaxWidth()
+                            // Permite navegar a la pantalla del producto al pulsar una sugerencia
                             .clickable {
-                                onProductoClick(producto) // Acción al pulsar
-                                expanded = false // Cierra el menú
+                                onProductoClick(producto)
+                                expanded = false
                             }
                             .padding(horizontal = 16.dp, vertical = 4.dp)
                     )
@@ -662,7 +634,3 @@ fun SearchBarProductos(
         }
     }
 }
-
-
-
-

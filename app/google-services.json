@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "551086859146-a271nn8nqgbpk49qmpq5rrtenddpmvcp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.persistencia",
+            "certificate_hash": "47accaae8ee784d6c0a75c1a75be6826ca33f9cd"
+          }
+        },
+        {
           "client_id": "551086859146-dhlg0gj5uh4i3vm4m3447oee0nuidp84.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
