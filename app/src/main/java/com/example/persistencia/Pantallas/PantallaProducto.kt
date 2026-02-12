@@ -8,8 +8,10 @@ import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
@@ -29,6 +31,7 @@ import coil.compose.AsyncImage
 import com.composables.icons.lucide.ArrowLeft
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Pencil
+import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Herramientas.NotificationHandler
@@ -37,11 +40,12 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 
-// Efecto shimmer para la carga
+// Efecto de brillo animado mientras carga el producto
 @SuppressLint("ModifierFactoryExtensionFunction")
 @Composable
 fun shimmerEffect(): Modifier {
-    val transition = rememberInfiniteTransition()
+    val transition = rememberInfiniteTransition() // Permite crear animaciones infinitas
+    // Anima la opacidad del color
     val alpha by transition.animateFloat(
         initialValue = 0.3f,
         targetValue = 0.7f,
@@ -53,7 +57,7 @@ fun shimmerEffect(): Modifier {
     return Modifier.background(Color.LightGray.copy(alpha = alpha))
 }
 
-// Esto se muestra en lo que se carga el producto de la base de datos
+// Esto se muestra en lo que se carga el producto de la base de datos y se le aplica el efecto de brillo
 @Composable
 fun ProductoTemp() {
     // Degradado magenta a morado
@@ -116,7 +120,8 @@ fun ProductoTemp() {
 @Composable
 fun PantallaProducto(idProducto: String, navController: NavController) {
 
-    val dao = ProductosDao() // Dao de la base de datos
+    val daoCarrito = CarritoDao() // Dao del carrito
+    val dao = ProductosDao() // Dao del producto
     var producto by remember { mutableStateOf<Producto?>(null) } // Producto actual
 
     // Cargar el producto desde Firestore
@@ -203,6 +208,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
             contentAlignment = Alignment.Center,
         ) {
 
+            // DIALOG DE EDICIÓN DEL PRODUCTO
             // Permite editar el producto
             if (mostrarDialogo) {
 
@@ -241,8 +247,8 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                 withDismissAction = true
                             )
 
+                            // Al pulsar deshacer se revierten los cambios
                             if (resultado == SnackbarResult.ActionPerformed) {
-                                // Usuario pulsó "Deshacer"
                                 dao.actualizarProducto(
                                     id = productoAnterior.id,
                                     nombre = productoAnterior.nombre,
@@ -252,7 +258,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
 
                                 producto = productoAnterior
                             }
-                            // Si se ha pulsado fuera del snackbar o la X, se cierra
+                            // Si se ha pulsado fuera del snackbar o cancelar, se cierra
                             else {
                                 if (resultado == SnackbarResult.Dismissed) {
                                     mostrarDialogo = false
@@ -267,66 +273,68 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 40.dp),
+                    .padding(top = 0.dp)
+                    .verticalScroll(rememberScrollState()) // Permite hacer scroll
             ) {
 
-                //Spacer(modifier = Modifier.height(20.dp))
-
                 // INFORMACIÓN DEL PRODUCTO
-                // Imagen del producto
+
+                // Tarjeta que contiene la imagen del producto
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 01f)),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(0.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White.copy(alpha = 0.25f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     AsyncImage(
                         model = p.imagenUrl,
                         contentDescription = p.nombre,
                         modifier = Modifier
-                            .height(280.dp)
-                            .padding(5.dp)
+                            .height(250.dp)
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp)),
-                        contentScale = ContentScale.Fit,
+                        contentScale = ContentScale.Fit
                     )
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(24.dp))
 
                 // Nombre del producto
                 Text(
                     text = p.nombre,
-                    fontSize = 24.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-
-
-                Spacer(Modifier.height(8.dp))
-
-                // Precio
-                Text(
-                    text = "${p.precio} €",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    //color = Color(0xFF6C3AEC),
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(10.dp))
 
-                // Descripción
+                // Precio del producto
+                Text(
+                    // El %.2f redondea a 2 decimales
+                    text = "%.2f €".format(p.precio),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFE8FF),
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                // Descripción del producto
                 Text(
                     text = p.descripcion,
                     fontSize = 16.sp,
-                    color = Color.White,
+                    color = Color.White.copy(alpha = 0.9f),
                     lineHeight = 22.sp,
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(40.dp))
 
                 // BOTONES
                 Column(
@@ -336,66 +344,66 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    // Botón añadir al carrito
+                    // Añadir al carrito
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(55.dp)
                             .clip(RoundedCornerShape(14.dp)),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6C3AEC),
+                            containerColor = Color(0x944E89FF),
                             contentColor = Color.White
                         ),
                         onClick = {
-                            scope.launch { // Ejecuta la corrutina
-                                // Muestra un mensaje toast
+                            scope.launch {
                                 Toast.makeText(
                                     context,
                                     "Producto añadido al carrito",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                // Manda una notificación
+
+                                // Manda una notificación de aviso que lleva al carrito
                                 notificationHandler.showSimpleNotification(
                                     "Producto añadido al carrito",
-                                    "Has añadido ${p.nombre} al carrito. Haz click aquí para verlo. (Pronto se almacenarán ahí todos los productos añadidos).",
-                                    "PantallaPrincipal",
+                                    "Has añadido ${p.nombre} al carrito.",
+                                    "Carrito",
                                 )
+
+                                daoCarrito.addCarrito(p, 1)
                             }
                         }
                     ) {
                         Text(
                             text = "Añadir al carrito",
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(14.dp))
 
-                    // Botón añadir a la lista de la compra
+                    // Añadir a la lista de la compra
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(55.dp)
                             .clip(RoundedCornerShape(14.dp)),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6C3AEC),
+                            containerColor = Color(0x944E89FF),
                             contentColor = Color.White
                         ),
                         onClick = {
-                            scope.launch { // Ejecuta la corrutina
-                                // Muestra un mensaje toast
+                            scope.launch {
                                 Toast.makeText(
                                     context,
                                     "Producto añadido a la lista de la compra",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                // Manda una notificación
+
                                 notificationHandler.showSimpleNotification(
-                                    "Producto añadido al carrito",
-                                    "Has añadido ${p.nombre} a la lista de la compra. (En realidad no, no ha sido implementada aún).",
-                                    "Carrito",
+                                    "Función en desarrollo",
+                                    "Lo sentimos, esta función aún no está disponible.",
+                                    "PantallaPrincipal",
                                 )
                             }
                         }
@@ -403,12 +411,14 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         Text(
                             text = "Añadir a la lista de la compra",
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
+
+                Spacer(Modifier.height(40.dp))
             }
+
         }
     }
 }

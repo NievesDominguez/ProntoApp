@@ -147,7 +147,7 @@ fun PantallaPrincipal(navController: NavController) {
                 fontWeight = FontWeight.Medium
             )
 
-            // Imagen del supermercado
+            // Imagen del supermercado (placeholder por ahora)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -155,7 +155,7 @@ fun PantallaPrincipal(navController: NavController) {
                     .padding(horizontal = 24.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.5f)
+                    containerColor = Color(0xBAFFFFFF)
                 ),
 
             ) {
@@ -247,7 +247,8 @@ fun PantallaPrincipal(navController: NavController) {
                     IconButton(
                         modifier = Modifier.size(65.dp),
                         shape = CircleShape,
-                        onClick = { },
+                        onClick = {
+                        },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = Color.White.copy(alpha = 0.25f),
                             contentColor = Color.White

@@ -11,7 +11,7 @@ class ProductosDao {
     // Instancia de Firestore
     private val db = FirebaseFirestore.getInstance()
 
-    // Referencia directa a la colección "productos"
+    // Referencia a la colección "productos"
     private val coleccion = db.collection("productos")
 
 

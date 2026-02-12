@@ -117,6 +117,7 @@ import com.composables.icons.lucide.Popcorn
 import com.composables.icons.lucide.Shirt
 import com.composables.icons.lucide.Store
 import com.composables.icons.lucide.Wine
+import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
@@ -202,220 +203,235 @@ fun Catalogo(navController: NavController) {
     val scope = rememberCoroutineScope()
     var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
 
-
-    // Fondo degradado de la pantalla
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(gradient)
+    Scaffold(
+        topBar = {
+            // TopBar transparente
+            TopAppBar(
+                modifier = Modifier.height(56.dp),
+                title = {
+                    Text(
+                        text = "Catálogo",
+                        // Si el menú lateral está abierto, el título cambia a negro
+                        color = if (drawerState.isOpen) Color.Black else Color.White
+                    )
+                },
+                colors = topAppBarColors(
+                    containerColor = Color.Transparent, // Transparente para que se vea el fondo
+                    titleContentColor = Color.White
+                ),
+                // Abre o cierra el menú lateral
+                navigationIcon = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            if (drawerState.isClosed) drawerState.open()
+                            else drawerState.close()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Barra lateral",
+                            // Si el menú lateral está abierto, el icono cambia a negro
+                            tint = if (drawerState.isOpen) Color.Black else Color.White
+                        )
+                    }
+                }
+            )
+        }
     ) {
 
-        // TopBar transparente
-        // Va aquí porque si lo pongo arriba el SearchBar se va para abajo
-        TopAppBar(
-            modifier = Modifier.height(56.dp),
-            title = { Text("Catálogo") },
-            colors = topAppBarColors(
-                containerColor = Color.Transparent, // Transparente para que se vea el fondo
-                titleContentColor = Color.White
-            ),
-            // Abre o cierra el menú lateral
-            navigationIcon = {
-                IconButton(onClick = {
-                    scope.launch {
-                        if (drawerState.isClosed) drawerState.open()
-                        else drawerState.close()
-                    }
-                }) {
-                    Icon(Icons.Default.Menu, contentDescription = "Barra lateral")
-                }
-            }
-        )
 
-        // Barra horizontal de navegación, permite navegar por categorías
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                // Lo metemos dentro de un box para modificar el tamaño
-                Box(modifier = Modifier.width(220.dp)) {
-                    ModalDrawerSheet {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        categorias.forEachIndexed { index, item ->
-                            NavigationDrawerItem(
-                                label = { Text(text = item.title) },
-                                selected = index == selectedItemIndex,
-                                onClick = {
-                                    selectedItemIndex = index
-                                    if (item.title == "Todos") {
-                                        categoriaSeleccionada = null
-                                        scope.launch {
-                                            productos = dao.getTodos()
-                                            drawerState.close()
+        // Fondo degradado de la pantalla
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradient)
+        ) {
+
+            // Barra horizontal de navegación, permite navegar por categorías
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    // Lo metemos dentro de un box para modificar el tamaño
+                    Box(modifier = Modifier.width(220.dp)) {
+                        ModalDrawerSheet {
+                            Spacer(modifier = Modifier.height(40.dp))
+                            categorias.forEachIndexed { index, item ->
+                                NavigationDrawerItem(
+                                    label = { Text(text = item.title) },
+                                    selected = index == selectedItemIndex,
+                                    onClick = {
+                                        selectedItemIndex = index
+                                        if (item.title == "Todos") {
+                                            categoriaSeleccionada = null
+                                            scope.launch {
+                                                productos = dao.getTodos()
+                                                drawerState.close()
+                                            }
+
+                                        } else {
+                                            categoriaSeleccionada =
+                                                item.title // Guardamos la categoría seleccionada
+                                            scope.launch {
+                                                drawerState.close()
+
+                                                // Filtrar productos por categoría
+                                                productos = dao.getPorCategoria(item.title)
+                                            }
                                         }
-
-                                    } else {
-                                        categoriaSeleccionada =
-                                            item.title // Guardamos la categoría seleccionada
                                         scope.launch {
                                             drawerState.close()
 
                                             // Filtrar productos por categoría
                                             productos = dao.getPorCategoria(item.title)
                                         }
-                                    }
-                                    scope.launch {
-                                        drawerState.close()
+                                    },
+                                    // Icono correspondiente al item
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (index == selectedItemIndex) {
+                                                item.selectedIcon
+                                            } else item.unselectedIcon,
+                                            contentDescription = item.title
+                                        )
+                                    },
+                                    // Colores del item, cuando está seleccionado o no
+                                    colors = NavigationDrawerItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF6C3AEC),
+                                        unselectedIconColor = Color.Black,
+                                        selectedTextColor = Color(0xFF6C3AEC),
+                                        unselectedTextColor = Color.Black,
+                                        selectedContainerColor = Color(0xFF6C3AEC).copy(alpha = 0.15f),
+                                        unselectedContainerColor = Color.Transparent
+                                    ),
 
-                                        // Filtrar productos por categoría
-                                        productos = dao.getPorCategoria(item.title)
-                                    }
-                                },
-                                // Icono correspondiente al item
-                                icon = {
-                                    Icon(
-                                        imageVector = if (index == selectedItemIndex) {
-                                            item.selectedIcon
-                                        } else item.unselectedIcon,
-                                        contentDescription = item.title
+                                    // Muestra badge al lateral si el item lo tiene
+                                    badge = {
+                                        item.badgeCount?.let {
+                                            Text(text = item.badgeCount.toString())
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .padding(NavigationDrawerItemDefaults.ItemPadding) //padding between items
+                                )
+                            }
+
+                        }
+                    }
+                },
+                gesturesEnabled = true // Permite abrir y cerrar con gestos
+            ) {
+
+
+                Column {
+
+                    // BARRA DE BÚSQUEDA
+                    var query by remember { mutableStateOf("") } // Texto a buscar
+
+                    var productosFiltrados by remember { mutableStateOf(emptyList<Producto>()) }
+
+                    // Sugerencias mientras se escribe
+                    val sugerencias = remember(query, productos) {
+                        if (query.isBlank()) emptyList()
+                        else productos.filter { it.nombre.contains(query, ignoreCase = true) }
+                    }
+
+                    // Cuando los productos cambian (por primera carga o recarga), actualizamos la lista principal para que muestre todos los productos.
+                    LaunchedEffect(productos) {
+                        productosFiltrados = productos
+                    }
+
+                    SearchBarProductos(
+                        query = query,
+                        onQueryChange = { query = it },
+
+                        // Al pulsar buscar filtra la lista de productos de abajo
+                        onSearchConfirmed = {
+                            productosFiltrados =
+                                if (query.isBlank()) productos
+                                else productos.filter {
+                                    it.nombre.contains(
+                                        query,
+                                        ignoreCase = true
                                     )
-                                },
-                                // Colores del item, cuando está seleccionado o no
-                                colors = NavigationDrawerItemDefaults.colors(
-                                    selectedIconColor = Color(0xFF6C3AEC),
-                                    unselectedIconColor = Color.Black,
-                                    selectedTextColor = Color(0xFF6C3AEC),
-                                    unselectedTextColor = Color.Black,
-                                    selectedContainerColor = Color(0xFF6C3AEC).copy(alpha = 0.15f),
-                                    unselectedContainerColor = Color.Transparent
-                                ),
+                                }
+                        },
 
-                                // Muestra badge al lateral si el item lo tiene
-                                badge = {
-                                    item.badgeCount?.let {
-                                        Text(text = item.badgeCount.toString())
-                                    }
-                                },
-                                modifier = Modifier
-                                    .padding(NavigationDrawerItemDefaults.ItemPadding) //padding between items
-                            )
+                        sugerencias = sugerencias,
+
+                        // Al hacer click en una sugerencia lleva a la página del producto
+                        onProductoClick = { producto ->
+                            navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
                         }
-
-                    }
-                }
-            },
-            gesturesEnabled = true // Permite abrir y cerrar con gestos
-        ) {
+                    )
 
 
-            Column {
+                    // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
+                    // No usar Column infinito y dentro un LazyColumn
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
 
-                // BARRA DE BÚSQUEDA
-                var query by remember { mutableStateOf("") } // Texto a buscar
-
-                var productosFiltrados by remember { mutableStateOf(emptyList<Producto>()) }
-
-                // Sugerencias mientras se escribe
-                val sugerencias = remember(query, productos) {
-                    if (query.isBlank()) emptyList()
-                    else productos.filter { it.nombre.contains(query, ignoreCase = true) }
-                }
-
-                // Cuando los productos cambian (por primera carga o recarga), actualizamos la lista principal para que muestre todos los productos.
-                LaunchedEffect(productos) {
-                    productosFiltrados = productos
-                }
-
-                SearchBarProductos(
-                    query = query,
-                    onQueryChange = { query = it },
-
-                    // Al pulsar buscar filtra la lista de productos de abajo
-                    onSearchConfirmed = {
-                        productosFiltrados =
-                            if (query.isBlank()) productos
-                            else productos.filter {
-                                it.nombre.contains(
-                                    query,
-                                    ignoreCase = true
-                                )
-                            }
-                    },
-
-                    sugerencias = sugerencias,
-
-                    // Al hacer click en una sugerencia lleva a la página del producto
-                    onProductoClick = { producto ->
-                        navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
-                    }
-                )
-
-
-                // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
-                // No usar Column infinito y dentro un LazyColumn
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-
-                    // Si hay una categoría seleccionada, muestra el nombre
-                    item {
-                        categoriaSeleccionada?.let {
-                            Text(
-                                modifier = Modifier.padding(24.dp),
-                                text = it,
-                                color = Color.Black,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-
-                    // Grid con dos columnas. No se usa grid porque entra el conflicto con el scroll de la pantalla
-                    items(productosFiltrados.chunked(2)) { fila ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-
-                            // Dibujamos los productos de la fila
-                            fila.forEach { producto ->
-                                TarjetaProducto(
-                                    producto,
-                                    modifier = Modifier.weight(1f), // Deben repartirse el ancho por igual
-                                    navController
-                                )
-                            }
-
-
-                            // Si la fila tiene solo 1 producto, rellenamos el hueco
-                            if (fila.size == 1) {
-                                Spacer(modifier = Modifier.width(170.dp))
-                            }
-                        }
-                    }
-
-                    if (productosFiltrados.isEmpty()) {
+                        // Si hay una categoría seleccionada, muestra el nombre
                         item {
-                            Text(
-                                modifier = Modifier.padding(24.dp),
-                                text = "No hay productos que coincidan con la búsqueda",
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            categoriaSeleccionada?.let {
+                                Text(
+                                    modifier = Modifier.padding(24.dp),
+                                    text = it,
+                                    color = Color.Black,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
-                    }
 
-                    // Espacio final para que el ultimo elemento no quede cortado por el bottombar
-                    item {
-                        Spacer(Modifier.height(150.dp))
+
+                        // Grid con dos columnas. No se usa grid porque entra el conflicto con el scroll de la pantalla
+                        items(productosFiltrados.chunked(2)) { fila ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+
+                                // Dibujamos los productos de la fila
+                                fila.forEach { producto ->
+                                    TarjetaProducto(
+                                        producto,
+                                        modifier = Modifier.weight(1f), // Deben repartirse el ancho por igual
+                                        navController
+                                    )
+                                }
+
+
+                                // Si la fila tiene solo 1 producto, rellenamos el hueco
+                                if (fila.size == 1) {
+                                    Spacer(modifier = Modifier.width(170.dp))
+                                }
+                            }
+                        }
+
+                        if (productosFiltrados.isEmpty()) {
+                            item {
+                                Text(
+                                    modifier = Modifier.padding(24.dp),
+                                    text = "No hay productos que coincidan con la búsqueda",
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Espacio final para que el ultimo elemento no quede cortado por el bottombar
+                        item {
+                            Spacer(Modifier.height(150.dp))
+                        }
                     }
                 }
             }
-        }
 
+        }
     }
 
 
@@ -428,6 +444,9 @@ fun TarjetaProducto(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
+    val daoCarrito = CarritoDao() // Dao del carrito
+    val scope = rememberCoroutineScope() // Para ejecutar corrutinas
+
     val context = LocalContext.current // Para acceder al sistema
     // Permite abrir y cerrar el dropdown
     var expanded by remember { mutableStateOf(false) }
@@ -442,7 +461,7 @@ fun TarjetaProducto(
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.9f)
+                containerColor = Color.White.copy(alpha = 0.8f)
             ),
             onClick = {
                 navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
@@ -479,7 +498,8 @@ fun TarjetaProducto(
 
                 // Precio
                 Text(
-                    text = "${producto.precio} €",
+                    // El %.2f redondea a 2 decimales
+                    text = "%.2f €".format(producto.precio),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF6C3AEC)
@@ -514,12 +534,15 @@ fun TarjetaProducto(
                     },
                     text = { Text("Añadir al carrito") },
                     onClick = {
-                        Toast.makeText(
-                            context,
-                            "${producto.nombre} añadido al carrito",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        expanded = false
+                        scope.launch {
+                            Toast.makeText(
+                                context,
+                                "${producto.nombre} añadido al carrito",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            expanded = false
+                            daoCarrito.addCarrito(producto, 1)
+                        }
                     }
                 )
 

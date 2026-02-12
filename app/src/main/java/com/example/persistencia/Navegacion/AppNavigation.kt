@@ -200,9 +200,6 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
             }
 
             composable(route = AppScreens.Escaner.route) {
-//                BackHandler(true) {
-//                    AppScreens.PantallaPrincipal.route
-//                }
                 // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
                 val callback: OnBackPressedCallback =
                     object : OnBackPressedCallback(true) {
@@ -214,11 +211,13 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
             }
 
             composable(
+                // Ruta con argumento para llevar a la pantalla del producto con su id
                 route = AppScreens.PantallaProducto.route + "/{idProducto}",
                 arguments = listOf(
                     navArgument("idProducto") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
+                // Permite volver a la pantalla anterior
                 BackHandler {
                     navController.popBackStack()
                 }

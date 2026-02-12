@@ -79,11 +79,15 @@ import java.util.Locale
 @Composable
 fun Inicio(navController: NavController) {
     val dbFirebase = Firebase.firestore
+
+    // Variables para los datos de inicio de sesión
     var email by remember { mutableStateOf("") }
     var contrasena = rememberTextFieldState("")
-    var passVisible by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    var passVisible by remember { mutableStateOf(false) } // Para mostrar u ocultar la contraseña
 
+    val context = LocalContext.current // Contexto de la aplicación
+
+    // Instancia de la base de datos Room (no está en uso ahora)
     val dbl = Room.databaseBuilder(context, AppDB::class.java, Estructura.DB.NAME)
         .allowMainThreadQueries().build()
 
@@ -94,6 +98,7 @@ fun Inicio(navController: NavController) {
         colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
     )
 
+    // Para obtener el token de Google
     val token = stringResource(R.string.default_web_client_id)
     val googleSignInClient = remember {
         val gso =
@@ -104,15 +109,22 @@ fun Inicio(navController: NavController) {
         GoogleSignIn.getClient(context, gso)
     }
 
+    // Launcher que recibe el resultado de la actividad de Google Sign-In
     val launcher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+            // Google devuelve un Intent con la información del login
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
+                // Obtiene la cuenta de Google seleccionada por el usuario
                 val account = task.getResult(ApiException::class.java)
+                // Crea las credenciales para Firebase usando el ID Token de Google
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+
+                // Inicia sesión en Firebase con las credenciales de Google
                 Firebase.auth.signInWithCredential(credential)
                     .addOnSuccessListener { authResult ->
-                        val user = authResult.user
+                        val user = authResult.user // Obtiene el usuario autenticado
+                        // Si no es nulo, guarda los datos del usuario en Firestore
                         if (user != null) {
                             val db = FirebaseFirestore.getInstance()
                             val datosUsuario = mapOf(
@@ -126,7 +138,11 @@ fun Inicio(navController: NavController) {
                                 .document(user.uid)
                                 .set(datosUsuario, SetOptions.merge())
                         }
+
+                        // Lleva a la pantalla principal tras iniciar sesión
                         navController.navigate(AppScreens.PantallaPrincipal.route)
+
+                        // Errores
                     }.addOnFailureListener { e ->
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
@@ -150,12 +166,14 @@ fun Inicio(navController: NavController) {
         ) {
             Spacer(Modifier.height(40.dp))
 
+            // Logo del supermercado
             Image(
                 painter = painterResource(R.drawable.pronto_blanco),
                 contentDescription = "Logo supermercado",
                 modifier = Modifier.size(200.dp)
             )
 
+            // Lema
             Text(
                 text = "Escanea, paga y listo",
                 fontSize = 16.sp,
@@ -164,6 +182,7 @@ fun Inicio(navController: NavController) {
 
             //Spacer(Modifier.height(10.dp))
 
+            // INICIO DE SESIÓN
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -177,6 +196,7 @@ fun Inicio(navController: NavController) {
                 ) {
                     Text("Bienvenid@", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
+                    // Email
                     OutlinedTextField(
                         value = email,
                         onValueChange = { if (it.length < 30) email = it },
@@ -185,6 +205,7 @@ fun Inicio(navController: NavController) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // Contraseña
                     OutlinedSecureTextField(
                         state = contrasena,
                         label = { Text("Contraseña") },
@@ -202,6 +223,7 @@ fun Inicio(navController: NavController) {
                         textObfuscationMode = if (passVisible) TextObfuscationMode.Visible else TextObfuscationMode.RevealLastTyped
                     )
 
+                    // Botón de inicio de sesión
                     Button(
                         onClick = {
 
@@ -289,7 +311,7 @@ fun Inicio(navController: NavController) {
                         Text("Iniciar sesión", fontSize = 16.sp)
                     }
 
-
+                    // Lleva a la pantalla de registro para crear una cuenta
                     TextButton(onClick = {
                         navController.navigate(AppScreens.Registro.route)
                     }) {
@@ -305,7 +327,7 @@ fun Inicio(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
-                // INICIO DE SESIÓN CON GOOGLE
+                // Botón para iniciar sesión con Google
                 Button(
                     onClick = { launcher.launch(googleSignInClient.signInIntent) },
                     modifier = Modifier
@@ -329,8 +351,6 @@ fun Inicio(navController: NavController) {
 
                 }
             }
-
-
         }
     }
 }

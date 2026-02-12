@@ -1,5 +1,6 @@
 package com.example.persistencia.Pantallas
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,7 +74,8 @@ fun Carrito(
     )
 
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current // Para acceder al sistema
+
 
     var carrito by remember { mutableStateOf<List<ProductoCarrito>>(emptyList()) }
 
@@ -81,6 +83,7 @@ fun Carrito(
     suspend fun recargarCarrito() {
         val items = daoCarrito.getCarrito() // List<Pair<idProducto, cantidad>>
 
+        // Convertir a lista a ProductoCarrito
         carrito = items.mapNotNull { (id, cantidad) ->
             val producto = daoProductos.getProducto(id)
             if (producto != null) ProductoCarrito(producto, cantidad) else null
@@ -99,28 +102,31 @@ fun Carrito(
             .background(gradient)
     ) {
 
+        // Título superior
+        Column {
+            Text(
+                modifier = Modifier.padding(24.dp, 50.dp, 24.dp, 24.dp),
+                text = "Carrito de la compra",
+                color = Color.White,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Lista de productos del carrito
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp, 100.dp, 16.dp, 100.dp), // margen inferior para el total
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Text(
-                    modifier = Modifier.padding(24.dp),
-                    text = "Carrito de la compra",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
             items(carrito) { item ->
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -137,27 +143,48 @@ fun Carrito(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Nombre y precio
+                    // Nombre y precio (ocupa más espacio gracias al weight)
                     Column(
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1.3f) // ← más espacio para el nombre
                     ) {
-                        Text(item.producto.nombre, color = Color.White, fontSize = 18.sp)
                         Text(
-                            "${item.producto.precio} €",
-                            color = Color.LightGray,
-                            fontSize = 14.sp
+                            text = item.producto.nombre,
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            maxLines = 2
+                        )
+
+                        Text(
+                            // El %.2f redondea a 2 decimales
+                            text = "%.2f €".format(item.producto.precio),
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 5.dp)
                         )
                     }
 
-                    // Botones + y -
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Controles de cantidad (+ / número / -)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(0.7f) // ← ocupa menos espacio
+                    ) {
 
-                        IconButton(onClick = {
-                            scope.launch {
-                                val ok = daoCarrito.addCarrito(item.producto, -1)
-                                if (ok) recargarCarrito()
+                        // Botón para restar cantidad
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    if (daoCarrito.addCarrito(item.producto, -1)) {
+                                        recargarCarrito()
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "No se ha podido modificar el carrito",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
                             }
-                        }) {
+                        ) {
                             Icon(
                                 Icons.Default.Remove,
                                 contentDescription = "Restar",
@@ -165,19 +192,30 @@ fun Carrito(
                             )
                         }
 
+                        // Cantidad actual
                         Text(
                             text = item.cantidad.toString(),
                             color = Color.White,
                             fontSize = 18.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            modifier = Modifier.padding(horizontal = 4.dp)
                         )
 
-                        IconButton(onClick = {
-                            scope.launch {
-                                val ok = daoCarrito.addCarrito(item.producto, +1)
-                                if (ok) recargarCarrito()
+                        // Botón para sumar cantidad
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    if (daoCarrito.addCarrito(item.producto, 1)) {
+                                        recargarCarrito()
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "No se ha podido modificar el carrito",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
                             }
-                        }) {
+                        ) {
                             Icon(
                                 Icons.Default.Add,
                                 contentDescription = "Añadir",
@@ -188,7 +226,29 @@ fun Carrito(
                 }
             }
         }
+
+        // Cálculo del total del carrito
+        val total = carrito.sumOf { it.producto.precio * it.cantidad }
+
+        // Caja inferior fija con el total
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Color.White.copy(alpha = 0.20f))
+                .padding(20.dp, 20.dp, 20.dp, 150.dp)
+        ) {
+            Text(
+                // El %.2f redondea a 2 decimales
+                text = "Total: %.2f €".format(total),
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
     }
+
 
 }
 

@@ -101,18 +101,17 @@ fun Perfil(navController: NavController) {
         colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
     )
 
-    //val user = Firebase.auth.currentUser // Usuario actual con la sesión iniciada
-
-    val authUser = Firebase.auth.currentUser// Usuario autenticado (solo UID y email)
+    val authUser = Firebase.auth.currentUser// Usuario autenticado
     val firestore =
         FirebaseFirestore.getInstance() // Estado donde guardaremos los datos del usuario desde Firestore
 
     var datosUsuario by remember {
         mutableStateOf<Map<String, Any>?>(null)
     }
-    // Cargar datos del usuario desde Firestore
+    // Cargar datos del usuario desde Firestore al cargar la pantalla
     LaunchedEffect(authUser?.uid) {
-        val uid = authUser?.uid
+        val uid = authUser?.uid // ID del usuario
+        // Si el ID no es nulo, se cargan los datos del usuario
         if (uid != null) {
             firestore.collection("usuarios")
                 .document(uid)
@@ -243,7 +242,11 @@ fun Perfil(navController: NavController) {
                     shape = RoundedCornerShape(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {
-                    Text("Cerrar sesión", fontSize = 18.sp, color = Color(0xFF6C3AEC))
+                    Text(
+                        text = "Cerrar sesión",
+                        fontSize = 18.sp,
+                        color = Color(0xFF6C3AEC)
+                    )
                 }
 
                 // Diálogo para cerrar sesión
@@ -281,12 +284,13 @@ fun Perfil(navController: NavController) {
 }
 
 
+// Función para cerrar sesión
 fun signOut(context: Context, navController: NavController) {
+    // Sesión de google
     val googleSignInClient = GoogleSignIn.getClient(
         context,
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
     )
-
     // Cerrar sesión de Google
     googleSignInClient.signOut()
 
@@ -374,7 +378,7 @@ fun EditarPerfil(
 
                     usuario.reauthenticate(credential)
                         .addOnSuccessListener {
-                            usuario.updatePassword(contrasenaNueva)
+                            usuario.updatePassword(contrasenaNueva) // Cambiar contraseña
                                 .addOnSuccessListener {
                                     Toast.makeText(
                                         context,
@@ -401,8 +405,6 @@ fun EditarPerfil(
                         }
 
                 }
-
-
             }) {
                 Text("Guardar")
             }

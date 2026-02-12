@@ -36,14 +36,14 @@ fun BottomBar(navController: NavController) {
         val navBackStackEntry by navController.currentBackStackEntryAsState() // Indica la pantalla actual
         val currentRoute = navBackStackEntry?.destination?.route // Indica la ruta a la pantalla actual
 
-        // Añade cada pantalla de la lista a la barra inferior
+        // Añade cada icono de de la lista de pantallas a la barra inferior
         items.forEach { item ->
             NavigationBarItem(
-                selected = currentRoute == item.route, // La ruta al item
+                selected = currentRoute == item.route, // Ruta al item
                 onClick = {
                     navController.navigate(item.route) { // Va a la ruta seleccionada
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
+                        launchSingleTop = true // Únicamente una instancia de la pantalla
                         restoreState = true
                     }
                 },

@@ -47,7 +47,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
     // Estado del Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Scope para lanzar coroutines (necesario para mostrar Snackbars)
+    // Scope para lanzar coroutinas (necesario para mostrar Snackbars)
     val scope = rememberCoroutineScope()
 
     // Estado donde guardaremos el código detectado

@@ -66,8 +66,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 @Composable
 fun Registro(navController: NavController) {
 
-    val context = LocalContext.current
+    val context = LocalContext.current // Contexto de la aplicación
 
+    // Variables para los datos a rellenar
     var nombre by remember { mutableStateOf("") }
     var apellidos by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -97,19 +98,21 @@ fun Registro(navController: NavController) {
         ) {
             Spacer(Modifier.height(40.dp))
 
+            // Logo del supermercado
             Image(
                 painter = painterResource(com.example.persistencia.R.drawable.pronto_blanco),
                 contentDescription = "Logo supermercado",
                 modifier = Modifier.size(200.dp)
             )
 
+            // Lema
             Text(
                 text = "Escanea, paga y listo",
                 fontSize = 16.sp,
                 color = Color.White
             )
 
-
+            // FORMULARIO DE REGISTRO
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -159,6 +162,7 @@ fun Registro(navController: NavController) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         leadingIcon = { Icon(Icons.Outlined.Lock, null) },
                         trailingIcon = {
+                            // Botón para mostrar u ocultar la contraseña
                             IconButton(onClick = { passVisible = !passVisible }) {
                                 Icon(
                                     imageVector = if (passVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
@@ -166,6 +170,7 @@ fun Registro(navController: NavController) {
                                 )
                             }
                         },
+                        // Muestra u oculta la contraseña
                         textObfuscationMode = if (passVisible) TextObfuscationMode.Visible else
                             TextObfuscationMode.RevealLastTyped
                     )
@@ -175,10 +180,11 @@ fun Registro(navController: NavController) {
                         onValueChange = { telefono = it },
                         label = { Text("Teléfono") },
                         leadingIcon = { Icon(Icons.Outlined.Phone, null) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), // Permite solo números
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // BOTÓN DE REGISTRO
                     Button(
                         onClick = {
                             // Se obtiene el email sin espacios
@@ -327,10 +333,11 @@ fun Registro(navController: NavController) {
                     }
 
 
+                    // Botón para volver a la pantalla de inicio de sesión
                     TextButton(onClick = {
                         navController.navigate(AppScreens.Inicio.route)
                     }) {
-                        Text("¿Ya tienes cuenta? Inicia sesión >", color = Color(0xFF6C3AEC))
+                        Text("¿Ya tienes cuenta? Inicia sesión", color = Color(0xFF6C3AEC))
                     }
                 }
             }
