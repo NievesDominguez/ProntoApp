@@ -69,7 +69,7 @@ fun PantallaPrincipal(navController: NavController) {
     val postNotificationPermission =
         rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS) // Control de permisos
     val notificationHandler = NotificationHandler(context) // La clase de notificaciones
-    LaunchedEffect(key1 = true) { // Al cargar la ventana pide permiso POST_NOTIFICATIONS si no se pidió. Sólo la primera vez en la primera recomposición. Pide el permiso automáticamente.
+    LaunchedEffect(key1 = true) { // Al cargar la ventana pide permiso POST_NOTIFICATIONS si no se pidió. Solo la primera vez en la primera recomposición. Pide el permiso automáticamente.
         if (!postNotificationPermission.status.isGranted) {
             postNotificationPermission.launchPermissionRequest() // Popup de permiso si no está concedido
         }

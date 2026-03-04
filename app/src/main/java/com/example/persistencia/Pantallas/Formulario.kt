@@ -31,10 +31,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDatePickerState
@@ -154,6 +157,8 @@ fun Formulario(navController: NavController) {
                 label = { Text("Apellidos del usuario") },
                 modifier = Modifier.width(300.dp)
             )
+
+
             // Pedimos el email
             OutlinedTextField(
                 value = email,

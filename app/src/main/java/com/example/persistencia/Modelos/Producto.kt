@@ -1,9 +1,11 @@
 package com.example.persistencia.Modelos
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.IgnoreExtraProperties
 import kotlinx.serialization.Serializable
 
 // Modelo de datos para un producto del catálogo
+@IgnoreExtraProperties // Para que ignore los campos que sobren (hasta que los añada)
 data class Producto(
     val id: String = "",            // Código de barras (ID del documento en Firestore)
     val nombre: String = "",        // Nombre del producto

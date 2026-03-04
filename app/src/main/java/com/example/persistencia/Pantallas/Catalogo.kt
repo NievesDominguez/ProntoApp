@@ -1,6 +1,7 @@
 package com.example.persistencia.Pantallas
 
 import android.R.attr.query
+import android.annotation.SuppressLint
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.DrawableRes
@@ -127,6 +128,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Catalogo(navController: NavController) {
