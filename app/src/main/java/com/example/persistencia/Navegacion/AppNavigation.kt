@@ -226,6 +226,17 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
 
             }
 
+            composable(route = AppScreens.Cupones.route) {
+                // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
+                val callback: OnBackPressedCallback =
+                    object : OnBackPressedCallback(true) {
+                        override fun handleOnBackPressed() {
+                            AppScreens.Carrito.route
+                        }
+                    }
+                Carrito(navController)
+            }
+
         }
     }
 }

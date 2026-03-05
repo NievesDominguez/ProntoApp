@@ -9,6 +9,9 @@ import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ReceiptEuro
+import com.composables.icons.lucide.TicketPercent
 
 sealed class AppScreens (val route: String, val icon: ImageVector) {
     object Inicio: AppScreens("Inicio",Icons.Default.LibraryBooks)
@@ -25,6 +28,7 @@ sealed class AppScreens (val route: String, val icon: ImageVector) {
     object BottomNavigationBar: AppScreens("BottomNavigationBar",Icons.Default.LibraryBooks)
     object Escaner: AppScreens("BarcodeScannerScreen",Icons.Default.Camera)
     object PantallaProducto: AppScreens("PantallaProducto",Icons.Default.ShoppingBasket)
+    object Cupones: AppScreens("Cupones",Lucide.TicketPercent)
 
     companion object {
     }

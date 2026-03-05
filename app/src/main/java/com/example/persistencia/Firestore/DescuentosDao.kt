@@ -10,7 +10,6 @@ import kotlin.coroutines.suspendCoroutine
 class DescuentosDao {
 
     private val db = FirebaseFirestore.getInstance()
-
     suspend fun getDescuentos(): List<Descuento> {
         return try {
             val snap = db.collection("descuentos")
@@ -27,6 +26,4 @@ class DescuentosDao {
             emptyList()
         }
     }
-
 }
-

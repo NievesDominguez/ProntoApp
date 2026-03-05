@@ -2,14 +2,21 @@
 
 package com.example.persistencia.Pantallas
 
+import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,7 +36,10 @@ import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Modelos.Descuento
+import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoCarrito
+import com.example.persistencia.Navegacion.AppScreens
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 // -------------------------
@@ -54,7 +64,7 @@ fun aplicarSegundaUnidadCombinable(
 
     while (index < unidades.size) {
         if (index + 1 < unidades.size) {
-            // Hay pareja → aplicar descuento a la más barata (unidades[index])
+            // Si hay pareja, aplicar descuento a la más barata (unidades[index])
             val barato = unidades[index]
             val caro = unidades[index + 1]
 
@@ -62,7 +72,7 @@ fun aplicarSegundaUnidadCombinable(
             total += caro
             index += 2
         } else {
-            // Unidad suelta → sin descuento
+            // Unidad suelta: sin descuento
             total += unidades[index]
             index += 1
         }
@@ -70,7 +80,6 @@ fun aplicarSegundaUnidadCombinable(
 
     return total
 }
-
 
 
 // n por m combinable (3x2, 4x3…)
@@ -117,7 +126,6 @@ fun calcularTotalGrupo(
 // -------------------------
 // PANTALLA CARRITO
 // -------------------------
-
 @Composable
 fun Carrito(
     navController: NavController,
@@ -142,6 +150,7 @@ fun Carrito(
         }
     }
 
+    // Al iniciar, carga las ofertas y el carrito
     LaunchedEffect(Unit) {
         ofertas = daoOfertas.getDescuentos()
         recargarCarrito()
@@ -152,151 +161,229 @@ fun Carrito(
         .filter { it.producto.oferta != null }
         .groupBy { it.producto.oferta }
 
-    // Total del carrito
     val total = calcularTotalCarrito(carrito, ofertas)
 
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(gradient)
-    ) {
-
-        Column {
-            Text(
-                modifier = Modifier.padding(24.dp, 50.dp, 24.dp, 24.dp),
-                text = "Carrito de la compra",
-                color = Color.White,
-                fontSize = 25.sp,
-                fontWeight = FontWeight.Bold
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Carrito de la compra",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 10.dp)
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                actions = {
+                    Row(
+                        modifier = Modifier.padding(end = 15.dp),
+                    ) {
+                        IconButton(
+                            modifier = Modifier
+                                .size(35.dp),
+                            shape = CircleShape,
+                            onClick = { navController.navigate(AppScreens.Escaner.route) },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.White.copy(alpha = 0.25f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Filled.CameraAlt, contentDescription = "Escanear")
+                        }
+                    }
+                }
             )
-        }
+        },
+        containerColor = Color.Transparent
+    ) { padding ->
 
-        LazyColumn(
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp, 100.dp, 16.dp, 100.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .background(gradient)
         ) {
 
-            items(carrito) { item ->
 
-                val oferta = ofertas.find { it.codigo == item.producto.oferta }
-                val itemsGrupo = grupos[item.producto.oferta]
-                val precioFinal = if (oferta != null && itemsGrupo != null) {
-                    calcularPrecioProducto(item, itemsGrupo, oferta)
-                } else item.producto.precio * item.cantidad
+            // Contiene todos los productos en el carrito
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp, 100.dp, 16.dp, 200.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFFFFFF).copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                items(carrito) { item ->
 
-                    // Imagen del producto
-                    AsyncImage(
-                        model = item.producto.imagenUrl,
-                        contentDescription = item.producto.nombre,
-                        modifier = Modifier
-                            .size(90.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
+                    // Comprueba si hay una oferta para el producto actual
+                    val oferta = ofertas.find { it.codigo == item.producto.oferta }
+                    val itemsGrupo = grupos[item.producto.oferta]
+                    // Se calcula el precio final de cada producto
+                    val precioFinal = if (oferta != null && itemsGrupo != null) {
+                        calcularPrecioProducto(item, itemsGrupo, oferta)
+                    } else item.producto.precio * item.cantidad
+
+                    Log.d(
+                        "DEBUG",
+                        "Producto: ${item.producto.nombre}, oferta=${item.producto.oferta}"
                     )
+                    Log.d("DEBUG", "Ofertas cargadas: ${ofertas.map { it.codigo }}")
 
-                    Spacer(modifier = Modifier.width(12.dp))
 
-                    // Nombre + precio por unidad
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = item.producto.nombre,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 2
-                        )
-
-                        Text(
-                            text = "%.2f €".format(item.producto.precio),
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 15.sp
-                        )
-                    }
-
-                    // Cantidad + precio final
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Color(0xFFFFFFFF).copy(alpha = 0.15f),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        // Controles de cantidad
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        // Imagen del producto
+                        AsyncImage(
+                            model = item.producto.imagenUrl,
+                            contentDescription = item.producto.nombre,
+                            modifier = Modifier
+                                .size(90.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        // Nombre + precio por unidad
+                        Column(
+                            modifier = Modifier.weight(1f)
                         ) {
-                            IconButton(
-                                onClick = {
-                                    scope.launch {
-                                        if (daoCarrito.addCarrito(item.producto, -1)) recargarCarrito()
-                                        else Toast.makeText(context, "No se ha podido modificar el carrito", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.Remove, contentDescription = "Restar", tint = Color.White)
-                            }
-
                             Text(
-                                text = item.cantidad.toString(),
+                                text = item.producto.nombre,
                                 color = Color.White,
                                 fontSize = 18.sp,
-                                modifier = Modifier.padding(horizontal = 4.dp)
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 2
                             )
 
-                            IconButton(
-                                onClick = {
-                                    scope.launch {
-                                        if (daoCarrito.addCarrito(item.producto, 1)) recargarCarrito()
-                                        else Toast.makeText(context, "No se ha podido modificar el carrito", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = "Añadir", tint = Color.White)
-                            }
+                            Text(
+                                text = "%.2f €".format(item.producto.precio),
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 15.sp
+                            )
                         }
 
-                        // Precio total (en rojo si hay descuento)
-                        val precioOriginal = item.producto.precio * item.cantidad
-                        val hayDescuento = precioFinal < precioOriginal
+                        // Cantidad + precio final
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            modifier = Modifier.weight(1f)
+                        ) {
 
-                        Text(
-                            text = "%.2f €".format(precioFinal),
-                            color = if (hayDescuento) Color(0xFFFF0000) else Color.White,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 6.dp, end = 12.dp),
-                        )
+                            // Controles de cantidad
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            if (daoCarrito.addCarrito(
+                                                    item.producto,
+                                                    -1
+                                                )
+                                            ) recargarCarrito()
+                                            else Toast.makeText(
+                                                context,
+                                                "No se ha podido modificar el carrito",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Remove,
+                                        contentDescription = "Restar",
+                                        tint = Color.White
+                                    )
+                                }
+
+                                Text(
+                                    text = item.cantidad.toString(),
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            if (daoCarrito.addCarrito(
+                                                    item.producto,
+                                                    1
+                                                )
+                                            ) recargarCarrito()
+                                            else Toast.makeText(
+                                                context,
+                                                "No se ha podido modificar el carrito",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Añadir",
+                                        tint = Color.White
+                                    )
+                                }
+                            }
+
+                            // Precio total (en rojo si hay descuento)
+                            val precioOriginal = item.producto.precio * item.cantidad
+                            val hayDescuento = precioFinal < precioOriginal
+
+                            Text(
+                                text = "%.2f €".format(precioFinal),
+                                color = if (hayDescuento) Color(0xFFFF0000) else Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 6.dp, end = 12.dp),
+                            )
+                        }
                     }
                 }
 
             }
-        }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(Color.White.copy(alpha = 0.20f))
-                .padding(20.dp, 20.dp, 20.dp, 150.dp)
-        ) {
-            Text(
-                text = "Total: %.2f €".format(total),
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
-            )
+            // Precio total del carrito
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.White.copy(alpha = 0.20f))
+                    .padding(20.dp, 20.dp, 20.dp, 150.dp)
+            ) {
+                Text(
+                    text = "Total: %.2f €".format(total),
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    //modifier = Modifier.align(Alignment.Center)
+                )
+
+                Button(
+                    onClick = {
+                        navController.navigate(AppScreens.Cupones.route)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF6C3AEC)
+                    ),
+                    //modifier = Modifier.width(30.dp)
+                ) {
+                    Text("Finalizar")
+                }
+            }
         }
     }
 }
@@ -321,7 +408,7 @@ fun calcularPreciosUnitariosSegundaUnidad(
         }
     }
 
-    // Orden global por precio (mezclando productos)
+    // Orden global por precio
     val ordenadas = unidades.sortedBy { u -> u.producto.precio }
 
     // Número de unidades que deben llevar descuento
@@ -355,7 +442,7 @@ fun calcularPreciosUnitariosNxM(
     val n = ((oferta.formula?.get("n") ?: 0) as Number).toInt()
     val m = ((oferta.formula?.get("m") ?: 0) as Number).toInt()
 
-    data class Unidad(val producto: com.example.persistencia.Modelos.Producto, val index: Int)
+    data class Unidad(val producto: Producto, val index: Int)
 
     val unidades = mutableListOf<Unidad>()
     var idx = 0
@@ -366,23 +453,23 @@ fun calcularPreciosUnitariosNxM(
         }
     }
 
-    val ordenadas = unidades.sortedBy { u -> u.producto.precio }
+    val ordenadas = unidades.sortedBy { it.producto.precio }
 
-    val paga = BooleanArray(unidades.size)
-    var i = 0
-    while (i < ordenadas.size) {
-        val grupo = ordenadas.drop(i).take(n)
-        // En cada grupo, las m más baratas se pagan
-        val grupoOrdenado = grupo.sortedBy { u -> u.producto.precio }
-        grupoOrdenado.take(m).forEach { u ->
-            paga[u.index] = true
-        }
-        i += n
+    val total = unidades.size
+    val gratis = total / n * (n - m)
+
+    val paga = BooleanArray(unidades.size) { true }
+
+    // Marcar las más baratas como gratis
+    for (i in 0 until gratis) {
+        paga[ordenadas[i].index] = false
     }
 
     val preciosFinales = MutableList(unidades.size) { 0.0 }
+
     for ((pos, unidad) in unidades.withIndex()) {
-        preciosFinales[pos] = if (paga[pos]) unidad.producto.precio else 0.0
+        preciosFinales[pos] =
+            if (paga[pos]) unidad.producto.precio else 0.0
     }
 
     return preciosFinales
@@ -461,7 +548,7 @@ fun calcularTotalCarrito(
         }
 
         // Expandir unidades del grupo
-        val unidades = mutableListOf<com.example.persistencia.Modelos.Producto>()
+        val unidades = mutableListOf<Producto>()
         for (ig in itemsGrupo) {
             repeat(ig.cantidad) {
                 unidades.add(ig.producto)
@@ -480,4 +567,3 @@ fun calcularTotalCarrito(
 
     return total
 }
-
