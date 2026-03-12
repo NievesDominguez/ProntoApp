@@ -371,7 +371,7 @@ fun Carrito(
                     //modifier = Modifier.align(Alignment.Center)
                 )
 
-                Button(
+                /*Button(
                     onClick = {
                         navController.navigate(AppScreens.Cupones.route)
                     },
@@ -382,7 +382,7 @@ fun Carrito(
                     //modifier = Modifier.width(30.dp)
                 ) {
                     Text("Finalizar")
-                }
+                }*/
             }
         }
     }

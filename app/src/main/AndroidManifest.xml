@@ -20,6 +20,7 @@
         android:resource="@mipmap/pronto_icon">
         <activity
             android:name=".MainActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:label="Pronto"
             android:theme="@style/Theme.Persistencia">
