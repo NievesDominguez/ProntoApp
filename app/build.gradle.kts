@@ -1,3 +1,7 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +9,17 @@ plugins {
     id("com.google.devtools.ksp") version "2.0.21-1.0.28"
     alias(libs.plugins.google.gms.google.services)
 }
+
+// Leer la API key desde local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { stream ->
+        localProperties.load(stream)
+    }
+}
+
+val groqApiKey: String = localProperties.getProperty("GROQ_API_KEY") ?: ""
 
 android {
     namespace = "com.example.persistencia"
@@ -20,6 +35,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Añadir la API key al BuildConfig
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
+
         /*ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }*/
@@ -34,15 +53,19 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -69,6 +92,12 @@ dependencies {
 
     // Dependencias para subir imágenes
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Dependencias para el chatbot
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.android.volley:volley:1.2.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
 
     //implementation("com.google.firebase:firebase-firestore:26.0.2")
     implementation("androidx.room:room-runtime:2.8.3")

@@ -1,4 +1,4 @@
-package com.example.persistencia.Escaner
+package com.example.persistencia.Pantallas
 
 import android.Manifest
 import android.app.Activity

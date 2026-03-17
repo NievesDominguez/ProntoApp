@@ -16,19 +16,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
@@ -207,7 +213,7 @@ fun PantallaPrincipal(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 0.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly, // Distribuye los elementos de manera uniforme
                 verticalAlignment = Alignment.Top // Se alinean arriba, así todos los botones están a la misma altura
             ) {
@@ -218,7 +224,7 @@ fun PantallaPrincipal(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     IconButton(
-                        modifier = Modifier.size(65.dp),
+                        modifier = Modifier.size(45.dp),
                         shape = CircleShape,
                         onClick = { navController.navigate(AppScreens.Escaner.route) },
                         colors = IconButtonDefaults.iconButtonColors(
@@ -245,9 +251,9 @@ fun PantallaPrincipal(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     IconButton(
-                        modifier = Modifier.size(65.dp),
+                        modifier = Modifier.size(45.dp),
                         shape = CircleShape,
-                        onClick = {
+                        onClick = { navController.navigate(AppScreens.Chatbot.route)
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = Color.White.copy(alpha = 0.25f),
@@ -276,7 +282,7 @@ fun PantallaPrincipal(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     IconButton(
-                        modifier = Modifier.size(65.dp),
+                        modifier = Modifier.size(45.dp),
                         shape = CircleShape,
                         onClick = { },
                         colors = IconButtonDefaults.iconButtonColors(
@@ -298,6 +304,35 @@ fun PantallaPrincipal(navController: NavController) {
                 }
             }
         }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = 150.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = Color.White,
+                shadowElevation = 0.dp,   // Sin sombra
+                tonalElevation = 0.dp,    // Sin elevación
+                modifier = Modifier.size(56.dp)
+            ) {
+                IconButton(
+                    onClick = { navController.navigate(AppScreens.Chatbot.route) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Chat,
+                        contentDescription = "Chatbot",
+                        tint = Color(0xFF6C3AEC),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+        }
+
+
+
+
     }
 
 
