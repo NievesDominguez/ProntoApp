@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,8 +56,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import com.example.persistencia.Herramientas.LocalThemeManager
+import com.example.persistencia.Herramientas.ThemeManager
+import com.example.persistencia.Herramientas.ThemePreference
 import com.example.persistencia.ui.theme.PersistenciaTheme
 import com.example.persistencia.Navegacion.AppNavigation
+
+
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,9 +70,20 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         setContent {
-            val destino =
-                intent?.getStringExtra("destino") // Lee la información extra de destino del Intent que recibió el MainActivity
-            AppNavigation(destino) // Pasa el destino a AppNavigation para indicar la ventana que abrirá
+            val themeManager = remember { ThemeManager() }
+            CompositionLocalProvider(LocalThemeManager provides themeManager) {
+                PersistenciaTheme(
+                    darkTheme = when (themeManager.themePreference) {
+                        ThemePreference.Light -> false
+                        ThemePreference.Dark -> true
+                        ThemePreference.System -> isSystemInDarkTheme()
+                    },
+                    dynamicColor = false
+                ) {
+                    val destino = intent?.getStringExtra("destino")
+                    AppNavigation(destino)
+                }
+            }
         }
     }
 }

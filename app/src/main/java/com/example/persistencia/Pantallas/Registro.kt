@@ -2,26 +2,21 @@ package com.example.persistencia.Pantallas
 
 import android.util.Patterns
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.R
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brightness4
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Badge
@@ -29,34 +24,29 @@ import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedSecureTextField
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.persistencia.BuildConfig
+import com.example.persistencia.Herramientas.LocalThemeManager
+import com.example.persistencia.Herramientas.ThemePreference
 import com.example.persistencia.Navegacion.AppScreens
+import com.example.persistencia.R
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
@@ -65,10 +55,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Registro(navController: NavController) {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
 
-    val context = LocalContext.current // Contexto de la aplicación
-
-    // Variables para los datos a rellenar
     var nombre by remember { mutableStateOf("") }
     var apellidos by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -76,83 +66,172 @@ fun Registro(navController: NavController) {
     var passVisible by remember { mutableStateOf(false) }
     var telefono by remember { mutableStateOf("") }
 
-    // Degradado magenta a morado
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
-    )
-
-    // Inicializa las variables para la autenticación
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradient)
-            .padding(24.dp)
+            .background(colors.background)
+            .drawBehind {
+                val edgeWidth = with(density) { 25.dp.toPx() }
+                val primaryColor = colors.primary.copy(alpha = 0.1f)
+                val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+                val width = size.width
+                val height = size.height
+
+                // Borde superior
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(primaryColor, Color.Transparent),
+                        startY = 0f,
+                        endY = edgeWidth
+                    ),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(width, edgeWidth)
+                )
+                // Borde inferior
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, primaryColor),
+                        startY = height - edgeWidth,
+                        endY = height
+                    ),
+                    topLeft = Offset(0f, height - edgeWidth),
+                    size = Size(width, edgeWidth)
+                )
+                // Borde izquierdo
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(secondaryColor, Color.Transparent),
+                        startX = 0f,
+                        endX = edgeWidth
+                    ),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(edgeWidth, height)
+                )
+                // Borde derecho
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color.Transparent, secondaryColor),
+                        startX = width - edgeWidth,
+                        endX = width
+                    ),
+                    topLeft = Offset(width - edgeWidth, 0f),
+                    size = Size(edgeWidth, height)
+                )
+            }
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Spacer(Modifier.height(40.dp))
+        val themeManager = LocalThemeManager.current
 
-            // Logo del supermercado
-            Image(
-                painter = painterResource(com.example.persistencia.R.drawable.pronto_blanco),
-                contentDescription = "Logo supermercado",
-                modifier = Modifier.size(200.dp)
-            )
-
-            // Lema
-            Text(
-                text = "Escanea, paga y listo",
-                fontSize = 16.sp,
-                color = Color.White
-            )
-
-            // FORMULARIO DE REGISTRO
-            Card(
+        // Botón debug (solo en debug)
+        if (BuildConfig.DEBUG) {
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 200.dp, max = 500.dp), // Límite visual
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .size(40.dp),
+                shape = CircleShape,
+                color = colors.surface.copy(alpha = 0.8f),
+                shadowElevation = 4.dp
+            ) {
+                IconButton(
+                    onClick = {
+                        val newPreference = when (themeManager.themePreference) {
+                            ThemePreference.System -> ThemePreference.Light
+                            ThemePreference.Light -> ThemePreference.Dark
+                            ThemePreference.Dark -> ThemePreference.System
+                            else -> ThemePreference.System
+                        }
+                        themeManager.themePreference = newPreference
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Brightness4,
+                        contentDescription = "Cambiar tema",
+                        tint = colors.onBackground
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 24.dp) // Reducido el padding vertical
+                .imePadding(), // Evita que el teclado tape los campos inferiores
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Logo eliminado para ganar espacio vertical
+
+//            // Lema (opcional, se mantiene)
+//            Text(
+//                text = "Escanea, paga y listo",
+//                fontSize = 16.sp,
+//                color = colors.onBackground.copy(alpha = 0.7f)
+//            )
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // Tarjeta de registro (sin borde, igual que Inicio)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
-                        .verticalScroll(rememberScrollState()), // Para poder hacer scroll
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-
-                    Text("Crear cuenta", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Crear cuenta",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary
+                    )
 
                     OutlinedTextField(
                         value = nombre,
                         onValueChange = { nombre = it },
                         label = { Text("Nombre") },
-                        leadingIcon = { Icon(Icons.Outlined.Person, null) },
-                        modifier = Modifier.fillMaxWidth()
+                        leadingIcon = { Icon(Icons.Outlined.Person, null, tint = colors.primary) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     OutlinedTextField(
                         value = apellidos,
                         onValueChange = { apellidos = it },
                         label = { Text("Apellidos") },
-                        leadingIcon = { Icon(Icons.Outlined.Badge, null) },
-                        modifier = Modifier.fillMaxWidth()
+                        leadingIcon = { Icon(Icons.Outlined.Badge, null, tint = colors.primary) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
                         label = { Text("Email") },
-                        leadingIcon = { Icon(Icons.Outlined.Email, null) },
-                        modifier = Modifier.fillMaxWidth()
+                        leadingIcon = { Icon(Icons.Outlined.Email, null, tint = colors.primary) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     OutlinedSecureTextField(
@@ -160,115 +239,69 @@ fun Registro(navController: NavController) {
                         label = { Text("Contraseña") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        leadingIcon = { Icon(Icons.Outlined.Lock, null) },
+                        leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = colors.primary) },
                         trailingIcon = {
-                            // Botón para mostrar u ocultar la contraseña
                             IconButton(onClick = { passVisible = !passVisible }) {
                                 Icon(
                                     imageVector = if (passVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                    contentDescription = null
+                                    contentDescription = null,
+                                    tint = colors.primary
                                 )
                             }
                         },
-                        // Muestra u oculta la contraseña
-                        textObfuscationMode = if (passVisible) TextObfuscationMode.Visible else
-                            TextObfuscationMode.RevealLastTyped
+                        textObfuscationMode = if (passVisible) TextObfuscationMode.Visible else TextObfuscationMode.RevealLastTyped,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     OutlinedTextField(
                         value = telefono,
                         onValueChange = { telefono = it },
                         label = { Text("Teléfono") },
-                        leadingIcon = { Icon(Icons.Outlined.Phone, null) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), // Permite solo números
-                        modifier = Modifier.fillMaxWidth()
+                        leadingIcon = { Icon(Icons.Outlined.Phone, null, tint = colors.primary) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     )
 
-                    // BOTÓN DE REGISTRO
                     Button(
                         onClick = {
-                            // Se obtiene el email sin espacios
                             val correo = email.trim()
                             val pass = contrasena.text
 
-                            // Validación del nombre
                             if (nombre.isBlank()) {
-                                Toast.makeText(
-                                    context,
-                                    "Introduce tu nombre",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                return@Button // Vuelve arriba
+                                Toast.makeText(context, "Introduce tu nombre", Toast.LENGTH_SHORT).show()
+                                return@Button
                             }
-
-                            // Validación del correo
                             if (correo.isEmpty()) {
-                                Toast.makeText(
-                                    context,
-                                    "Introduce un correo electrónico",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                return@Button // Vuelve arriba
+                                Toast.makeText(context, "Introduce un correo electrónico", Toast.LENGTH_SHORT).show()
+                                return@Button
                             }
-
-                            // Validación del formato del correo
-                            val emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-                            if (!emailValido) {
-                                Toast.makeText(
-                                    context,
-                                    "Introduce un correo electrónico válido",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                return@Button // Vuelve arriba
+                            if (!Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+                                Toast.makeText(context, "Introduce un correo electrónico válido", Toast.LENGTH_SHORT).show()
+                                return@Button
                             }
-
-                            // Validación de contraseña
                             if (pass.isEmpty()) {
-                                Toast.makeText(
-                                    context,
-                                    "Introduce una contraseña",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                return@Button // Vuelve arriba
+                                Toast.makeText(context, "Introduce una contraseña", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            if (telefono.isNotEmpty() && (telefono.length < 9 || !telefono.all { it.isDigit() })) {
+                                Toast.makeText(context, "Introduce un teléfono válido", Toast.LENGTH_SHORT).show()
+                                return@Button
                             }
 
-                            // Validación del formato de la contraseña
-//                            if (pass.length<6) {
-//                                Toast.makeText(
-//                                    context,
-//                                    "La contraseña debe tener al menos 6 caracteres",
-//                                    Toast.LENGTH_SHORT
-//                                ).show()
-//                                return@Button // Vuelve arriba
-//                            }
-
-                            // Validación del teléfono solo si el usuario ha escrito algo
-                            if (telefono.isNotEmpty()) {
-                                val telefonoValido = telefono.length >= 9 && telefono.all {
-                                    it.isDigit()
-                                }
-                                if (!telefonoValido) {
-                                    Toast.makeText(
-                                        context,
-                                        "Introduce un teléfono válido",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    return@Button
-                                }
-                            }
-
-                            // Se crea el usuario en Firebase Authentication con email y contraseña
                             auth.createUserWithEmailAndPassword(correo, pass as String)
                                 .addOnCompleteListener { task ->
                                     if (task.isSuccessful) {
-
-                                        // Si el registro es correcto, se obtiene el UID del usuario autenticado
                                         val uid = auth.currentUser?.uid
-
-                                        // Se envía un correo de verificación
                                         FirebaseAuth.getInstance().currentUser?.sendEmailVerification()
-
-                                        // Si el registro es correcto, se guardan los datos del usuario en firestore
                                         if (uid != null) {
                                             val datosUsuario = mapOf(
                                                 "nombre" to nombre,
@@ -276,71 +309,48 @@ fun Registro(navController: NavController) {
                                                 "email" to correo,
                                                 "telefono" to telefono
                                             )
-
-                                            // Se crea el documento del usuario en la colección "usuarios"
                                             firestore.collection("usuarios")
                                                 .document(uid)
                                                 .set(datosUsuario)
                                                 .addOnSuccessListener {
-                                                    // Se confirma que se ha registrado el usuario correctamente con un toast
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Usuario registrado correctamente. Comprueba tu correo electrónico.",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-
-                                                    // Cerrar sesión de Firebase Authentication
+                                                    Toast.makeText(context, "Usuario registrado correctamente. Comprueba tu correo electrónico.", Toast.LENGTH_SHORT).show()
                                                     Firebase.auth.signOut()
-
-                                                    // Navegación a la pantalla de inicio de sesión
                                                     navController.navigate("Inicio")
                                                 }
                                                 .addOnFailureListener {
-                                                    // Error al guardar los datos en Firestore
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Error al guardar datos",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                                    Toast.makeText(context, "Error al guardar datos", Toast.LENGTH_SHORT).show()
                                                 }
-
                                         } else {
-                                            // Error inesperado al obtener el UID del usuario
-                                            Toast.makeText(
-                                                context,
-                                                "Error al obtener usuario",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Toast.makeText(context, "Error al obtener usuario", Toast.LENGTH_SHORT).show()
                                         }
-
                                     } else {
-                                        // Error al registrar en Firebase Authentication
-                                        val mensaje = task.exception?.localizedMessage
-                                            ?: "Error al registrar"
-                                        Toast.makeText(context, mensaje, Toast.LENGTH_SHORT)
-                                            .show()
+                                        val mensaje = task.exception?.localizedMessage ?: "Error al registrar"
+                                        Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
                                     }
                                 }
-
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C3AEC))
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.primary,
+                            contentColor = Color.White
+                        )
                     ) {
-                        Text("Registrarse", fontSize = 16.sp)
+                        Text("Registrarse", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }
 
-
-                    // Botón para volver a la pantalla de inicio de sesión
-                    TextButton(onClick = {
-                        navController.navigate(AppScreens.Inicio.route)
-                    }) {
-                        Text("¿Ya tienes cuenta? Inicia sesión", color = Color(0xFF6C3AEC))
+                    TextButton(
+                        onClick = { navController.navigate(AppScreens.Inicio.route) },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("¿Ya tienes cuenta? Inicia sesión", color = colors.secondary)
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
