@@ -5,10 +5,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
@@ -19,6 +16,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Composable
 fun BottomBar(navController: NavController) {
+    val colors = MaterialTheme.colorScheme
 
     // Lista de pantallas en las que aparece la barra inferior
     val items = listOf(
@@ -28,33 +26,39 @@ fun BottomBar(navController: NavController) {
         BottomItem.Perfil
     )
 
-    // Barra de navegación, aquí se determinan sus características
+    // Barra de navegación con colores del tema
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = colors.surface,
         tonalElevation = 8.dp
     ) {
-        val navBackStackEntry by navController.currentBackStackEntryAsState() // Indica la pantalla actual
-        val currentRoute = navBackStackEntry?.destination?.route // Indica la ruta a la pantalla actual
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route
 
-        // Añade cada icono de de la lista de pantallas a la barra inferior
         items.forEach { item ->
             NavigationBarItem(
-                selected = currentRoute == item.route, // Ruta al item
+                selected = currentRoute == item.route,
                 onClick = {
-                    navController.navigate(item.route) { // Va a la ruta seleccionada
+                    navController.navigate(item.route) {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true // Únicamente una instancia de la pantalla
+                        launchSingleTop = true
                         restoreState = true
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { Text(item.label) }
+                label = { Text(item.label) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = colors.primary,
+                    selectedTextColor = colors.primary,
+                    unselectedIconColor = colors.onSurface.copy(alpha = 0.6f),
+                    unselectedTextColor = colors.onSurface.copy(alpha = 0.6f),
+                    indicatorColor = colors.primaryContainer
+                )
             )
         }
     }
 }
 
-// Pantallas de la barra inferior
+// Pantallas de la barra inferior (sin cambios)
 sealed class BottomItem(val route: String, val icon: ImageVector, val label: String) {
     object Principal : BottomItem(AppScreens.PantallaPrincipal.route, Icons.Default.Home, "Inicio")
     object Catalogo : BottomItem(AppScreens.Catalogo.route, Icons.Default.List, "Catálogo")

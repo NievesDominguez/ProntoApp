@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.persistencia.Herramientas.LocalThemeManager
+import com.example.persistencia.Herramientas.ThemePreference
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -41,13 +42,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun Perfil(navController: NavController) {
 
     val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
     val usuario = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
-
-    // Fondo degradado original
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
-    )
+    val themeManager = LocalThemeManager.current
 
     // Estados principales
     var modoEdicion by remember { mutableStateOf(false) }
@@ -91,7 +89,7 @@ fun Perfil(navController: NavController) {
                 title = {
                     Text(
                         text = "Perfil",
-                        color = Color.White,
+                        color = colors.onBackground,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 10.dp)
@@ -109,33 +107,34 @@ fun Perfil(navController: NavController) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Cancelar",
-                                tint = Color.White
+                                tint = colors.onBackground
                             )
                         }
                     }
-
-                    IconButton(
-                        onClick = {
-                            if (modoEdicion) showConfirmDialog = true
-                            else modoEdicion = true
+                    if (selectedTab == 0) {
+                        IconButton(
+                            onClick = {
+                                if (modoEdicion) showConfirmDialog = true
+                                else modoEdicion = true
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (modoEdicion) Icons.Default.Check else Icons.Default.Edit,
+                                contentDescription = "Editar",
+                                tint = colors.primary
+                            )
                         }
-                    ) {
-                        Icon(
-                            imageVector = if (modoEdicion) Icons.Default.Check else Icons.Default.Edit,
-                            contentDescription = "Editar",
-                            tint = Color.White
-                        )
                     }
                 }
             )
         },
-        containerColor = Color.Transparent
+        containerColor = colors.background
     ) { padding ->
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradient)
+                .background(colors.background)
                 .padding(padding)
         ) {
 
@@ -162,7 +161,7 @@ fun Perfil(navController: NavController) {
                         modifier = Modifier
                             .size(130.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.25f)),
+                            .background(colors.surfaceVariant.copy(alpha = 0.5f)),
                         contentAlignment = Alignment.Center
                     ) {
                         AsyncImage(
@@ -181,19 +180,19 @@ fun Perfil(navController: NavController) {
                         text = "$nombre $apellidos",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
+                        color = colors.onBackground,
                         textAlign = TextAlign.Center
                     )
 
                     // Botón para cambiar la foto
                     if (modoEdicion) {
                         TextButton(onClick = { launcher.launch("image/*") }) {
-                            Text("Cambiar foto", color = Color.White)
+                            Text("Cambiar foto", color = colors.primary)
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // ------------------------------------------------------------------
                 // TABS SUPERIORES
@@ -204,13 +203,13 @@ fun Perfil(navController: NavController) {
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
-                    contentColor = Color.White
+                    contentColor = colors.primary
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
-                            text = { Text(title, color = Color.White) }
+                            text = { Text(title, color = colors.onBackground) }
                         )
                     }
                 }
@@ -247,10 +246,10 @@ fun Perfil(navController: NavController) {
                     }
 
                     // TAB COMPRAS
-                    1 -> TarjetaPlaceholder("Datos de compras.")
+                    1 -> TarjetaPlaceholder("Datos de compras.", colors)
 
                     // TAB AJUSTES
-                    2 -> TarjetaPlaceholder("Opciones de ajuste próximamente.")
+                    2 -> AjustesScreenCompact(themeManager, colors)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -262,8 +261,8 @@ fun Perfil(navController: NavController) {
                         navController.navigate("login") { popUpTo(0) }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF6C3AEC)
+                        containerColor = colors.primary,
+                        contentColor = Color.White
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -281,7 +280,6 @@ fun Perfil(navController: NavController) {
                         val credential = EmailAuthProvider
                             .getCredential(usuario?.email!!, passActual)
 
-                        // Reautentica y cambia los datos
                         usuario.reauthenticate(credential)
                             .addOnSuccessListener {
 
@@ -318,10 +316,11 @@ fun Perfil(navController: NavController) {
 }
 
 // --------------------------------------------------------------------------
-// VISTA DE PERFIL
+// VISTA DE PERFIL (MODO VISUALIZACIÓN)
 // --------------------------------------------------------------------------
 @Composable
 fun PerfilView(nombre: String, apellidos: String, telefono: String, email: String?) {
+    val colors = MaterialTheme.colorScheme
 
     Column(
         modifier = Modifier
@@ -330,22 +329,36 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
         horizontalAlignment = Alignment.Start
     ) {
 
-        // Datos del usuario
-        Text("Nombre:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(nombre, fontSize = 18.sp, color = Color.White.copy(alpha = 0.9f))
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text("Apellidos:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(apellidos, fontSize = 18.sp, color = Color.White.copy(alpha = 0.9f))
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text("Teléfono:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Text(
-            telefono.ifBlank { "No especificado" }, // Si no hay teléfono, pone "No especificado"
+            "Nombre:",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onBackground.copy(alpha = 0.7f)
+        )
+        Text(nombre, fontSize = 18.sp, color = colors.onBackground)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            "Apellidos:",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onBackground.copy(alpha = 0.7f)
+        )
+        Text(apellidos, fontSize = 18.sp, color = colors.onBackground)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            "Teléfono:",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onBackground.copy(alpha = 0.7f)
+        )
+        Text(
+            telefono.ifBlank { "No especificado" },
             fontSize = 18.sp,
-            color = Color.White.copy(alpha = 0.9f)
+            color = colors.onBackground
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -354,14 +367,14 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
             "Correo electrónico:",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.onBackground.copy(alpha = 0.7f)
         )
-        Text(email ?: "", fontSize = 18.sp, color = Color.White.copy(alpha = 0.9f))
+        Text(email ?: "", fontSize = 18.sp, color = colors.onBackground)
     }
 }
 
 // --------------------------------------------------------------------------
-// VISTA DE PERFIL (modo edición)
+// VISTA DE PERFIL (MODO EDICIÓN) - SIN CAMBIOS EN LA ESTRUCTURA
 // --------------------------------------------------------------------------
 @Composable
 fun PerfilEdit(
@@ -374,25 +387,21 @@ fun PerfilEdit(
     onTelefono: (String) -> Unit,
     onPassword: (String) -> Unit
 ) {
-    // Estado de scroll para el contenido interno
     val scrollState = rememberScrollState()
+    val colors = MaterialTheme.colorScheme
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
-
-        // La tarjeta es scrolleable
         Column(
             modifier = Modifier
                 .padding(24.dp)
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             OutlinedTextField(
                 value = nombre,
                 onValueChange = onNombre,
@@ -427,32 +436,91 @@ fun PerfilEdit(
     }
 }
 
-
-/* --------------------------------------------------------------------------
-   TARJETA PLACEHOLDER PARA TABS VACÍOS
-   -------------------------------------------------------------------------- */
-
+// --------------------------------------------------------------------------
+// TARJETA PLACEHOLDER PARA TAB "COMPRAS"
+// --------------------------------------------------------------------------
 @Composable
-fun TarjetaPlaceholder(texto: String) {
+fun TarjetaPlaceholder(texto: String, colors: androidx.compose.material3.ColorScheme) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Text(
             texto,
             modifier = Modifier.padding(24.dp),
             fontSize = 16.sp,
-            color = Color.DarkGray
+            color = colors.onSurfaceVariant
         )
     }
 }
 
-/* --------------------------------------------------------------------------
-   DIÁLOGO DE CONFIRMACIÓN
-   -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// SELECTOR DE TEMA COMPACTO (para la pestaña "Ajustes")
+// --------------------------------------------------------------------------
+@Composable
+fun AjustesScreenCompact(
+    themeManager: com.example.persistencia.Herramientas.ThemeManager,
+    colors: androidx.compose.material3.ColorScheme
+) {
+    val themeOptions = listOf(
+        ThemePreference.System to "Sistema",
+        ThemePreference.Light to "Claro",
+        ThemePreference.Dark to "Oscuro"
+    )
 
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Tema",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                themeOptions.forEach { (pref, label) ->
+                    val isSelected = themeManager.themePreference == pref
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(24.dp),
+                        color = if (isSelected) colors.primary else colors.surface,
+                        onClick = { themeManager.themePreference = pref }
+                    ) {
+                        Text(
+                            text = label,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = if (isSelected) Color.White else colors.onSurface,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
+// DIÁLOGO DE CONFIRMACIÓN (SIN CAMBIOS)
+// --------------------------------------------------------------------------
 @Composable
 fun ConfirmacionDialog(
     nuevaPassword: String,
@@ -478,7 +546,6 @@ fun ConfirmacionDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
                 OutlinedTextField(
                     value = passActual,
                     onValueChange = { passActual = it },
@@ -489,7 +556,6 @@ fun ConfirmacionDialog(
                 )
 
                 if (nuevaPassword.isNotEmpty()) {
-
                     OutlinedTextField(
                         value = repetirNueva,
                         onValueChange = { repetirNueva = it },
