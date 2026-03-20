@@ -1,7 +1,9 @@
 package com.example.persistencia.Firestore
 
 import com.example.persistencia.Modelos.Descuento
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
@@ -26,4 +28,20 @@ class DescuentosDao {
             emptyList()
         }
     }
+
+    suspend fun getCupones(): List<Descuento> {
+        return try {
+            val snapshot = Firebase.firestore
+                .collection("descuentos")
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Descuento::class.java)?.copy(codigo = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 }

@@ -15,11 +15,6 @@ import com.composables.icons.lucide.TicketPercent
 
 sealed class AppScreens (val route: String, val icon: ImageVector) {
     object Inicio: AppScreens("Inicio",Icons.Default.LibraryBooks)
-    object Formulario: AppScreens("Formulario",Icons.Default.LibraryBooks)
-    object Resultados: AppScreens("Resultados",Icons.Default.LibraryBooks)
-    object Amigos: AppScreens("Amigos",Icons.Default.LibraryBooks)
-    object MisInmuebles: AppScreens("MisInmuebles",Icons.Default.LibraryBooks)
-    object InmueblesTodos: AppScreens("InmueblesTodos",Icons.Default.LibraryBooks)
     object PantallaPrincipal: AppScreens("PantallaPrincipal",Icons.Default.Home)
     object Registro: AppScreens("Registro",Icons.Default.LibraryBooks)
     object Perfil: AppScreens("Perfil",Icons.Default.Person)

@@ -17,27 +17,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.room.Room
-import com.example.persistencia.localdb.AppDB
-import com.example.persistencia.localdb.Estructura
-import com.google.firebase.BuildConfig
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.example.persistencia.Pantallas.Amigos
 import com.example.persistencia.Pantallas.BarcodeScannerScreen
 import com.example.persistencia.Pantallas.Carrito
 import com.example.persistencia.Pantallas.Catalogo
 import com.example.persistencia.Pantallas.Chatbot
-import com.example.persistencia.Pantallas.Formulario
+import com.example.persistencia.Pantallas.Cupones
 import com.example.persistencia.Pantallas.Inicio
-import com.example.persistencia.Pantallas.InmueblesTodos
-import com.example.persistencia.Pantallas.MisInmuebles
 import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.PantallaProducto
 import com.example.persistencia.Pantallas.Perfil
 import com.example.persistencia.Pantallas.Registro
-import com.example.persistencia.Pantallas.Resultados
-
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -54,8 +45,6 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
         }
 
     val context = LocalContext.current
-    val db = Room.databaseBuilder(context, AppDB::class.java, Estructura.DB.NAME)
-        .allowMainThreadQueries().build()
     val user = Firebase.auth.currentUser
 
     val destinoFinal = when {
@@ -94,58 +83,6 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
         ) {
             composable(route = AppScreens.Inicio.route) {
                 Inicio(navController)
-            }
-            composable(route = AppScreens.Formulario.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } // Sirve para interceptar y manejar el evento del botón físico Atrás del dispositivo. El parámetro true indica que el sistema no ejecutará su comportamiento predeterminado (cerrar la app o regresar a la pantalla anterior).
-                Formulario(navController)
-            }
-            composable(route = AppScreens.Resultados.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                Resultados(navController)
-            }
-            composable(route = AppScreens.Amigos.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                Amigos(navController)
-            }
-
-            composable(route = AppScreens.MisInmuebles.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                MisInmuebles(navController)
-            }
-
-            composable(route = AppScreens.InmueblesTodos.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                InmueblesTodos(navController)
             }
 
             composable(route = AppScreens.PantallaPrincipal.route) {
@@ -230,15 +167,12 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
 
             }
 
-            composable(route = AppScreens.Cupones.route) {
-                // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
-                val callback: OnBackPressedCallback =
-                    object : OnBackPressedCallback(true) {
-                        override fun handleOnBackPressed() {
-                            AppScreens.Carrito.route
-                        }
-                    }
-                Carrito(navController)
+            composable(route = AppScreens.Cupones.route) { backStackEntry ->
+                // Permite volver a la pantalla anterior
+                BackHandler {
+                    navController.popBackStack()
+                }
+                Cupones(navController)
             }
 
             composable(route = AppScreens.Chatbot.route) {

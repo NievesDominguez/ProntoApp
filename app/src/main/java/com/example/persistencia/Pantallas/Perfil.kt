@@ -88,7 +88,15 @@ fun Perfil(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Perfil", color = Color.White) },
+                title = {
+                    Text(
+                        text = "Perfil",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 10.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
 
                 // Botones editar / guardar / cancelar
@@ -98,7 +106,11 @@ fun Perfil(navController: NavController) {
                             modoEdicion = false
                             nuevaPassword = ""
                         }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancelar", tint = Color.White)
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Cancelar",
+                                tint = Color.White
+                            )
                         }
                     }
 
@@ -291,10 +303,12 @@ fun Perfil(navController: NavController) {
                                 modoEdicion = false
                                 showConfirmDialog = false
 
-                                Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                             .addOnFailureListener {
-                                Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                     }
                 )
@@ -336,7 +350,12 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Text("Correo electrónico:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(
+            "Correo electrónico:",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
         Text(email ?: "", fontSize = 18.sp, color = Color.White.copy(alpha = 0.9f))
     }
 }

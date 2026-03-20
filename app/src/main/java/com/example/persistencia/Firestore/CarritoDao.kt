@@ -83,5 +83,78 @@ class CarritoDao {
         }
     }
 
+    // Devuelve todos los cupones activos en el carrito
+    suspend fun getCuponesActivos(): List<String> {
+        val user = Firebase.auth.currentUser ?: return emptyList()
+        val uid = user.uid
 
+        return try {
+            val snapshot = Firebase.firestore
+                .collection("carrito")
+                .document(uid)
+                .collection("cupones")
+                .get()
+                .await()
+
+            snapshot.documents.map { it.id }   // El ID del doc es el código del cupón
+
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Activar cupón
+    suspend fun activarCupon(codigo: String) {
+
+        val user = Firebase.auth.currentUser ?: return
+        val uid = user.uid
+
+        val cuponRef = Firebase.firestore
+            .collection("carrito")
+            .document(uid)
+            .collection("cupones")
+            .document(codigo)
+
+        // Guardamos un campo activo por claridad, aunque no es necesario
+        cuponRef.set(mapOf("activo" to true)).await()
+    }
+
+    // Desactivar un cupón
+    suspend fun desactivarCupon(codigo: String) {
+
+        val user = Firebase.auth.currentUser ?: return
+        val uid = user.uid
+
+        val cuponRef = Firebase.firestore
+            .collection("carrito")
+            .document(uid)
+            .collection("cupones")
+            .document(codigo)
+
+        // Se elimina el documento con el ID de ese cupón
+        cuponRef.delete().await()
+    }
+
+    // Comprobar si un cupón dado está activo en el carrito
+    suspend fun comprobarCupon(codigo: String?): Boolean {
+
+        val user = Firebase.auth.currentUser ?: return false
+        val uid = user.uid
+
+        val cuponRef = Firebase.firestore
+            .collection("carrito")
+            .document(uid)
+            .collection("cupones")
+            .document(codigo ?: return false)
+
+        // Devuelve true si se encuentra el código en el carrito
+        return try {
+            val snapshot = cuponRef.get().await()
+            snapshot.exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
+
+

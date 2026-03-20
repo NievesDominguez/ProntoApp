@@ -31,12 +31,14 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollableArea
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Checkroom
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.List
@@ -52,6 +54,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingBasket
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -59,6 +62,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -105,6 +109,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -205,16 +210,18 @@ fun Catalogo(navController: NavController) {
     val scope = rememberCoroutineScope()
     var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
 
+
     Scaffold(
         topBar = {
             // TopBar transparente
             TopAppBar(
-                modifier = Modifier.height(56.dp),
                 title = {
                     Text(
                         text = "Catálogo",
                         // Si el menú lateral está abierto, el título cambia a negro
-                        color = if (drawerState.isOpen) Color.Black else Color.White
+                        color = if (drawerState.isOpen) Color.Black else Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
                     )
                 },
                 colors = topAppBarColors(
@@ -239,7 +246,7 @@ fun Catalogo(navController: NavController) {
                 }
             )
         }
-    ) {
+    ) { padding ->
 
 
         // Fondo degradado de la pantalla
@@ -247,6 +254,7 @@ fun Catalogo(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradient)
+                .padding(top = 70.dp)
         ) {
 
             // Barra horizontal de navegación, permite navegar por categorías
@@ -256,7 +264,7 @@ fun Catalogo(navController: NavController) {
                     // Lo metemos dentro de un box para modificar el tamaño
                     Box(modifier = Modifier.width(220.dp)) {
                         ModalDrawerSheet {
-                            Spacer(modifier = Modifier.height(40.dp))
+                            Spacer(modifier = Modifier.height(60.dp))
                             categorias.forEachIndexed { index, item ->
                                 NavigationDrawerItem(
                                     label = { Text(text = item.title) },
@@ -313,7 +321,7 @@ fun Catalogo(navController: NavController) {
                                         }
                                     },
                                     modifier = Modifier
-                                        .padding(NavigationDrawerItemDefaults.ItemPadding) //padding between items
+                                        .padding(NavigationDrawerItemDefaults.ItemPadding) //padding entre items
                                 )
                             }
 
@@ -324,7 +332,7 @@ fun Catalogo(navController: NavController) {
             ) {
 
 
-                Column {
+                Box {
 
                     // BARRA DE BÚSQUEDA
                     var query by remember { mutableStateOf("") } // Texto a buscar
@@ -345,6 +353,11 @@ fun Catalogo(navController: NavController) {
                     SearchBarProductos(
                         query = query,
                         onQueryChange = { query = it },
+                        // Añadimos un modificador para posicionarla y darle transparencia
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .alpha(0.95f), // Un poco de transparencia
 
                         // Al pulsar buscar filtra la lista de productos de abajo
                         onSearchConfirmed = {
@@ -370,7 +383,7 @@ fun Catalogo(navController: NavController) {
                     // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
                     // No usar Column infinito y dentro un LazyColumn
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize().padding(top = 70.dp)
                     ) {
 
                         // Si hay una categoría seleccionada, muestra el nombre
@@ -435,8 +448,6 @@ fun Catalogo(navController: NavController) {
 
         }
     }
-
-
 }
 
 // Tarjeta, estructura de un producto
@@ -581,78 +592,65 @@ data class NavigationItems(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBarProductos(
-    query: String, // Texto escrito por el usuario
-    onQueryChange: (String) -> Unit, // Actualiza el texto y filtra sugerencias
-    onSearchConfirmed: () -> Unit, // Acción al pulsar buscar (filtrar lista principal)
-    sugerencias: List<Producto>, // Lista filtrada para sugerencias
-    onProductoClick: (Producto) -> Unit, // Acción al pulsar una sugerencia
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onSearchConfirmed: () -> Unit,
+    sugerencias: List<Producto>,
+    onProductoClick: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Controla si el SearchBar está expandido (si muestra sugerencias)
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    // Contenedor que evita que el menú se expanda hacia arriba
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .semantics { isTraversalGroup = true }
+    // Usamos DockedSearchBar para que no se expanda a pantalla completa hacia arriba
+    DockedSearchBar(
+        modifier = modifier, // Recibe el align y padding del padre
+        inputField = {
+            SearchBarDefaults.InputField(
+                query = query,
+                onQueryChange = {
+                    onQueryChange(it)
+                    expanded = it.isNotEmpty()
+                },
+                onSearch = {
+                    expanded = false
+                    onSearchConfirmed()
+                },
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                placeholder = { Text("Buscar productos") },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }
+            )
+        },
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        // IMPORTANTE: Colores para la transparencia
+        colors = SearchBarDefaults.colors(
+            containerColor = Color.White.copy(alpha = 0.9f)
+        )
     ) {
-
-        // Barra de búsqueda
-        SearchBar(
+        // Contenedor de sugerencias que se ajusta al tamaño
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 40.dp, bottom = 5.dp),
-
-            // Campo de texto del buscador
-            inputField = {
-                SearchBarDefaults.InputField(
-                    query = query, // Texto actual
-
-                    onQueryChange = {
-                        onQueryChange(it) // Actualiza texto y filtra sugerencias
-                        expanded = true // Abre sugerencias
-                    },
-
-                    onSearch = {
-                        expanded = false // Cierra sugerencias
-                        onSearchConfirmed() // Filtra la lista de productos
-                    },
-
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it },
-
-                    placeholder = { Text("Buscar productos") },
-
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Search, contentDescription = null)
-                    }
-                )
-            },
-
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
+                .wrapContentHeight() // Se ajusta al contenifo
+                .heightIn(max = 300.dp) // Límite máximo
         ) {
-
-            // Sugerencias
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
+                modifier = Modifier.wrapContentHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Muestra solo 10 sugerencias
                 items(sugerencias.take(10)) { producto ->
-
                     ListItem(
                         headlineContent = { Text(producto.nombre) },
                         supportingContent = { Text("${producto.precio} €") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            // Permite navegar a la pantalla del producto al pulsar una sugerencia
-                            .clickable {
-                                onProductoClick(producto)
-                                expanded = false
-                            }
-                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                        modifier = Modifier.clickable {
+                            onProductoClick(producto)
+                            expanded = false
+                        }
+                    )
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = Color(0xFF5A498C)
                     )
                 }
             }
