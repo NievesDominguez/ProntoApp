@@ -73,6 +73,9 @@ dependencies {
     // Reproducir vídeos de youtube
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
+    // Pagos con Stripe
+    implementation("com.stripe:stripe-android:20.48.4")
+
     // Dependencias del lector de código de barras y la cámara
     implementation ("androidx.camera:camera-core:1.3.0")
     implementation ("androidx.camera:camera-camera2:1.3.0")
@@ -117,6 +120,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.ui.text)
     ksp("androidx.room:room-compiler:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation(libs.androidx.core.ktx)

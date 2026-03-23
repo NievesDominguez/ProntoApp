@@ -25,6 +25,8 @@ import com.example.persistencia.Pantallas.Catalogo
 import com.example.persistencia.Pantallas.Chatbot
 import com.example.persistencia.Pantallas.Cupones
 import com.example.persistencia.Pantallas.Inicio
+import com.example.persistencia.Pantallas.ListaCompra
+import com.example.persistencia.Pantallas.PagoStripeScreen
 import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.PantallaProducto
 import com.example.persistencia.Pantallas.Perfil
@@ -184,6 +186,19 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
                         }
                     }
                 Chatbot(onBack = { navController.popBackStack() })
+            }
+
+            composable("pago_stripe/{total}") { backStackEntry ->
+                val total = backStackEntry.arguments?.getString("total")?.toDouble() ?: 0.0
+                PagoStripeScreen(navController, total)
+            }
+
+            composable(route = AppScreens.ListaCompra.route) { backStackEntry ->
+                // Permite volver a la pantalla anterior
+                BackHandler {
+                    navController.popBackStack()
+                }
+                ListaCompra(navController)
             }
         }
     }

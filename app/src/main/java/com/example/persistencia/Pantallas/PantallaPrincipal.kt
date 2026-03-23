@@ -231,7 +231,7 @@ fun PantallaPrincipal(navController: NavController) {
                     IconButton(
                         modifier = Modifier.size(45.dp),
                         shape = CircleShape,
-                        onClick = { navController.navigate(AppScreens.Chatbot.route) },
+                        onClick = { navController.navigate(AppScreens.ListaCompra.route) },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = colors.onPrimary.copy(alpha = 0.8f),
                             contentColor = colors.onSurface

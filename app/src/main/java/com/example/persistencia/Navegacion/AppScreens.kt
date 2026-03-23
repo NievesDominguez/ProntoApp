@@ -2,6 +2,7 @@ package com.example.persistencia.Navegacion
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Person
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.composables.icons.lucide.BadgeEuro
 import com.composables.icons.lucide.Bot
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.TicketPercent
@@ -25,6 +27,7 @@ sealed class AppScreens (val route: String, val icon: ImageVector) {
     object PantallaProducto: AppScreens("PantallaProducto",Icons.Default.ShoppingBasket)
     object Cupones: AppScreens("Cupones", Lucide.TicketPercent)
     object Chatbot: AppScreens("Chatbot", Lucide.Bot)
+    object ListaCompra: AppScreens("ListaCompra", Icons.Default.FormatListBulleted)
 
 
     companion object {

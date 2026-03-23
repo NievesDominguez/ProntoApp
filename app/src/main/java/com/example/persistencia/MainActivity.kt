@@ -61,12 +61,17 @@ import com.example.persistencia.Herramientas.ThemeManager
 import com.example.persistencia.Herramientas.ThemePreference
 import com.example.persistencia.ui.theme.PersistenciaTheme
 import com.example.persistencia.Navegacion.AppNavigation
+import com.stripe.android.PaymentConfiguration
 
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PaymentConfiguration.init(
+            applicationContext,
+            "pk_test_51TE5qDCNZxzYE0FEay0v0s8J5F1BhPmXzIogyoTUQAwYmLNMmFBgBUCna9eYdMZahW7RvQWEbewlg4k1Ts2qSg2R007qkaME2A"
+        )
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         setContent {

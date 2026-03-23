@@ -328,7 +328,10 @@ fun Carrito(
                 Spacer(modifier = Modifier.width(50.dp))
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        // Navegamos pasando el total dinámico
+                        navController.navigate("pago_stripe/${total.toFloat()}")
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.primary,
                         contentColor = Color.White

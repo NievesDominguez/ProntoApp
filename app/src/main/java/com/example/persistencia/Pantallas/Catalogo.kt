@@ -237,7 +237,7 @@ fun Catalogo(navController: NavController) {
                 title = {
                     Text(
                         text = "Catálogo",
-                        color = colors.onBackground, // antes dependía del estado del drawer
+                        color = colors.onBackground,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                     )
@@ -429,7 +429,7 @@ fun TarjetaProducto(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
-    val colors = MaterialTheme.colorScheme // <-- AÑADIDO
+    val colors = MaterialTheme.colorScheme
     val daoCarrito = CarritoDao()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -471,14 +471,14 @@ fun TarjetaProducto(
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = colors.onSurface // antes por defecto negro
+                    color = colors.onSurface
                 )
 
                 Text(
                     text = "%.2f €".format(producto.precio),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = colors.primary // antes Color(0xFF6C3AEC)
+                    color = colors.onSurface
                 )
             }
         }
@@ -557,7 +557,7 @@ fun SearchBarProductos(
     onProductoClick: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colors = MaterialTheme.colorScheme // <-- AÑADIDO
+    val colors = MaterialTheme.colorScheme
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     DockedSearchBar(
@@ -597,8 +597,8 @@ fun SearchBarProductos(
             ) {
                 items(sugerencias.take(10)) { producto ->
                     ListItem(
-                        headlineContent = { Text(producto.nombre, color = colors.onSurface) }, // color añadido
-                        supportingContent = { Text("${producto.precio} €", color = colors.onSurfaceVariant) }, // color añadido
+                        headlineContent = { Text(producto.nombre, color = colors.onSurface) },
+                        supportingContent = { Text("${producto.precio} €", color = colors.onSurface) },
                         modifier = Modifier.clickable {
                             onProductoClick(producto)
                             expanded = false
