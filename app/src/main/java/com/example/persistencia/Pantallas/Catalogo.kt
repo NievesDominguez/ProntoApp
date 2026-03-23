@@ -95,11 +95,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
@@ -132,36 +136,56 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Catalogo(navController: NavController) {
 
-    // Clase local para los elementos del carousel
-    data class CarouselItem(
-        val id: Int,
-        val imgLink: String,
-        val contentDescription: String
-    )
+    val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
 
-    // Degradado de fondo semitransparente
-    val gradient2 = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF6C3AEC).copy(alpha = 0.5f),
-            Color(0xFF6C3AEC).copy(alpha = 0.5f)
-        )
-    )
+    // Fondo con bordes degradados
+    val backgroundModifier = Modifier
+        .fillMaxSize()
+        .background(colors.background)
+        .drawBehind {
+            val edgeWidth = with(density) { 25.dp.toPx() }
+            val primaryColor = colors.primary.copy(alpha = 0.1f)
+            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+            val width = size.width
+            val height = size.height
 
-    // Degradado magenta a morado
-    val gradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFD13CF2),
-            Color(0xFF6C3AEC)
-        )
-    )
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(primaryColor, Color.Transparent),
+                    startY = 0f, endY = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, primaryColor),
+                    startY = height - edgeWidth, endY = height
+                ),
+                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(secondaryColor, Color.Transparent),
+                    startX = 0f, endX = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, secondaryColor),
+                    startX = width - edgeWidth, endX = width
+                ),
+                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+            )
+        }
 
-    //Lista de items para la barra lateral de navegación
+    // Lista de items para la barra lateral de navegación
     val categorias = listOf(
         NavigationItems(
             title = "Todos",
@@ -186,49 +210,42 @@ fun Catalogo(navController: NavController) {
         )
     )
 
-    val dao = ProductosDao() // Dao de la base de datos
+    val dao = ProductosDao()
     var productos by remember { mutableStateOf<List<Producto>>(emptyList()) }
 
-    // Cargar productos al entrar en la pantalla
     LaunchedEffect(Unit) {
         productos = dao.getTodos()
     }
 
     var query by remember { mutableStateOf("") }
 
-    // Filtrado local de productos según la búsqueda
     productos.filter { producto ->
         producto.nombre.contains(query, ignoreCase = true)
     }
 
     var categoriaSeleccionada by remember { mutableStateOf<String?>(null) }
 
-    val context = LocalContext.current // Para acceder al sistema
+    val context = LocalContext.current
 
-    // Para el panel lateral de navegación
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
 
-
     Scaffold(
         topBar = {
-            // TopBar transparente
             TopAppBar(
                 title = {
                     Text(
                         text = "Catálogo",
-                        // Si el menú lateral está abierto, el título cambia a negro
-                        color = if (drawerState.isOpen) Color.Black else Color.White,
+                        color = colors.onBackground, // antes dependía del estado del drawer
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                     )
                 },
                 colors = topAppBarColors(
-                    containerColor = Color.Transparent, // Transparente para que se vea el fondo
-                    titleContentColor = Color.White
+                    containerColor = Color.Transparent,
+                    titleContentColor = colors.onBackground
                 ),
-                // Abre o cierra el menú lateral
                 navigationIcon = {
                     IconButton(onClick = {
                         scope.launch {
@@ -239,8 +256,7 @@ fun Catalogo(navController: NavController) {
                         Icon(
                             imageVector = Icons.Default.Menu,
                             contentDescription = "Barra lateral",
-                            // Si el menú lateral está abierto, el icono cambia a negro
-                            tint = if (drawerState.isOpen) Color.Black else Color.White
+                            tint = colors.onBackground
                         )
                     }
                 }
@@ -248,22 +264,18 @@ fun Catalogo(navController: NavController) {
         }
     ) { padding ->
 
-
-        // Fondo degradado de la pantalla
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradient)
+            modifier = backgroundModifier
                 .padding(top = 70.dp)
         ) {
 
-            // Barra horizontal de navegación, permite navegar por categorías
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    // Lo metemos dentro de un box para modificar el tamaño
                     Box(modifier = Modifier.width(220.dp)) {
-                        ModalDrawerSheet {
+                        ModalDrawerSheet(
+                            drawerContainerColor = colors.surface
+                        ) {
                             Spacer(modifier = Modifier.height(60.dp))
                             categorias.forEachIndexed { index, item ->
                                 NavigationDrawerItem(
@@ -277,75 +289,58 @@ fun Catalogo(navController: NavController) {
                                                 productos = dao.getTodos()
                                                 drawerState.close()
                                             }
-
                                         } else {
-                                            categoriaSeleccionada =
-                                                item.title // Guardamos la categoría seleccionada
+                                            categoriaSeleccionada = item.title
                                             scope.launch {
                                                 drawerState.close()
-
-                                                // Filtrar productos por categoría
                                                 productos = dao.getPorCategoria(item.title)
                                             }
                                         }
                                         scope.launch {
                                             drawerState.close()
-
-                                            // Filtrar productos por categoría
                                             productos = dao.getPorCategoria(item.title)
                                         }
                                     },
-                                    // Icono correspondiente al item
                                     icon = {
                                         Icon(
-                                            imageVector = if (index == selectedItemIndex) {
-                                                item.selectedIcon
-                                            } else item.unselectedIcon,
-                                            contentDescription = item.title
+                                            imageVector = if (index == selectedItemIndex) item.selectedIcon else item.unselectedIcon,
+                                            contentDescription = item.title,
+                                            tint = if (index == selectedItemIndex) colors.primary else colors.onSurface
                                         )
                                     },
-                                    // Colores del item, cuando está seleccionado o no
                                     colors = NavigationDrawerItemDefaults.colors(
-                                        selectedIconColor = Color(0xFF6C3AEC),
-                                        unselectedIconColor = Color.Black,
-                                        selectedTextColor = Color(0xFF6C3AEC),
-                                        unselectedTextColor = Color.Black,
-                                        selectedContainerColor = Color(0xFF6C3AEC).copy(alpha = 0.15f),
+                                        selectedIconColor = colors.primary,
+                                        unselectedIconColor = colors.onSurface,
+                                        selectedTextColor = colors.primary,
+                                        unselectedTextColor = colors.onSurface,
+                                        selectedContainerColor = colors.primary.copy(alpha = 0.15f),
                                         unselectedContainerColor = Color.Transparent
                                     ),
-
-                                    // Muestra badge al lateral si el item lo tiene
                                     badge = {
                                         item.badgeCount?.let {
                                             Text(text = item.badgeCount.toString())
                                         }
                                     },
                                     modifier = Modifier
-                                        .padding(NavigationDrawerItemDefaults.ItemPadding) //padding entre items
+                                        .padding(NavigationDrawerItemDefaults.ItemPadding)
                                 )
                             }
-
                         }
                     }
                 },
-                gesturesEnabled = true // Permite abrir y cerrar con gestos
+                gesturesEnabled = true
             ) {
-
-
                 Box {
 
                     // BARRA DE BÚSQUEDA
-                    var query by remember { mutableStateOf("") } // Texto a buscar
-
+                    var query by remember { mutableStateOf("") }
                     var productosFiltrados by remember { mutableStateOf(emptyList<Producto>()) }
 
-                    // Sugerencias mientras se escribe
                     val sugerencias = remember(query, productos) {
                         if (query.isBlank()) emptyList()
                         else productos.filter { it.nombre.contains(query, ignoreCase = true) }
                     }
 
-                    // Cuando los productos cambian (por primera carga o recarga), actualizamos la lista principal para que muestre todos los productos.
                     LaunchedEffect(productos) {
                         productosFiltrados = productos
                     }
@@ -353,54 +348,38 @@ fun Catalogo(navController: NavController) {
                     SearchBarProductos(
                         query = query,
                         onQueryChange = { query = it },
-                        // Añadimos un modificador para posicionarla y darle transparencia
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .alpha(0.95f), // Un poco de transparencia
-
-                        // Al pulsar buscar filtra la lista de productos de abajo
+                            .alpha(0.95f),
                         onSearchConfirmed = {
                             productosFiltrados =
                                 if (query.isBlank()) productos
                                 else productos.filter {
-                                    it.nombre.contains(
-                                        query,
-                                        ignoreCase = true
-                                    )
+                                    it.nombre.contains(query, ignoreCase = true)
                                 }
                         },
-
                         sugerencias = sugerencias,
-
-                        // Al hacer click en una sugerencia lleva a la página del producto
                         onProductoClick = { producto ->
                             navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
                         }
                     )
 
-
-                    // Con un LazyColumn único se puede hacer scroll vertical de toda la pantalla
-                    // No usar Column infinito y dentro un LazyColumn
                     LazyColumn(
                         modifier = Modifier.fillMaxSize().padding(top = 70.dp)
                     ) {
-
-                        // Si hay una categoría seleccionada, muestra el nombre
                         item {
                             categoriaSeleccionada?.let {
                                 Text(
                                     modifier = Modifier.padding(24.dp),
                                     text = it,
-                                    color = Color.Black,
+                                    color = colors.onBackground,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
 
-
-                        // Grid con dos columnas. No se usa grid porque entra el conflicto con el scroll de la pantalla
                         items(productosFiltrados.chunked(2)) { fila ->
                             Row(
                                 modifier = Modifier
@@ -408,18 +387,13 @@ fun Catalogo(navController: NavController) {
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-
-                                // Dibujamos los productos de la fila
                                 fila.forEach { producto ->
                                     TarjetaProducto(
                                         producto,
-                                        modifier = Modifier.weight(1f), // Deben repartirse el ancho por igual
+                                        modifier = Modifier.weight(1f),
                                         navController
                                     )
                                 }
-
-
-                                // Si la fila tiene solo 1 producto, rellenamos el hueco
                                 if (fila.size == 1) {
                                     Spacer(modifier = Modifier.width(170.dp))
                                 }
@@ -431,21 +405,19 @@ fun Catalogo(navController: NavController) {
                                 Text(
                                     modifier = Modifier.padding(24.dp),
                                     text = "No hay productos que coincidan con la búsqueda",
-                                    color = Color.White,
+                                    color = colors.onBackground,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
 
-                        // Espacio final para que el ultimo elemento no quede cortado por el bottombar
                         item {
                             Spacer(Modifier.height(150.dp))
                         }
                     }
                 }
             }
-
         }
     }
 }
@@ -457,42 +429,35 @@ fun TarjetaProducto(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
-    val daoCarrito = CarritoDao() // Dao del carrito
-    val scope = rememberCoroutineScope() // Para ejecutar corrutinas
-
-    val context = LocalContext.current // Para acceder al sistema
-    // Permite abrir y cerrar el dropdown
+    val colors = MaterialTheme.colorScheme // <-- AÑADIDO
+    val daoCarrito = CarritoDao()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
 
-    // Contenedor que permite superponer el dropdown sobre el Card
     Box(
-        modifier = modifier
-            .height(190.dp)
+        modifier = modifier.height(190.dp)
     ) {
-
         Card(
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.8f)
+                containerColor = colors.onPrimary.copy(alpha = 0.8f)
             ),
             onClick = {
                 navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
             }
         ) {
-
             Column(
                 modifier = Modifier.padding(12.dp)
             ) {
+                Spacer(Modifier.height(4.dp))
 
-                Spacer(Modifier.height(4.dp)) // deja espacio para el botón flotante
-
-                // Imagen del producto
                 AsyncImage(
                     model = producto.imagenUrl,
                     contentDescription = producto.nombre,
                     modifier = Modifier
-                        .height(120.dp)
+                        .height(100.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Fit
@@ -500,47 +465,45 @@ fun TarjetaProducto(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Nombre
                 Text(
                     text = producto.nombre,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = colors.onSurface // antes por defecto negro
                 )
 
-                // Precio
                 Text(
-                    // El %.2f redondea a 2 decimales
                     text = "%.2f €".format(producto.precio),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6C3AEC)
+                    color = colors.primary // antes Color(0xFF6C3AEC)
                 )
             }
         }
 
-        // Botón del dropdown menu
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(4.dp)
         ) {
-
-            // Al pulsar abre o cierra el dropdown
             IconButton(
                 onClick = { expanded = !expanded },
                 modifier = Modifier.size(32.dp)
             ) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = "Opciones",
+                    tint = colors.onSurface // antes por defecto negro
+                )
             }
 
             DropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                containerColor = colors.surface // fondo del menú
             ) {
-
-                // Botón añadir al carrito
                 DropdownMenuItem(
                     leadingIcon = {
                         Icon(Icons.Default.ShoppingCart, contentDescription = null)
@@ -558,8 +521,6 @@ fun TarjetaProducto(
                         }
                     }
                 )
-
-                // Botón añadir a la lista
                 DropdownMenuItem(
                     leadingIcon = {
                         Icon(Lucide.ListCheck, contentDescription = null)
@@ -579,7 +540,6 @@ fun TarjetaProducto(
     }
 }
 
-// Clase Navigation Items para items de la barra lateral
 data class NavigationItems(
     val title: String,
     val selectedIcon: ImageVector,
@@ -587,8 +547,6 @@ data class NavigationItems(
     val badgeCount: Int? = null
 )
 
-
-// Barra de búsqueda
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBarProductos(
@@ -599,11 +557,11 @@ fun SearchBarProductos(
     onProductoClick: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = MaterialTheme.colorScheme // <-- AÑADIDO
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    // Usamos DockedSearchBar para que no se expanda a pantalla completa hacia arriba
     DockedSearchBar(
-        modifier = modifier, // Recibe el align y padding del padre
+        modifier = modifier,
         inputField = {
             SearchBarDefaults.InputField(
                 query = query,
@@ -623,17 +581,15 @@ fun SearchBarProductos(
         },
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        // IMPORTANTE: Colores para la transparencia
         colors = SearchBarDefaults.colors(
-            containerColor = Color.White.copy(alpha = 0.9f)
+            containerColor = colors.onPrimary.copy(alpha = 0.8f)
         )
     ) {
-        // Contenedor de sugerencias que se ajusta al tamaño
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight() // Se ajusta al contenifo
-                .heightIn(max = 300.dp) // Límite máximo
+                .wrapContentHeight()
+                .heightIn(max = 300.dp)
         ) {
             LazyColumn(
                 modifier = Modifier.wrapContentHeight(),
@@ -641,8 +597,8 @@ fun SearchBarProductos(
             ) {
                 items(sugerencias.take(10)) { producto ->
                     ListItem(
-                        headlineContent = { Text(producto.nombre) },
-                        supportingContent = { Text("${producto.precio} €") },
+                        headlineContent = { Text(producto.nombre, color = colors.onSurface) }, // color añadido
+                        supportingContent = { Text("${producto.precio} €", color = colors.onSurfaceVariant) }, // color añadido
                         modifier = Modifier.clickable {
                             onProductoClick(producto)
                             expanded = false
@@ -650,7 +606,7 @@ fun SearchBarProductos(
                     )
                     HorizontalDivider(
                         thickness = 1.dp,
-                        color = Color(0xFF5A498C)
+                        color = colors.outline
                     )
                 }
             }

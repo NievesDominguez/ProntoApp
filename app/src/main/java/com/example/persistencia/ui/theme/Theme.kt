@@ -26,25 +26,27 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Color(0xFFF5F5F5),
     background = Color.White,
     surface = Color.White,
-    onPrimary = Color.White,
+    onPrimary = Color(0xFFDCCCE1),
     onSecondary = Color.White,
     onBackground = Color.Black,
     onSurface = Color.Black,
-    outline = Color.Gray.copy(alpha = 0.5f)
+    outline = Color.Gray.copy(alpha = 0.5f),
+    onError = Color(0xFFFF0000)
 )
 
-// Esquema de colores oscuro - más suave
+// Esquema de colores oscuro
 private val DarkColorScheme = darkColorScheme(
     primary = BrandPurpleLight,
     secondary = BrandPinkLight,
     tertiary = Color(0xFF2C2C2C),
     background = Color(0xFF3A3A3A),
     surface = Color(0xFF464646),
-    onPrimary = Color.Black,
+    onPrimary = Color(0xFF524C54),
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    outline = Color.Gray.copy(alpha = 0.7f)
+    outline = Color.Gray.copy(alpha = 0.7f),
+    onError = Color(0xFFFF2727)
 )
 
 @Composable

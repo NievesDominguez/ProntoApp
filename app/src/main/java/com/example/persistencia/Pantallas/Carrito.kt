@@ -2,8 +2,6 @@
 
 package com.example.persistencia.Pantallas
 
-import android.util.Log
-import android.widget.Button
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,9 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
@@ -24,10 +19,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,10 +41,8 @@ import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Herramientas.calcularPrecioProducto
 import com.example.persistencia.Herramientas.calcularTotalCarrito
 import com.example.persistencia.Modelos.Descuento
-import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoCarrito
 import com.example.persistencia.Navegacion.AppScreens
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,9 +52,49 @@ fun Carrito(
     daoProductos: ProductosDao = ProductosDao(),
     daoOfertas: DescuentosDao = DescuentosDao()
 ) {
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
-    )
+    val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
+
+    // Fondo con bordes degradados
+    val backgroundModifier = Modifier
+        .fillMaxSize()
+        .background(colors.background)
+        .drawBehind {
+            val edgeWidth = with(density) { 25.dp.toPx() }
+            val primaryColor = colors.primary.copy(alpha = 0.1f)
+            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+            val width = size.width
+            val height = size.height
+
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(primaryColor, Color.Transparent),
+                    startY = 0f, endY = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, primaryColor),
+                    startY = height - edgeWidth, endY = height
+                ),
+                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(secondaryColor, Color.Transparent),
+                    startX = 0f, endX = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, secondaryColor),
+                    startX = width - edgeWidth, endX = width
+                ),
+                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+            )
+        }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -97,13 +134,16 @@ fun Carrito(
                 title = {
                     Text(
                         text = "Carrito de la compra",
-                        color = Color.White,
+                        color = colors.onBackground,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 10.dp)
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = colors.onBackground
+                ),
                 actions = {
                     Row(modifier = Modifier.padding(end = 15.dp)) {
                         IconButton(
@@ -111,8 +151,8 @@ fun Carrito(
                             shape = CircleShape,
                             onClick = { navController.navigate(AppScreens.Escaner.route) },
                             colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = Color.White.copy(alpha = 0.25f),
-                                contentColor = Color.White
+                                containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                                contentColor = colors.onBackground
                             )
                         ) {
                             Icon(Icons.Filled.CameraAlt, contentDescription = "Escanear")
@@ -125,16 +165,14 @@ fun Carrito(
     ) { padding ->
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradient)
+            modifier = backgroundModifier
         ) {
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp, 100.dp, 16.dp, 200.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
 
                 items(carrito) { item ->
@@ -150,7 +188,7 @@ fun Carrito(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                Color.White.copy(alpha = 0.15f),
+                                colors.onPrimary.copy(alpha = 0.8f),
                                 RoundedCornerShape(16.dp)
                             )
                             .padding(12.dp),
@@ -171,14 +209,14 @@ fun Carrito(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = item.producto.nombre,
-                                color = Color.White,
+                                color = colors.onBackground,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 2
                             )
                             Text(
                                 text = "%.2f €".format(item.producto.precio),
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = colors.onBackground.copy(alpha = 0.8f),
                                 fontSize = 15.sp
                             )
                         }
@@ -203,12 +241,16 @@ fun Carrito(
                                         }
                                     }
                                 ) {
-                                    Icon(Icons.Default.Remove, contentDescription = "Restar", tint = Color.White)
+                                    Icon(
+                                        Icons.Default.Remove,
+                                        contentDescription = "Restar",
+                                        tint = colors.onBackground
+                                    )
                                 }
 
                                 Text(
                                     text = item.cantidad.toString(),
-                                    color = Color.White,
+                                    color = colors.onBackground,
                                     fontSize = 18.sp,
                                     modifier = Modifier.padding(horizontal = 4.dp)
                                 )
@@ -226,7 +268,11 @@ fun Carrito(
                                         }
                                     }
                                 ) {
-                                    Icon(Icons.Default.Add, contentDescription = "Añadir", tint = Color.White)
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Añadir",
+                                        tint = colors.onBackground
+                                    )
                                 }
                             }
 
@@ -235,7 +281,7 @@ fun Carrito(
 
                             Text(
                                 text = "%.2f €".format(precioFinal),
-                                color = if (hayDescuento) Color(0xFFFF0000) else Color.White,
+                                color = if (hayDescuento) MaterialTheme.colorScheme.onError else colors.onBackground,
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = 6.dp, end = 12.dp),
@@ -249,8 +295,8 @@ fun Carrito(
             IconButton(
                 onClick = { navController.navigate(AppScreens.Cupones.route) },
                 colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF6C3AEC)
+                    containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                    contentColor = colors.onSurface
                 ),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -264,7 +310,7 @@ fun Carrito(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(Color.White.copy(alpha = 0.20f))
+                    .background(colors.onPrimary)
                     .padding(30.dp, 10.dp, 20.dp, 135.dp),
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
@@ -272,7 +318,7 @@ fun Carrito(
 
                 Text(
                     text = "Total: %.2f €".format(total),
-                    color = Color.White,
+                    color = colors.onBackground,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -284,16 +330,17 @@ fun Carrito(
                 Button(
                     onClick = {},
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF6C3AEC),
+                        containerColor = colors.primary,
+                        contentColor = Color.White
                     )
                 ) {
                     Icon(Icons.Default.ShoppingCart, contentDescription = "Finalizar compra")
                     Spacer(modifier = Modifier.width(5.dp))
-                    Text("Finalizar")
+                    Text(
+                        text = "Finalizar"
+                    )
                 }
             }
         }
     }
 }
-

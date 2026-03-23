@@ -5,50 +5,28 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,81 +43,85 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU) // Sólo Android 13 o superior (API 33)
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaPrincipal(navController: NavController) {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
 
-    val scope = rememberCoroutineScope() // Para ejecutar corrutinas
-    val context = LocalContext.current // Para acceder al sistema
-    val postNotificationPermission =
-        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS) // Control de permisos
-    val notificationHandler = NotificationHandler(context) // La clase de notificaciones
-    LaunchedEffect(key1 = true) { // Al cargar la ventana pide permiso POST_NOTIFICATIONS si no se pidió. Solo la primera vez en la primera recomposición. Pide el permiso automáticamente.
+    // Permiso de notificaciones
+    val postNotificationPermission = rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
+    val notificationHandler = NotificationHandler(context)
+    LaunchedEffect(Unit) {
         if (!postNotificationPermission.status.isGranted) {
-            postNotificationPermission.launchPermissionRequest() // Popup de permiso si no está concedido
+            postNotificationPermission.launchPermissionRequest()
         }
     }
 
-    // Clase local para los elementos del carrusel
-    data class CarouselItem(
-        val id: Int,
-        val imgLink: String,
-        val contentDescription: String
-    )
-
-    // Lista fija de imagenes que se muestran en el carrusel
+    // Datos del carrusel
+    data class CarouselItem(val id: Int, val imgLink: String, val contentDescription: String)
     val carouselItems = remember {
         listOf(
-            CarouselItem(
-                0,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg",
-                "Oferta 1"
-            ),
-            CarouselItem(
-                1,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg",
-                "Oferta 2"
-            ),
-            CarouselItem(
-                2,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg",
-                "Oferta 3"
-            ),
-            CarouselItem(
-                3,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg",
-                "Oferta 4"
-            ),
-            CarouselItem(
-                4,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg",
-                "Oferta 5"
-            )
+            CarouselItem(0, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg", "Oferta 1"),
+            CarouselItem(1, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg", "Oferta 2"),
+            CarouselItem(2, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg", "Oferta 3"),
+            CarouselItem(3, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg", "Oferta 4"),
+            CarouselItem(4, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg", "Oferta 5")
         )
     }
 
-    // Degradado magenta a morado
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
-    )
-
-// Fondo degradado de la pantalla
+    // Fondo con bordes degradados
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradient)
-    ) {
+            .background(colors.background)
+            .drawBehind {
+                val edgeWidth = with(density) { 25.dp.toPx() }
+                val primaryColor = colors.primary.copy(alpha = 0.1f)
+                val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+                val width = size.width
+                val height = size.height
 
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(primaryColor, Color.Transparent),
+                        startY = 0f, endY = edgeWidth
+                    ),
+                    topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+                )
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, primaryColor),
+                        startY = height - edgeWidth, endY = height
+                    ),
+                    topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+                )
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(secondaryColor, Color.Transparent),
+                        startX = 0f, endX = edgeWidth
+                    ),
+                    topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+                )
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color.Transparent, secondaryColor),
+                        startX = width - edgeWidth, endX = width
+                    ),
+                    topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+                )
+            }
+    ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-
             // Título
             Text(
                 modifier = Modifier.padding(24.dp, 40.dp, 24.dp, 10.dp),
                 text = "Pronto",
-                color = Color.White,
+                color = colors.onBackground,
                 fontSize = 34.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -148,12 +130,12 @@ fun PantallaPrincipal(navController: NavController) {
             Text(
                 modifier = Modifier.padding(24.dp, 0.dp, 24.dp, 20.dp),
                 text = "Escanea, paga y listo.",
-                color = Color.White.copy(alpha = 0.9f),
+                color = colors.onBackground.copy(alpha = 0.7f),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
             )
 
-            // Imagen del supermercado (placeholder por ahora)
+            // Tarjeta con logo
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -161,9 +143,8 @@ fun PantallaPrincipal(navController: NavController) {
                     .padding(horizontal = 24.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xBAFFFFFF)
-                ),
-
+                    containerColor = colors.surfaceVariant
+                )
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -178,11 +159,11 @@ fun PantallaPrincipal(navController: NavController) {
                 }
             }
 
-            // Ofertas
+            // Ofertas destacadas
             Text(
                 modifier = Modifier.padding(24.dp, 30.dp, 24.dp, 10.dp),
                 text = "Ofertas destacadas",
-                color = Color.White,
+                color = colors.onBackground,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -209,18 +190,17 @@ fun PantallaPrincipal(navController: NavController) {
                 )
             }
 
-            // Botones de escáner y demás
+            // Botones de acción
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 0.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly, // Distribuye los elementos de manera uniforme
-                verticalAlignment = Alignment.Top // Se alinean arriba, así todos los botones están a la misma altura
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Top
             ) {
-
                 // Botón Escanear
                 Column(
-                    modifier = Modifier.height(120.dp), // Altura fija
+                    modifier = Modifier.height(120.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     IconButton(
@@ -228,18 +208,16 @@ fun PantallaPrincipal(navController: NavController) {
                         shape = CircleShape,
                         onClick = { navController.navigate(AppScreens.Escaner.route) },
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.25f),
-                            contentColor = Color.White
+                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                            contentColor = colors.onSurface
                         )
                     ) {
                         Icon(Icons.Filled.CameraAlt, contentDescription = "Escanear")
                     }
-
                     Spacer(Modifier.height(6.dp))
-
                     Text(
                         text = "Escanear",
-                        color = Color.White,
+                        color = colors.onBackground,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -253,11 +231,10 @@ fun PantallaPrincipal(navController: NavController) {
                     IconButton(
                         modifier = Modifier.size(45.dp),
                         shape = CircleShape,
-                        onClick = { navController.navigate(AppScreens.Chatbot.route)
-                        },
+                        onClick = { navController.navigate(AppScreens.Chatbot.route) },
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.25f),
-                            contentColor = Color.White
+                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                            contentColor = colors.onSurface
                         )
                     ) {
                         Icon(
@@ -265,12 +242,10 @@ fun PantallaPrincipal(navController: NavController) {
                             contentDescription = "Lista de la compra"
                         )
                     }
-
                     Spacer(Modifier.height(6.dp))
-
                     Text(
                         text = "Lista de la\ncompra",
-                        color = Color.White,
+                        color = colors.onBackground,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -286,18 +261,16 @@ fun PantallaPrincipal(navController: NavController) {
                         shape = CircleShape,
                         onClick = { },
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.25f),
-                            contentColor = Color.White
+                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                            contentColor = colors.onSurface
                         )
                     ) {
                         Icon(Icons.Filled.Favorite, contentDescription = "Favoritos")
                     }
-
                     Spacer(Modifier.height(6.dp))
-
                     Text(
                         text = "Favoritos",
-                        color = Color.White,
+                        color = colors.onBackground,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -305,35 +278,25 @@ fun PantallaPrincipal(navController: NavController) {
             }
         }
 
+        // Botón flotante del chatbot
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 150.dp)
         ) {
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color.White,
-                shadowElevation = 0.dp,   // Sin sombra
-                tonalElevation = 0.dp,    // Sin elevación
+            FloatingActionButton(
+                onClick = { navController.navigate(AppScreens.Chatbot.route) },
+                shape = CircleShape,
+                containerColor = colors.primary,
+                contentColor = Color.White,
                 modifier = Modifier.size(56.dp)
             ) {
-                IconButton(
-                    onClick = { navController.navigate(AppScreens.Chatbot.route) }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Chat,
-                        contentDescription = "Chatbot",
-                        tint = Color(0xFF6C3AEC),
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Chat,
+                    contentDescription = "Chatbot",
+                    modifier = Modifier.size(30.dp)
+                )
             }
         }
-
-
-
-
     }
-
-
 }

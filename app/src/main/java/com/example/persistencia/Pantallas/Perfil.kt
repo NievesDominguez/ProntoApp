@@ -121,7 +121,7 @@ fun Perfil(navController: NavController) {
                             Icon(
                                 imageVector = if (modoEdicion) Icons.Default.Check else Icons.Default.Edit,
                                 contentDescription = "Editar",
-                                tint = colors.primary
+                                tint = colors.onBackground
                             )
                         }
                     }

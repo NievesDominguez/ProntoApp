@@ -18,10 +18,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -44,8 +48,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("ModifierFactoryExtensionFunction")
 @Composable
 fun shimmerEffect(): Modifier {
-    val transition = rememberInfiniteTransition() // Permite crear animaciones infinitas
-    // Anima la opacidad del color
+    val transition = rememberInfiniteTransition()
     val alpha by transition.animateFloat(
         initialValue = 0.3f,
         targetValue = 0.7f,
@@ -60,24 +63,54 @@ fun shimmerEffect(): Modifier {
 // Esto se muestra en lo que se carga el producto de la base de datos y se le aplica el efecto de brillo
 @Composable
 fun ProductoTemp() {
-    // Degradado magenta a morado
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
-    )
+    val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
+    val backgroundModifier = Modifier
+        .fillMaxSize()
+        .background(colors.background)
+        .drawBehind {
+            val edgeWidth = with(density) { 25.dp.toPx() }
+            val primaryColor = colors.primary.copy(alpha = 0.1f)
+            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+            val width = size.width
+            val height = size.height
 
-    // Da el color de fondo y permite que los elementos de dentro tengan un margen
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(primaryColor, Color.Transparent),
+                    startY = 0f, endY = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, primaryColor),
+                    startY = height - edgeWidth, endY = height
+                ),
+                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(secondaryColor, Color.Transparent),
+                    startX = 0f, endX = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, secondaryColor),
+                    startX = width - edgeWidth, endX = width
+                ),
+                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+            )
+        }
+
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(gradient)
-            .padding(24.dp)
+        modifier = backgroundModifier.padding(24.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
-
-            // Imagen
             Box(
                 modifier = Modifier
                     .height(280.dp)
@@ -85,10 +118,7 @@ fun ProductoTemp() {
                     .clip(RoundedCornerShape(20.dp))
                     .then(shimmerEffect())
             )
-
             Spacer(Modifier.height(20.dp))
-
-            // Nombre
             Box(
                 modifier = Modifier
                     .height(26.dp)
@@ -96,10 +126,7 @@ fun ProductoTemp() {
                     .clip(RoundedCornerShape(8.dp))
                     .then(shimmerEffect())
             )
-
             Spacer(Modifier.height(12.dp))
-
-            // Precio
             Box(
                 modifier = Modifier
                     .height(22.dp)
@@ -112,40 +139,74 @@ fun ProductoTemp() {
 }
 
 // Pantalla del producto
-@RequiresApi(Build.VERSION_CODES.TIRAMISU) // Sólo Android 13 o superior (API 33)
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(
     ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
 fun PantallaProducto(idProducto: String, navController: NavController) {
+    val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
 
-    val daoCarrito = CarritoDao() // Dao del carrito
-    val dao = ProductosDao() // Dao del producto
-    var producto by remember { mutableStateOf<Producto?>(null) } // Producto actual
+    val backgroundModifier = Modifier
+        .fillMaxSize()
+        .background(colors.background)
+        .drawBehind {
+            val edgeWidth = with(density) { 25.dp.toPx() }
+            val primaryColor = colors.primary.copy(alpha = 0.1f)
+            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+            val width = size.width
+            val height = size.height
 
-    // Cargar el producto desde Firestore
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(primaryColor, Color.Transparent),
+                    startY = 0f, endY = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, primaryColor),
+                    startY = height - edgeWidth, endY = height
+                ),
+                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(secondaryColor, Color.Transparent),
+                    startX = 0f, endX = edgeWidth
+                ),
+                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, secondaryColor),
+                    startX = width - edgeWidth, endX = width
+                ),
+                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+            )
+        }
+
+    val daoCarrito = CarritoDao()
+    val dao = ProductosDao()
+    var producto by remember { mutableStateOf<Producto?>(null) }
+
     LaunchedEffect(idProducto) {
         producto = dao.getProducto(idProducto)
     }
 
-    // Mientras carga se muestra ProductoTemp como placeholder
     if (producto == null) {
         ProductoTemp()
         return
     }
 
-    val p = producto!! // Hace que no pueda ser null
+    val p = producto!!
 
-    // Degradado magenta a morado
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFD13CF2), Color(0xFF6C3AEC))
-    )
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    val scope = rememberCoroutineScope() // Para ejecutar corrutinas
-    val context = LocalContext.current // Para acceder al sistema
-
-    // Al cargar la ventana pide permiso para enviar notificaciones si no se pidió antes
     val postNotificationPermission =
         rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
     val notificationHandler = NotificationHandler(context)
@@ -155,22 +216,17 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() } // Estado del snackbar
-
-
-    // Muestra el diálogo de edición
+    val snackbarHostState = remember { SnackbarHostState() }
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // TOPBAR
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("") },
                 colors = topAppBarColors(
                     containerColor = Color.Transparent,
-                    titleContentColor = Color.White
+                    titleContentColor = colors.onBackground
                 ),
-                // Vuelve a la pantalla anterior
                 navigationIcon = {
                     IconButton(onClick = {
                         scope.launch { navController.popBackStack() }
@@ -178,17 +234,16 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         Icon(
                             imageVector = Lucide.ArrowLeft,
                             contentDescription = "Atrás",
-                            tint = Color.White
+                            tint = colors.onBackground
                         )
                     }
                 },
                 actions = {
-                    // Botón de editar
                     IconButton(onClick = { mostrarDialogo = true }) {
                         Icon(
                             imageVector = Lucide.Pencil,
                             contentDescription = "Editar producto",
-                            tint = Color.White
+                            tint = colors.onBackground
                         )
                     }
                 }
@@ -198,31 +253,19 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
         containerColor = Color.Transparent
     ) { paddingValues ->
 
-
-        // Da el color de fondo y permite que los elementos de dentro tengan un margen
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradient)
-                .padding(paddingValues), // Esto evita que el contenido tape la TopBar
+            modifier = backgroundModifier
+                .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
-
-            // DIALOG DE EDICIÓN DEL PRODUCTO
-            // Permite editar el producto
             if (mostrarDialogo) {
-
                 EditarProductoDialog(
-                    producto = p, // Producto actual a editar
-                    onDismiss = { mostrarDialogo = false }, // Cierra el diálogo al pulsar cancelar
-
-                    // Comportamiento al pulsar guardar
+                    producto = p,
+                    onDismiss = { mostrarDialogo = false },
                     onSave = { nombre, precio, descripcion ->
                         scope.launch {
-                            val productoAnterior =
-                                p.copy() // Se guarda el producto actual para poder revertir los cambios
+                            val productoAnterior = p.copy()
 
-                            // Actualizar en Firestore
                             dao.actualizarProducto(
                                 id = p.id,
                                 nombre = nombre,
@@ -230,16 +273,14 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                 descripcion = descripcion
                             )
 
-                            // Actualizar en pantalla
                             producto = producto!!.copy(
                                 nombre = nombre,
                                 precio = precio,
                                 descripcion = descripcion
                             )
 
-                            mostrarDialogo = false // Cierra el diálogo
+                            mostrarDialogo = false
 
-                            // Mostrar Snackbar con opción de deshacer
                             val resultado = snackbarHostState.showSnackbar(
                                 message = "Producto actualizado",
                                 actionLabel = "Deshacer",
@@ -247,7 +288,6 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                 withDismissAction = true
                             )
 
-                            // Al pulsar deshacer se revierten los cambios
                             if (resultado == SnackbarResult.ActionPerformed) {
                                 dao.actualizarProducto(
                                     id = productoAnterior.id,
@@ -255,18 +295,14 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                     precio = productoAnterior.precio,
                                     descripcion = productoAnterior.descripcion
                                 )
-
                                 producto = productoAnterior
-                            }
-                            // Si se ha pulsado fuera del snackbar o cancelar, se cierra
-                            else {
+                            } else {
                                 if (resultado == SnackbarResult.Dismissed) {
                                     mostrarDialogo = false
                                 }
                             }
                         }
                     }
-
                 )
             }
 
@@ -274,15 +310,11 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 0.dp)
-                    .verticalScroll(rememberScrollState()) // Permite hacer scroll
+                    .verticalScroll(rememberScrollState())
             ) {
-
-                // INFORMACIÓN DEL PRODUCTO
-
-                // Tarjeta que contiene la imagen del producto
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.25f)
+                        containerColor = colors.surfaceVariant.copy(alpha = 0.25f)
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -302,56 +334,49 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
 
                 Spacer(Modifier.height(24.dp))
 
-                // Nombre del producto
                 Text(
                     text = p.nombre,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = colors.onBackground,
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
 
                 Spacer(Modifier.height(10.dp))
 
-                // Precio del producto
                 Text(
-                    // El %.2f redondea a 2 decimales
                     text = "%.2f €".format(p.precio),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFE8FF),
+                    color = colors.onBackground.copy(alpha = 0.8f),
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
 
                 Spacer(Modifier.height(20.dp))
 
-                // Descripción del producto
                 Text(
                     text = p.descripcion,
                     fontSize = 16.sp,
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = colors.onBackground.copy(alpha = 0.9f),
                     lineHeight = 22.sp,
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
 
                 Spacer(Modifier.height(40.dp))
 
-                // BOTONES
                 Column(
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-
-                    // Añadir al carrito
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(55.dp)
                             .clip(RoundedCornerShape(14.dp)),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0x944E89FF),
+                            containerColor = colors.primary.copy(alpha = 0.6f),
                             contentColor = Color.White
                         ),
                         onClick = {
@@ -362,7 +387,6 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                     Toast.LENGTH_SHORT
                                 ).show()
 
-                                // Manda una notificación de aviso que lleva al carrito
                                 notificationHandler.showSimpleNotification(
                                     "Producto añadido al carrito",
                                     "Has añadido ${p.nombre} al carrito.",
@@ -382,14 +406,13 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
 
                     Spacer(Modifier.height(14.dp))
 
-                    // Añadir a la lista de la compra
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(55.dp)
                             .clip(RoundedCornerShape(14.dp)),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0x944E89FF),
+                            containerColor = colors.primary.copy(alpha = 0.6f),
                             contentColor = Color.White
                         ),
                         onClick = {
@@ -418,68 +441,72 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
 
                 Spacer(Modifier.height(40.dp))
             }
-
         }
     }
 }
 
-
-// Diálogo de edición de producto
 @Composable
 fun EditarProductoDialog(
     producto: Producto,
     onDismiss: () -> Unit,
     onSave: (String, Double, String) -> Unit
 ) {
-    // Datos del producto
+    val colors = MaterialTheme.colorScheme
     var nombre by remember { mutableStateOf(producto.nombre) }
     var precio by remember { mutableStateOf(producto.precio.toString()) }
     var descripcion by remember { mutableStateOf(producto.descripcion) }
 
-    // Diálogo
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar producto") },
+        title = { Text("Editar producto", color = colors.onSurface) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Nombre
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
-                    label = { Text("Nombre") }
+                    label = { Text("Nombre") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline
+                    )
                 )
-                // Precio
                 OutlinedTextField(
                     value = precio,
                     onValueChange = { precio = it },
                     label = { Text("Precio") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline
+                    )
                 )
-                // Descripción
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
                     label = { Text("Descripción") },
-                    maxLines = 4
+                    maxLines = 4,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline
+                    )
                 )
             }
         },
-
-        // Al pulsar guardar se ejecuta onSave
         confirmButton = {
-            TextButton(onClick = {
-                val precioDouble = precio.toDoubleOrNull() ?: producto.precio
-                onSave(nombre, precioDouble, descripcion)
-            }) {
-                Text("Guardar")
+            TextButton(
+                onClick = {
+                    val precioDouble = precio.toDoubleOrNull() ?: producto.precio
+                    onSave(nombre, precioDouble, descripcion)
+                }
+            ) {
+                Text("Guardar", color = colors.primary)
             }
         },
-        // Al pulsar cancelar se ejecuta onDismiss
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+                Text("Cancelar", color = colors.onSurface)
             }
-        }
+        },
+        containerColor = colors.surface
     )
 }
-

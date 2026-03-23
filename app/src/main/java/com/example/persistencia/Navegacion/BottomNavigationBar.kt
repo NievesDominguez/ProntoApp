@@ -18,7 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun BottomBar(navController: NavController) {
     val colors = MaterialTheme.colorScheme
 
-    // Lista de pantallas en las que aparece la barra inferior
+    // Items que aparecen en el bottombar
     val items = listOf(
         BottomItem.Principal,
         BottomItem.Catalogo,
@@ -26,7 +26,7 @@ fun BottomBar(navController: NavController) {
         BottomItem.Perfil
     )
 
-    // Barra de navegación con colores del tema
+    // Barra de navegación inferior
     NavigationBar(
         containerColor = colors.surface,
         tonalElevation = 8.dp
@@ -35,8 +35,11 @@ fun BottomBar(navController: NavController) {
         val currentRoute = navBackStackEntry?.destination?.route
 
         items.forEach { item ->
+            val selected = currentRoute == item.route
+
             NavigationBarItem(
-                selected = currentRoute == item.route,
+                selected = selected,
+                // Al hacer click lleva a la pantalla correspondiente
                 onClick = {
                     navController.navigate(item.route) {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -47,18 +50,18 @@ fun BottomBar(navController: NavController) {
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = { Text(item.label) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = colors.primary,
-                    selectedTextColor = colors.primary,
+                    selectedIconColor = Color.White,
+                    selectedTextColor = colors.onSurface.copy(alpha = 0.6f),
                     unselectedIconColor = colors.onSurface.copy(alpha = 0.6f),
                     unselectedTextColor = colors.onSurface.copy(alpha = 0.6f),
-                    indicatorColor = colors.primaryContainer
+                    indicatorColor = colors.primary  // Fondo sólido del elemento seleccionado
                 )
             )
         }
     }
 }
 
-// Pantallas de la barra inferior (sin cambios)
+// Cada item del bottombar con su icono y ruta a la que lleva
 sealed class BottomItem(val route: String, val icon: ImageVector, val label: String) {
     object Principal : BottomItem(AppScreens.PantallaPrincipal.route, Icons.Default.Home, "Inicio")
     object Catalogo : BottomItem(AppScreens.Catalogo.route, Icons.Default.List, "Catálogo")
