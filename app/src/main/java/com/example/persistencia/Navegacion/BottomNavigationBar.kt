@@ -23,7 +23,8 @@ fun BottomBar(navController: NavController) {
         BottomItem.Principal,
         BottomItem.Catalogo,
         BottomItem.Carrito,
-        BottomItem.Perfil
+        BottomItem.Perfil,
+        BottomItem.ListaCompra
     )
 
     // Barra de navegación inferior
@@ -67,4 +68,5 @@ sealed class BottomItem(val route: String, val icon: ImageVector, val label: Str
     object Catalogo : BottomItem(AppScreens.Catalogo.route, Icons.Default.List, "Catálogo")
     object Carrito : BottomItem(AppScreens.Carrito.route, Icons.Default.ShoppingCart, "Carrito")
     object Perfil : BottomItem(AppScreens.Perfil.route, Icons.Default.Person, "Perfil")
+    object ListaCompra : BottomItem(AppScreens.ListaCompra.route, Icons.Default.List, "Lista")
 }

@@ -43,6 +43,7 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
             "Carrito" -> AppScreens.Carrito.route
             "Catalogo" -> AppScreens.Catalogo.route
             "PantallaPrincipal" -> AppScreens.PantallaPrincipal.route
+            "ListaCompra" -> AppScreens.ListaCompra.route
             else -> AppScreens.PantallaPrincipal.route
         }
 
@@ -62,7 +63,8 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
         AppScreens.PantallaPrincipal.route,
         AppScreens.Perfil.route,
         AppScreens.Catalogo.route,
-        AppScreens.Carrito.route
+        AppScreens.Carrito.route,
+        AppScreens.ListaCompra.route
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState() // Indica la pantalla actual

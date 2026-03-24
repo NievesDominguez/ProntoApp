@@ -10,6 +10,7 @@ class ListasDao {
     private val db = Firebase.firestore
     private fun getUid() = Firebase.auth.currentUser?.uid
 
+    // Centralizamos la referencia para no cometer errores de escritura
     private fun getItemsRef() = getUid()?.let {
         db.collection("listas").document(it).collection("items")
     }
@@ -24,8 +25,7 @@ class ListasDao {
         } catch (e: Exception) { emptyList() }
     }
 
-    // Ahora recibe el ID (código) del producto directamente
-    suspend fun agregarOIncrementar(idProducto: String, cantidad: Int = 1) {
+    suspend fun addItem(idProducto: String, cantidad: Int = 1) {
         val ref = getItemsRef()?.document(idProducto) ?: return
         try {
             val doc = ref.get().await()
@@ -33,7 +33,6 @@ class ListasDao {
                 val nuevaCant = (doc.getLong("cantidad") ?: 0).toInt() + cantidad
                 ref.update("cantidad", nuevaCant).await()
             } else {
-                // Si no existe, creamos el documento con el ID del producto
                 ref.set(ItemLista(id = idProducto, cantidad = cantidad, comprado = false)).await()
             }
         } catch (e: Exception) { }
@@ -43,7 +42,7 @@ class ListasDao {
         getItemsRef()?.document(id)?.delete()?.await()
     }
 
-    suspend fun cambiarEstadoComprado(id: String, estado: Boolean) {
+    suspend fun cambiarEstado(id: String, estado: Boolean) {
         getItemsRef()?.document(id)?.update("comprado", estado)?.await()
     }
 
@@ -54,4 +53,31 @@ class ListasDao {
             eliminarItem(id)
         }
     }
+
+    // Marca todos los productos como no comprados
+    suspend fun desmarcarTodo() {
+        val ref = getItemsRef() ?: return
+        try {
+            val snapshot = ref.get().await()
+            db.runBatch { batch ->
+                for (doc in snapshot.documents) {
+                    batch.update(doc.reference, "comprado", false)
+                }
+            }.await()
+        } catch (e: Exception) { }
+    }
+
+    // Borra todos los productos de la lista
+    suspend fun eliminarTodo() {
+        val ref = getItemsRef() ?: return
+        try {
+            val snapshot = ref.get().await()
+            db.runBatch { batch ->
+                for (doc in snapshot.documents) {
+                    batch.delete(doc.reference)
+                }
+            }.await()
+        } catch (e: Exception) { }
+    }
+
 }

@@ -84,7 +84,7 @@ class CarritoDao {
     }
 
     // Devuelve todos los cupones activos en el carrito
-    suspend fun getCuponesActivos(): List<String> {
+    suspend fun getCupones(): List<String> {
         val user = Firebase.auth.currentUser ?: return emptyList()
         val uid = user.uid
 

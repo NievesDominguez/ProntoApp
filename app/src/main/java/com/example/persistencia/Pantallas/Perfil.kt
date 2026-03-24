@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -32,6 +33,12 @@ import com.example.persistencia.Herramientas.ThemePreference
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.delay
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import com.example.persistencia.Navegacion.AppScreens
 
 //--------------------------------------------------------------------------
 // PANTALLA DE PERFIL
@@ -43,6 +50,7 @@ fun Perfil(navController: NavController) {
 
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
     val usuario = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
     val themeManager = LocalThemeManager.current
@@ -50,6 +58,7 @@ fun Perfil(navController: NavController) {
     // Estados principales
     var modoEdicion by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
+    var cargando by remember { mutableStateOf(true) }
 
     // Datos del usuario
     var nombre by remember { mutableStateOf("") }
@@ -63,6 +72,7 @@ fun Perfil(navController: NavController) {
 
     // Cargar datos del usuario desde Firestore
     LaunchedEffect(usuario?.uid) {
+        cargando = true
         usuario?.uid?.let { uid ->
             firestore.collection("usuarios")
                 .document(uid)
@@ -74,6 +84,8 @@ fun Perfil(navController: NavController) {
                     fotoFirestore = doc.getString("foto")
                 }
         }
+        delay(300L) // Retardo para la carga
+        cargando = false
     }
 
     // Selector de imágenes
@@ -82,6 +94,35 @@ fun Perfil(navController: NavController) {
     ) { uri: Uri? ->
         imageUri = uri
     }
+
+    // Modificador para el degradado de los bordes
+    val backgroundModifier = Modifier
+        .fillMaxSize()
+        .background(colors.background)
+        .drawBehind {
+            val edgeWidth = with(density) { 25.dp.toPx() }
+            val primaryColor = colors.primary.copy(alpha = 0.1f)
+            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
+            val width = size.width
+            val height = size.height
+
+            drawRect(
+                brush = Brush.verticalGradient(listOf(primaryColor, Color.Transparent), 0f, edgeWidth),
+                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.verticalGradient(listOf(Color.Transparent, primaryColor), height - edgeWidth, height),
+                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(listOf(secondaryColor, Color.Transparent), 0f, edgeWidth),
+                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(listOf(Color.Transparent, secondaryColor), width - edgeWidth, width),
+                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+            )
+        }
 
     Scaffold(
         topBar = {
@@ -96,22 +137,16 @@ fun Perfil(navController: NavController) {
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-
-                // Botones editar / guardar / cancelar
                 actions = {
                     if (modoEdicion) {
                         IconButton(onClick = {
                             modoEdicion = false
                             nuevaPassword = ""
                         }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Cancelar",
-                                tint = colors.onBackground
-                            )
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar", tint = colors.onBackground)
                         }
                     }
-                    if (selectedTab == 0) {
+                    if (selectedTab == 0 && !cargando) {
                         IconButton(
                             onClick = {
                                 if (modoEdicion) showConfirmDialog = true
@@ -128,186 +163,150 @@ fun Perfil(navController: NavController) {
                 }
             )
         },
-        containerColor = colors.background
+        containerColor = Color.Transparent
     ) { padding ->
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colors.background)
-                .padding(padding)
-        ) {
+        Box(modifier = backgroundModifier.padding(padding)) {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Foto y nombre del usuario
-                val imagenMostrar = when {
-                    imageUri != null -> imageUri
-                    !fotoFirestore.isNullOrBlank() -> fotoFirestore
-                    usuario?.photoUrl != null -> usuario.photoUrl
-                    else -> "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1906669723.jpg"
+            if (cargando) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = colors.primary)
                 }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .size(130.dp)
-                            .clip(CircleShape)
-                            .background(colors.surfaceVariant.copy(alpha = 0.5f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AsyncImage(
-                            model = imagenMostrar,
-                            contentDescription = "Foto perfil",
+                    val imagenMostrar = when {
+                        imageUri != null -> imageUri
+                        !fotoFirestore.isNullOrBlank() -> fotoFirestore
+                        usuario?.photoUrl != null -> usuario.photoUrl
+                        else -> "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1906669723.jpg"
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
                             modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                                .size(130.dp)
+                                .clip(CircleShape)
+                                .background(colors.surfaceVariant.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = imagenMostrar,
+                                contentDescription = "Foto perfil",
+                                modifier = Modifier.size(120.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "$nombre $apellidos",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onBackground,
+                            textAlign = TextAlign.Center
                         )
-                    }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "$nombre $apellidos",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.onBackground,
-                        textAlign = TextAlign.Center
-                    )
-
-                    // Botón para cambiar la foto
-                    if (modoEdicion) {
-                        TextButton(onClick = { launcher.launch("image/*") }) {
-                            Text("Cambiar foto", color = colors.primary)
+                        if (modoEdicion) {
+                            TextButton(onClick = { launcher.launch("image/*") }) {
+                                Text("Cambiar foto", color = colors.primary)
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                // ------------------------------------------------------------------
-                // TABS SUPERIORES
-                // ------------------------------------------------------------------
+                    val tabs = listOf("Datos", "Compras", "Ajustes")
 
-                val tabs = listOf("Datos", "Compras", "Ajustes")
-
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color.Transparent,
-                    contentColor = colors.primary
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(title, color = colors.onBackground) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // ------------------------------------------------------------------
-                // CONTENIDO SEGÚN TAB
-                // ------------------------------------------------------------------
-
-                when (selectedTab) {
-
-                    // TAB DATOS
-                    0 -> {
-                        if (!modoEdicion) {
-                            PerfilView(
-                                nombre = nombre,
-                                apellidos = apellidos,
-                                telefono = telefono,
-                                email = usuario?.email
-                            )
-                        } else {
-                            PerfilEdit(
-                                nombre = nombre,
-                                apellidos = apellidos,
-                                telefono = telefono,
-                                nuevaPassword = nuevaPassword,
-                                onNombre = { nombre = it },
-                                onApellidos = { apellidos = it },
-                                onTelefono = { telefono = it },
-                                onPassword = { nuevaPassword = it }
+                    TabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = Color.Transparent,
+                        contentColor = colors.primary
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text(title, color = colors.onBackground) }
                             )
                         }
                     }
 
-                    // TAB COMPRAS
-                    1 -> TarjetaPlaceholder("Datos de compras.", colors)
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // TAB AJUSTES
-                    2 -> AjustesScreenCompact(themeManager, colors)
-                }
+                    when (selectedTab) {
+                        0 -> {
+                            if (!modoEdicion) {
+                                PerfilView(nombre, apellidos, telefono, usuario?.email)
+                            } else {
+                                PerfilEdit(nombre, apellidos, telefono, nuevaPassword,
+                                    { nombre = it }, { apellidos = it }, { telefono = it }, { nuevaPassword = it })
+                            }
+                        }
+                        1 -> TarjetaPlaceholder("Datos de compras.", colors)
+                        2 -> AjustesScreenCompact(themeManager, colors)
+                    }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                // Botón para cerrar sesión
-                Button(
-                    onClick = {
-                        FirebaseAuth.getInstance().signOut()
-                        navController.navigate("login") { popUpTo(0) }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colors.primary,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Cerrar sesión")
+                    // Botón para cerrar sesión
+                    Button(
+                        onClick = {
+                            // Cerramos la sesión en Firebase
+                            FirebaseAuth.getInstance().signOut()
+
+                            // Navegamos al login y limpiamos el historial
+                            navController.navigate(AppScreens.Inicio.route) {
+                                // Buscamos el inicio del grafo (0) para borrar todas las pantallas
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+                                // Evitamos que se creen múltiples instancias de la pantalla de login
+                                launchSingleTop = true
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.primary,
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Cerrar sesión")
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
 
-            // Diálogo de confirmación
             if (showConfirmDialog) {
                 ConfirmacionDialog(
                     nuevaPassword = nuevaPassword,
                     onDismiss = { showConfirmDialog = false },
-                    onConfirm = { passActual, repetirNueva ->
-
-                        val credential = EmailAuthProvider
-                            .getCredential(usuario?.email!!, passActual)
-
-                        usuario.reauthenticate(credential)
-                            .addOnSuccessListener {
-
-                                val datos = hashMapOf(
-                                    "nombre" to nombre,
-                                    "apellidos" to apellidos,
-                                    "telefono" to telefono
-                                )
-
-                                firestore.collection("usuarios")
-                                    .document(usuario.uid)
-                                    .update(datos as Map<String, Any>)
-
-                                if (nuevaPassword.isNotEmpty()) {
-                                    usuario.updatePassword(nuevaPassword)
-                                }
-
-                                nuevaPassword = ""
-                                modoEdicion = false
-                                showConfirmDialog = false
-
-                                Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                            .addOnFailureListener {
-                                Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
+                    onConfirm = { passActual, _ ->
+                        val credential = EmailAuthProvider.getCredential(usuario?.email!!, passActual)
+                        usuario.reauthenticate(credential).addOnSuccessListener {
+                            val datos = hashMapOf("nombre" to nombre, "apellidos" to apellidos, "telefono" to telefono)
+                            firestore.collection("usuarios").document(usuario.uid).update(datos as Map<String, Any>)
+                            if (nuevaPassword.isNotEmpty()) usuario.updatePassword(nuevaPassword)
+                            nuevaPassword = ""
+                            modoEdicion = false
+                            showConfirmDialog = false
+                            Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT).show()
+                        }.addOnFailureListener {
+                            Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 )
             }

@@ -4,15 +4,14 @@ import com.example.persistencia.Modelos.Descuento
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class DescuentosDao {
 
     private val db = FirebaseFirestore.getInstance()
-    suspend fun getDescuentos(): List<Descuento> {
+
+    // Devuelve las ofertas activas
+    suspend fun getOfertas(): List<Descuento> {
         return try {
             val snap = db.collection("descuentos")
                 .whereEqualTo("tipo", "oferta")
@@ -29,6 +28,7 @@ class DescuentosDao {
         }
     }
 
+    // Devuelve los cupones activos
     suspend fun getCupones(): List<Descuento> {
         return try {
             val snapshot = Firebase.firestore
