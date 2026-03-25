@@ -173,10 +173,9 @@ fun Catalogo(navController: NavController) {
                             items(productosFiltrados, key = { it.id }) { producto ->
                                 TarjetaProducto(producto, navController)
                             }
+                            item { Spacer(modifier = Modifier.height(250.dp)) }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(70.dp))
                 }
 
                 // Capa de búsqueda y sugerencias
@@ -279,7 +278,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
             .fillMaxSize()
             .padding(12.dp)) {
             Column(horizontalAlignment = Alignment.Start) {
-                // Contenedor de imagen con altura fija para alinear el texto inferior
+                // Contenedor de imagen: Aumentado de 70dp a 90dp
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -289,7 +288,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
                     AsyncImage(
                         model = producto.imagenUrl,
                         contentDescription = producto.nombre,
-                        modifier = Modifier.size(70.dp),
+                        modifier = Modifier.size(90.dp), // Imagen un poco más grande
                         contentScale = ContentScale.Fit
                     )
 
@@ -307,17 +306,23 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = producto.nombre,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                    maxLines = 2,
-                    minLines = 2,
-                    lineHeight = 16.sp,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Start
-                )
+                // Contenedor para el nombre: Centra el texto verticalmente en el espacio asignado
+                Box(
+                    modifier = Modifier.height(40.dp).fillMaxWidth(),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = producto.nombre,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                        maxLines = 2,
+                        minLines = 1, // Cambiado a 1 para facilitar el centrado dinámico
+                        lineHeight = 16.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Start
+                    )
+                }
 
                 Text(
                     text = "%.2f €".format(producto.precio),
@@ -327,6 +332,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
                 )
             }
 
+            // Menú de opciones (Tres puntos)
             Box(modifier = Modifier.align(Alignment.TopEnd)) {
                 IconButton(onClick = { expanded = true }, modifier = Modifier.size(24.dp)) {
                     Icon(
@@ -341,11 +347,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
                     DropdownMenuItem(
                         text = { Text("Carrito", fontSize = 14.sp) },
                         leadingIcon = {
-                            Icon(
-                                Icons.Outlined.ShoppingCart,
-                                null,
-                                Modifier.size(18.dp)
-                            )
+                            Icon(Icons.Outlined.ShoppingCart, null, Modifier.size(18.dp))
                         },
                         onClick = {
                             scope.launch {

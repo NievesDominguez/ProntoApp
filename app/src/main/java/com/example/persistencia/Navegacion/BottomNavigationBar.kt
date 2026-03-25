@@ -23,8 +23,8 @@ fun BottomBar(navController: NavController) {
         BottomItem.Principal,
         BottomItem.Catalogo,
         BottomItem.Carrito,
-        BottomItem.Perfil,
-        BottomItem.ListaCompra
+        BottomItem.ListaCompra,
+        BottomItem.Perfil
     )
 
     // Barra de navegación inferior

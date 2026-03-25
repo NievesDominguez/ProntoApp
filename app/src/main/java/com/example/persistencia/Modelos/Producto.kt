@@ -16,5 +16,7 @@ data class Producto(
     val stock: Int = 0,             // Unidades en stock
     val imagenUrl: String = "",     // URL de la imagen del producto
     val oferta: String? = null,     // ID de oferta opcional
-    val fecha: Timestamp? = null    // Fecha de subida (timestamp)
+    val fecha: Timestamp? = null,   // Fecha de subida (timestamp)
+    val cantidad: Double? = 1.toDouble(),      // Cantidad de producto
+    val unidad: String? = "ud"      // Unidad de medida para la cantidad de producto
 )

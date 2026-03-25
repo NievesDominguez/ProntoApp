@@ -1,9 +1,11 @@
 package com.example.persistencia.Firestore
 
+import com.example.persistencia.Modelos.Descuento
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
+
 
 class UsuariosDao {
     // Obtiene la preferencia de orden guardada en el perfil del usuario
@@ -27,4 +29,24 @@ class UsuariosDao {
             // Si el campo no existe, podrías usar set con merge
         }
     }
+
+    suspend fun getCupones(): List<String> {
+        val user = Firebase.auth.currentUser ?: return emptyList()
+        val uid = user.uid
+
+        return try {
+            val doc = Firebase.firestore
+                .collection("usuarios")
+                .document(uid)
+                .get()
+                .await()
+
+            // El campo "cupones" es un array de Strings
+            doc.get("cupones") as? List<String> ?: emptyList()
+
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 }
