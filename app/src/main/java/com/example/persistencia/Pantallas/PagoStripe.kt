@@ -1,84 +1,140 @@
 package com.example.persistencia.Pantallas
 
-import android.widget.Toast
+import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.stripe.android.paymentsheet.*
-import kotlinx.coroutines.*
+import com.example.persistencia.PaymentSheetResultHandler
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PagoStripeScreen(navController: NavController, total: Double) {
-    val context = LocalContext.current
+fun PagoStripe(
+    navController: NavController,
+    total: Float,
+    paymentSheet: PaymentSheet
+) {
     val scope = rememberCoroutineScope()
+
+    var clientSecret by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var paymentCompleted by remember { mutableStateOf(false) }
 
-    val paymentSheet = rememberPaymentSheet { result ->
-        isLoading = false
-        if (result is PaymentSheetResult.Completed) {
-            navController.navigate("exito_pedido")
-        }
-    }
-
-    // FUNCIÓN PRO: Llama a tu Python para obtener el Secret real
-    fun iniciarPagoReal() {
-        isLoading = true
-        scope.launch(Dispatchers.IO) {
-            try {
-                // REEMPLAZA CON LA IP DE TU PC (ej: 192.168.1.50)
-                val url = URL("http://192.168.74.52:4242/payment-sheet")
-                val conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-
-                val amountInCents = (total * 100).toInt()
-                val jsonInput = JSONObject().put("amount", amountInCents).toString()
-
-                conn.outputStream.use { it.write(jsonInput.toByteArray()) }
-
-                val response = conn.inputStream.bufferedReader().readText()
-                val jsonResponse = JSONObject(response)
-                val clientSecret = jsonResponse.getString("paymentIntent")
-
-                withContext(Dispatchers.Main) {
-                    paymentSheet.presentWithPaymentIntent(
-                        clientSecret,
-                        PaymentSheet.Configuration("Pronto Supermercados", googlePay = null)
-                    )
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    isLoading = false
-                    Toast.makeText(context, "Error: No se pudo conectar al servidor", Toast.LENGTH_LONG).show()
-                }
+    // Registrar callback del resultado
+    LaunchedEffect(Unit) {
+        PaymentSheetResultHandler.onResult = { result ->
+            when (result) {
+                is PaymentSheetResult.Completed -> paymentCompleted = true
+                is PaymentSheetResult.Failed -> errorMessage = result.error.localizedMessage
+                is PaymentSheetResult.Canceled -> {}
             }
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Total a pagar: ${"%.2f".format(total)} €", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(30.dp))
+    fun crearPaymentIntent() {
+        scope.launch {
+            try {
+                isLoading = true
+                errorMessage = null
 
-        Button(
-            onClick = { iniciarPagoReal() },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            enabled = !isLoading
+                val amountInCents = (total * 100).toInt()
+
+                val url = URL("https://stripe-backend.prontoapp.workers.dev")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+
+                val body = JSONObject()
+                body.put("amount", amountInCents)
+
+                connection.outputStream.use { os ->
+                    os.write(body.toString().toByteArray())
+                }
+
+                val response = connection.inputStream.bufferedReader().readText()
+                Log.d("Stripe", "Respuesta del servidor: $response")
+                Log.d("Stripe", "ClientSecret recibido: $clientSecret")
+                Log.d("Stripe", "Estado: clientSecret=$clientSecret isLoading=$isLoading paymentCompleted=$paymentCompleted")
+
+
+                val json = JSONObject(response)
+
+                clientSecret = json.getString("clientSecret")
+
+            } catch (e: Exception) {
+                errorMessage = e.toString()
+                Log.e("Stripe", "Error creando PaymentIntent", e)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun lanzarPaymentSheet() {
+        val secret = clientSecret ?: return
+
+        val config = PaymentSheet.Configuration(
+            merchantDisplayName = "Pronto"
+        )
+
+        paymentSheet.presentWithPaymentIntent(secret, config)
+    }
+
+    LaunchedEffect(Unit) {
+        crearPaymentIntent()
+    }
+
+    // UI igual que antes…
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Pago con tarjeta", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.Center
         ) {
-            if (isLoading) CircularProgressIndicator(Modifier.size(24.dp))
-            else Text("Pagar Ahora (Modo Pro)")
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Total: %.2f €".format(total), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+
+                if (isLoading) CircularProgressIndicator()
+
+                if (errorMessage != null) {
+                    Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { crearPaymentIntent() }) { Text("Reintentar") }
+                }
+
+                if (clientSecret != null && !isLoading && !paymentCompleted) {
+                    Button(onClick = { lanzarPaymentSheet() }) { Text("Pagar ahora") }
+                }
+
+                if (paymentCompleted) {
+                    Text("Pago completado correctamente", color = MaterialTheme.colorScheme.primary)
+                    Button(onClick = { navController.popBackStack() }) { Text("Volver") }
+                }
+            }
         }
     }
 }

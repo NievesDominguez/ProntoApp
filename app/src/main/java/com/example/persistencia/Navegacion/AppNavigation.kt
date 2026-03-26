@@ -8,9 +8,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,16 +24,17 @@ import com.example.persistencia.Pantallas.Chatbot
 import com.example.persistencia.Pantallas.Cupones
 import com.example.persistencia.Pantallas.Inicio
 import com.example.persistencia.Pantallas.ListaCompra
-import com.example.persistencia.Pantallas.PagoStripeScreen
+import com.example.persistencia.Pantallas.PagoStripe
 import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.PantallaProducto
 import com.example.persistencia.Pantallas.Perfil
 import com.example.persistencia.Pantallas.Registro
+import com.stripe.android.paymentsheet.PaymentSheet
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun AppNavigation(destino: String?) { // Recibe la información del destino
+fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la información del destino
     val startDestination =
         when (destino) { // Verifica con un when la información leída para determinar la ventana que se abrirá
             "Inicio" -> AppScreens.Inicio.route
@@ -191,9 +190,12 @@ fun AppNavigation(destino: String?) { // Recibe la información del destino
             }
 
             composable("pago_stripe/{total}") { backStackEntry ->
-                val total = backStackEntry.arguments?.getString("total")?.toDouble() ?: 0.0
-                PagoStripeScreen(navController, total)
+                val total = backStackEntry.arguments?.getString("total")?.toFloatOrNull() ?: 0f
+                PagoStripe(navController, total, paymentSheet)
             }
+
+
+
 
             composable(route = AppScreens.ListaCompra.route) { backStackEntry ->
                 // Permite volver a la pantalla anterior

@@ -181,13 +181,15 @@ fun Carrito(
 
                         val descuentoAplicable = oferta ?: cupon
 
-                        val itemsGrupo = carrito.filter { it.producto.oferta == item.producto.oferta }
+                        val itemsGrupo =
+                            carrito.filter { it.producto.oferta == item.producto.oferta }
 
-                        val precioFinal = if (descuentoAplicable != null && itemsGrupo.isNotEmpty()) {
-                            calcularPrecioProducto(item, itemsGrupo, descuentoAplicable)
-                        } else {
-                            item.producto.precio * item.cantidad
-                        }
+                        val precioFinal =
+                            if (descuentoAplicable != null && itemsGrupo.isNotEmpty()) {
+                                calcularPrecioProducto(item, itemsGrupo, descuentoAplicable)
+                            } else {
+                                item.producto.precio * item.cantidad
+                            }
 
 
 
@@ -323,7 +325,9 @@ fun Carrito(
                         )
                         Spacer(modifier = Modifier.width(50.dp))
                         Button(
-                            onClick = { navController.navigate("pago_stripe/${total.toFloat()}") },
+                            onClick = {
+                                navController.navigate("pago_stripe/${total.toFloat()}")
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary,
                                 contentColor = Color.White
