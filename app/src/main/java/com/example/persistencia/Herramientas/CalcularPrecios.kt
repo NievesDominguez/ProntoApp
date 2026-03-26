@@ -215,42 +215,42 @@ fun calcularTotalCarrito(
 
     var total = 0.0
 
-    // 1) OFERTAS (igual que ya tenías)
+    // Unificar ofertas + cupones que afectan a productos
+    val descuentosProducto = (ofertas + cupones).filter {
+        val tipo = (it.formula?.get("tipo") as? String) ?: it.tipo
+        tipo == "segunda_unidad" || tipo == "n_por_m"
+    }
 
+    // Agrupar productos por código (oferta o cupón)
     val grupos = carrito
         .filter { it.producto.oferta != null }
         .groupBy { it.producto.oferta }
 
-    for ((codigoOferta, itemsGrupo) in grupos) {
-        val oferta = ofertas.find { o -> o.codigo == codigoOferta } ?: continue
-        total += calcularTotalGrupo(itemsGrupo, oferta)
+    for ((codigo, itemsGrupo) in grupos) {
+
+        // Buscar si hay oferta o cupón con ese código
+        val descuento = descuentosProducto.find { it.codigo == codigo }
+
+        if (descuento != null) {
+            total += calcularTotalGrupo(itemsGrupo, descuento)
+        } else {
+            // Sin descuento válido
+            total += itemsGrupo.sumOf { it.producto.precio * it.cantidad }
+        }
     }
 
-    val sinOferta = carrito.filter { it.producto.oferta == null }
-    total += sinOferta.sumOf { it.producto.precio * it.cantidad }
+    // Productos sin oferta/cupón
+    val sinDescuento = carrito.filter { it.producto.oferta == null }
+    total += sinDescuento.sumOf { it.producto.precio * it.cantidad }
 
-    // 2) CUPONES (MISMA LÓGICA, PERO DESPUÉS)
+    // ---- CUPONES GLOBALES (solo estos van después) ----
 
     for (cupon in cupones) {
 
-        // OJO: aquí el tipo del cupón puede venir en cupon.tipo (como tu ejemplo del fijo)
-        // o en cupon.formula["tipo"] (como las ofertas). Damos prioridad al de fórmula si existe.
         val tipo = (cupon.formula?.get("tipo") as? String) ?: cupon.tipo
 
         when (tipo) {
 
-            // Cupones que funcionan EXACTAMENTE igual que las ofertas (segunda_unidad, n_por_m)
-            // pero su "grupo" es TODO el carrito
-            "segunda_unidad",
-            "n_por_m" -> {
-                val totalConCupon = calcularTotalGrupo(carrito, cupon)
-                total = totalConCupon
-            }
-
-            // Cupón fijo con mínimo (ejemplo que me has pasado)
-            // formula:
-            //   minimo = 20
-            //   valor  = 5
             "fijo" -> {
                 val minimo = ((cupon.formula?.get("minimo") ?: 0) as Number).toDouble()
                 val valor = ((cupon.formula?.get("valor") ?: 0) as Number).toDouble()
@@ -260,7 +260,6 @@ fun calcularTotalCarrito(
                 }
             }
 
-            // Cupón porcentaje con mínimo (si lo usas igual que el fijo)
             "porcentaje" -> {
                 val minimo = ((cupon.formula?.get("minimo") ?: 0) as Number).toDouble()
                 val porcentaje = ((cupon.formula?.get("valor") ?: 0) as Number).toDouble()

@@ -67,7 +67,7 @@ class CarritoDao {
                 if (nuevaCantidad == 0) {
                     transaction.delete(carritoRef)
                 } else {
-                    // Guardar solo la cantidad, como pediste
+                    // Guardar solo la cantidad
                     val datos = mapOf(
                         "cantidad" to nuevaCantidad
                     )

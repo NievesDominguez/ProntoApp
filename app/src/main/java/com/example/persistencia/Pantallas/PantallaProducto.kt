@@ -263,7 +263,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     ProductBadge(text = p.subcategoria, color = colors.secondary)
                 }
 
-                // Sección de ofertas y cupones dinámicos
+                // Sección de ofertas y cupones
                 if (ofertaAplicable != null || cuponAplicable != null) {
 
                     ofertaAplicable?.let {
@@ -303,6 +303,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         verticalAlignment = Alignment.Top
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
+                            // Nombre del producto
                             Text(
                                 text = p.nombre,
                                 fontSize = 28.sp,
@@ -311,6 +312,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                 lineHeight = 34.sp
                             )
                             //Spacer(Modifier.height(4.dp))
+                            // Cantidad por unidad
                             Text(
                                 text = "${p.cantidad} ${p.unidad}",
                                 fontSize = 12.sp,
@@ -318,6 +320,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(Modifier.height(4.dp))
+                            // Precio
                             Text(
                                 text = "%.2f€".format(p.precio),
                                 fontSize = 28.sp,
@@ -329,6 +332,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
 
                     Spacer(Modifier.height(1.dp))
 
+                    // Descripción del producto
                     Text(
                         text = p.descripcion,
                         fontSize = 15.sp,
@@ -352,6 +356,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         .padding(24.dp, 16.dp, 24.dp, 25.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Añadir a la lista de la compra
                     Button(
                         onClick = {
                             Toast.makeText(
@@ -380,6 +385,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         )
                     }
 
+                    // Añadir al carrito
                     Button(
                         onClick = {
                             scope.launch {
@@ -429,7 +435,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     }
 }
 
-// Componentes auxiliares de interfaz
+// Controla el aspecto de las categorías de producto
 @Composable
 fun ProductBadge(text: String, color: Color) {
     Surface(
@@ -447,6 +453,7 @@ fun ProductBadge(text: String, color: Color) {
     }
 }
 
+// Controla el aspecto del apartado de ofertas
 @Composable
 fun PromoCard(
     desc: String,
@@ -499,6 +506,7 @@ fun PromoCard(
 }
 
 
+// Diálogo para editar producto
 @Composable
 fun EditarProductoDialog(
     producto: Producto,
