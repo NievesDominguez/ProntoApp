@@ -15,6 +15,8 @@ import com.example.persistencia.Herramientas.ThemeManager
 import com.example.persistencia.Herramientas.ThemePreference
 import com.example.persistencia.ui.theme.PersistenciaTheme
 import com.example.persistencia.Navegacion.AppNavigation
+import com.redsys.tpvvinapplibrary.ErrorResponse
+import com.redsys.tpvvinapplibrary.ResultResponse
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 
@@ -64,4 +66,9 @@ object PaymentSheetResultHandler {
     fun onPaymentResult(result: PaymentSheetResult) {
         onResult?.invoke(result)
     }
+}
+
+object RedsysPaymentResultHandler {
+    var onSuccess: ((ResultResponse) -> Unit)? = null
+    var onError: ((ErrorResponse) -> Unit)? = null
 }

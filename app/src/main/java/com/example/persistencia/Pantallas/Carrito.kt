@@ -326,7 +326,8 @@ fun Carrito(
                         Spacer(modifier = Modifier.width(50.dp))
                         Button(
                             onClick = {
-                                navController.navigate("pago_stripe/${total.toFloat()}")
+                                //navController.navigate("pago_stripe/${total.toFloat()}")
+                                navController.navigate(AppScreens.PagoRedsys.passTotal(total.toFloat()))
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary,

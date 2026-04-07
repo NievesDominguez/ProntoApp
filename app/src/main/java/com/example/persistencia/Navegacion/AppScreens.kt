@@ -2,6 +2,7 @@ package com.example.persistencia.Navegacion
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
@@ -28,6 +29,10 @@ sealed class AppScreens (val route: String, val icon: ImageVector) {
     object Cupones: AppScreens("Cupones", Lucide.TicketPercent)
     object Chatbot: AppScreens("Chatbot", Lucide.Bot)
     object ListaCompra: AppScreens("ListaCompra", Icons.Default.FormatListBulleted)
+
+    object PagoRedsys : AppScreens("pago_redsys/{total}", Icons.Default.Euro) {
+        fun passTotal(total: Float) = "pago_redsys/$total"
+    }
 
 
     companion object {

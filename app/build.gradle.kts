@@ -73,6 +73,21 @@ dependencies {
     // Reproducir vídeos de youtube
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
+    // Dependencia local para el SDK de Redsys
+    implementation(files("libs/redsys-sdk-inApp-2.4.5.aar"))
+
+    // Dependencias necesarias para el SDK de Redsys
+    implementation("com.google.code.gson:gson:2.8.2")
+    implementation("androidx.webkit:webkit:1.14.0")
+    implementation("com.android.volley:volley:1.2.0")
+    implementation("com.google.code.gson:gson:2.8.6")
+    implementation("androidx.appcompat:appcompat:1.3.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
+    implementation("androidx.legacy:legacy-support-v4:1.0.0")
+    implementation("com.google.android.material:material:1.3.0")
+    implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.core:core:1.5.0")
+
     // Pagos con Stripe
     implementation("com.stripe:stripe-android:20.48.4")
 
