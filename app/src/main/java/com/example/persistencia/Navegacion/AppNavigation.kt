@@ -141,7 +141,7 @@ fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la i
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-                Carrito(navController)
+                Carrito(navController, paymentSheet)
             }
 
             composable(route = AppScreens.Escaner.route) {

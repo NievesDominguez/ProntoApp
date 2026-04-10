@@ -351,7 +351,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
                         },
                         onClick = {
                             scope.launch {
-                                daoCarrito.addCarrito(producto, 1)
+                                daoCarrito.addCarrito(producto, 1.toDouble())
                                 Toast.makeText(context, "Añadido", Toast.LENGTH_SHORT).show()
                                 expanded = false
                             }

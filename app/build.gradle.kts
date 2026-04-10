@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.0.21-1.0.28"
+    id("com.google.devtools.ksp") version "2.3.2"
     alias(libs.plugins.google.gms.google.services)
 }
 
@@ -89,7 +89,7 @@ dependencies {
     implementation("androidx.core:core:1.5.0")
 
     // Pagos con Stripe
-    implementation("com.stripe:stripe-android:20.48.4")
+    implementation("com.stripe:stripe-android:23.3.0")
 
     // Dependencias del lector de código de barras y la cámara
     implementation ("androidx.camera:camera-core:1.3.0")
@@ -136,6 +136,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.ui.text)
+    implementation(libs.firebase.crashlytics.buildtools)
     ksp("androidx.room:room-compiler:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation(libs.androidx.core.ktx)

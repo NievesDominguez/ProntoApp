@@ -5,9 +5,11 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -34,10 +37,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.composables.icons.lucide.Atom
+import com.composables.icons.lucide.Bean
+import com.composables.icons.lucide.Egg
+import com.composables.icons.lucide.Fish
+import com.composables.icons.lucide.Info
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Milk
+import com.composables.icons.lucide.Nut
 import com.composables.icons.lucide.Pencil
+import com.composables.icons.lucide.Shell
+import com.composables.icons.lucide.Sprout
 import com.composables.icons.lucide.Tag
 import com.composables.icons.lucide.Ticket
+import com.composables.icons.lucide.Wheat
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Firestore.ProductosDao
@@ -48,7 +61,6 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
 
 // Componentes de carga y efectos visuales
-
 @SuppressLint("ModifierFactoryExtensionFunction")
 @Composable
 fun shimmerEffect(): Modifier {
@@ -126,8 +138,8 @@ fun ProductoTemp() {
     }
 }
 
-// Pantalla principal del producto
 
+// Pantalla principal del producto
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -150,6 +162,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     var cuponesDisponibles by remember { mutableStateOf<List<Descuento>>(emptyList()) }
     var cargando by remember { mutableStateOf(true) }
     var mostrarDialogo by remember { mutableStateOf(false) }
+
 
     // Carga de datos sincronizada al iniciar la pantalla
     LaunchedEffect(idProducto) {
@@ -236,9 +249,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         modifier = Modifier.fillMaxSize(),
                         shape = RoundedCornerShape(32.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = colors.surfaceVariant.copy(
-                                alpha = 0f
-                            )
+                            containerColor = colors.surfaceVariant.copy(alpha = 0f)
                         ),
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
@@ -249,6 +260,18 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                 .fillMaxSize()
                                 .padding(12.dp),
                             contentScale = ContentScale.Fit
+                        )
+                    }
+
+                    // Indicadores de alérgenos
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    ) {
+                        AlergenosOverlay(
+                            contiene = p.alergenos_contiene ?: emptyList(),
+                            trazas = p.alergenos_trazas ?: emptyList()
                         )
                     }
                 }
@@ -389,7 +412,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     Button(
                         onClick = {
                             scope.launch {
-                                daoCarrito.addCarrito(p, 1)
+                                daoCarrito.addCarrito(p, 1.toDouble())
                                 Toast.makeText(context, "Añadido al carrito", Toast.LENGTH_SHORT)
                                     .show()
                             }
@@ -458,7 +481,7 @@ fun ProductBadge(text: String, color: Color) {
 fun PromoCard(
     desc: String,
     color: Color,
-    icono: androidx.compose.ui.graphics.vector.ImageVector,
+    icono: ImageVector,
     switch: Boolean = false,
     estadoSwitch: Boolean = false,
     onSwitch: (Boolean) -> Unit = {}
@@ -469,7 +492,7 @@ fun PromoCard(
             .padding(vertical = 12.dp, horizontal = 28.dp),
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
         shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.2f))
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -556,4 +579,99 @@ fun EditarProductoDialog(
             }
         }
     )
+}
+
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun AlergenosOverlay(
+    contiene: List<String>,
+    trazas: List<String>
+) {
+    val colors = MaterialTheme.colorScheme
+
+    // Iconos representativos de alérgenos
+    val iconosAlergenos = mapOf(
+        "pescado" to Lucide.Fish,
+        "leche" to Lucide.Milk,
+        "huevo" to Lucide.Egg,
+        "gluten" to Lucide.Wheat,
+        "soja" to Lucide.Sprout,
+        "mostaza" to Lucide.Bean,
+        "marisco" to Lucide.Shell,
+        "sulfitos" to Lucide.Atom,
+        "frutos secos" to Lucide.Nut,
+        "otros" to Lucide.Info
+    )
+
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .padding(2.dp)
+            .wrapContentSize()
+    ) {
+        // Alérgenos que contiene (color fuerte)
+        contiene.forEach { alergeno ->
+            val icono = iconosAlergenos[alergeno] ?: Lucide.Info
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .padding(2.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(colors.secondary.copy(alpha = 0.9f)),
+                contentAlignment = Alignment.Center
+            ) {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            Toast.makeText(context, "Contiene $alergeno", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        imageVector = icono,
+                        contentDescription = alergeno,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+
+        // Trazas (color suave)
+        trazas.forEach { alergeno ->
+            val icono = iconosAlergenos[alergeno] ?: Lucide.Info
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .padding(2.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(colors.secondary.copy(alpha = 0.35f)),
+                contentAlignment = Alignment.Center
+            ) {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            Toast.makeText(context, "Puede contener trazas de $alergeno", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        imageVector = icono,
+                        contentDescription = alergeno,
+                        tint = colors.onBackground.copy(alpha = 0.9f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+    }
 }

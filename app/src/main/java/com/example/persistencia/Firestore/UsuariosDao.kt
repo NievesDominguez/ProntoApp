@@ -26,7 +26,6 @@ class UsuariosDao {
             Firebase.firestore.collection("usuarios").document(uid)
                 .update("preferencia_orden", orden).await()
         } catch (e: Exception) {
-            // Si el campo no existe, podrías usar set con merge
         }
     }
 

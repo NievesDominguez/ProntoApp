@@ -373,7 +373,7 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
 }
 
 // --------------------------------------------------------------------------
-// VISTA DE PERFIL (MODO EDICIÓN) - SIN CAMBIOS EN LA ESTRUCTURA
+// VISTA DE PERFIL (MODO EDICIÓN)
 // --------------------------------------------------------------------------
 @Composable
 fun PerfilEdit(

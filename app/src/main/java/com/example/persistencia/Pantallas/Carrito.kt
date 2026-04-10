@@ -3,6 +3,8 @@
 package com.example.persistencia.Pantallas
 
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
@@ -43,21 +46,32 @@ import com.example.persistencia.Herramientas.calcularTotalCarrito
 import com.example.persistencia.Modelos.Descuento
 import com.example.persistencia.Modelos.ProductoCarrito
 import com.example.persistencia.Navegacion.AppScreens
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.annotation.Contract
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 @Composable
 fun Carrito(
     navController: NavController,
+    paymentSheet: PaymentSheet,
     daoCarrito: CarritoDao = CarritoDao(),
     daoProductos: ProductosDao = ProductosDao(),
     daoOfertas: DescuentosDao = DescuentosDao()
 ) {
-    val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme // Colores del tema actual
+    val density = LocalDensity.current // Densidad para conversion de dp a px
+    val scope = rememberCoroutineScope() // Para acciones asíncronas
+    val context = LocalContext.current // Para toasts
 
+    // Fondo con bordes degradados
     val backgroundModifier = Modifier
         .fillMaxSize()
         .background(colors.background)
@@ -101,9 +115,9 @@ fun Carrito(
     var ofertas by remember { mutableStateOf<List<Descuento>>(emptyList()) }
     var cuponesActivos by remember { mutableStateOf<List<Descuento>>(emptyList()) }
 
-    // Nueva variable de carga
     var cargando by remember { mutableStateOf(true) }
 
+    // Recarga el carrito desde Firestore
     suspend fun recargarCarrito() {
         val items = daoCarrito.getCarrito()
         carrito = items.mapNotNull { (id, cantidad) ->
@@ -111,6 +125,7 @@ fun Carrito(
         }
     }
 
+    // Carga inicial de datos
     LaunchedEffect(Unit) {
         cargando = true
         ofertas = daoOfertas.getOfertas()
@@ -118,11 +133,11 @@ fun Carrito(
         val codigosCupones = daoCarrito.getCupones()
         val todosCupones = daoOfertas.getCupones()
         cuponesActivos = todosCupones.filter { it.codigo in codigosCupones }
-        delay(200L) // Espera forzada
+        delay(200L)
         cargando = false
     }
 
-    val grupos = carrito.filter { it.producto.oferta != null }.groupBy { it.producto.oferta }
+    // Cálculo del total del carrito
     val total = calcularTotalCarrito(carrito, ofertas, cuponesActivos)
 
     Scaffold(
@@ -143,6 +158,7 @@ fun Carrito(
                 ),
                 actions = {
                     Row(modifier = Modifier.padding(end = 15.dp)) {
+                        // Botón para abrir el escáner
                         IconButton(
                             modifier = Modifier.size(35.dp),
                             shape = CircleShape,
@@ -162,13 +178,12 @@ fun Carrito(
     ) { padding ->
         Box(modifier = backgroundModifier) {
 
+            // Muestra un indicador mientras carga los datos
             if (cargando) {
-                // Indicador de carga respetando la estructura del Box
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = colors.primary)
                 }
             } else {
-                // Solo mostramos el contenido si no está cargando
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -176,14 +191,17 @@ fun Carrito(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(carrito) { item ->
+                        // Comprueba si el producto tiene una oferta o cupón
                         val oferta = ofertas.find { it.codigo == item.producto.oferta }
                         val cupon = cuponesActivos.find { it.codigo == item.producto.oferta }
 
                         val descuentoAplicable = oferta ?: cupon
 
+                        // Agrupa productos por oferta
                         val itemsGrupo =
                             carrito.filter { it.producto.oferta == item.producto.oferta }
 
+                        // Calcula el precio final
                         val precioFinal =
                             if (descuentoAplicable != null && itemsGrupo.isNotEmpty()) {
                                 calcularPrecioProducto(item, itemsGrupo, descuentoAplicable)
@@ -191,8 +209,9 @@ fun Carrito(
                                 item.producto.precio * item.cantidad
                             }
 
+                        val esProductoAlPeso = item.producto.al_peso == true
 
-
+                        // Fila que muestra el producto en el carrito
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -203,6 +222,7 @@ fun Carrito(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Imagen del producto
                             AsyncImage(
                                 model = item.producto.imagenUrl,
                                 contentDescription = item.producto.nombre,
@@ -213,6 +233,7 @@ fun Carrito(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
+                                // Nombre del producto
                                 Text(
                                     text = item.producto.nombre,
                                     color = colors.onBackground,
@@ -220,64 +241,112 @@ fun Carrito(
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 2
                                 )
-                                Text(
-                                    text = "%.2f €".format(item.producto.precio),
-                                    color = colors.onBackground.copy(alpha = 0.8f),
-                                    fontSize = 15.sp
-                                )
+                                // Precio por unidad (o peso) del producto
+                                if (esProductoAlPeso) {
+                                    Text(
+                                        text = ("%.2f €/" + item.producto.unidad).format(item.producto.precio),
+                                        color = colors.onBackground.copy(alpha = 0.8f),
+                                        fontSize = 15.sp
+                                    )
+                                }
+                                else{
+                                    Text(
+                                        text = "%.2f €/ud".format(item.producto.precio),
+                                        color = colors.onBackground.copy(alpha = 0.8f),
+                                        fontSize = 15.sp
+                                    )
+                                }
                             }
                             Column(
                                 horizontalAlignment = Alignment.End,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    IconButton(onClick = {
-                                        scope.launch {
-                                            if (daoCarrito.addCarrito(
-                                                    item.producto,
-                                                    -1
-                                                )
-                                            ) recargarCarrito() else Toast.makeText(
-                                                context,
-                                                "Error",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }) {
-                                        Icon(
-                                            Icons.Default.Remove,
-                                            "Restar",
-                                            tint = colors.onBackground
+                                if (esProductoAlPeso) {
+                                    // Producto al peso: solo botón eliminar y cantidad
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "%.2f kg".format(item.cantidad),
+                                            color = colors.onBackground,
+                                            fontSize = 16.sp,
+                                            modifier = Modifier.padding(start = 8.dp)
                                         )
+
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                if (daoCarrito.addCarrito(
+                                                        item.producto,
+                                                        -item.cantidad
+                                                    )
+                                                ) recargarCarrito() else Toast.makeText(
+                                                    context,
+                                                    "Error al eliminar",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                "Eliminar",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
-                                    Text(
-                                        text = item.cantidad.toString(),
-                                        color = colors.onBackground,
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(horizontal = 4.dp)
-                                    )
-                                    IconButton(onClick = {
-                                        scope.launch {
-                                            if (daoCarrito.addCarrito(
-                                                    item.producto,
-                                                    1
-                                                )
-                                            ) recargarCarrito() else Toast.makeText(
-                                                context,
-                                                "Error",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                } else {
+                                    // Producto normal: controles + y -, cantidad como número entero
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        // Botón para quitar 1
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                if (daoCarrito.addCarrito(
+                                                        item.producto,
+                                                        -1.0
+                                                    )
+                                                ) recargarCarrito() else Toast.makeText(
+                                                    context,
+                                                    "Error",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }) {
+                                            Icon(
+                                                Icons.Default.Remove,
+                                                "Restar",
+                                                tint = colors.onBackground
+                                            )
                                         }
-                                    }) {
-                                        Icon(
-                                            Icons.Default.Add,
-                                            "Añadir",
-                                            tint = colors.onBackground
+                                        // Cantidad del producto
+                                        Text(
+                                            text = item.cantidad.toInt().toString(),
+                                            color = colors.onBackground,
+                                            fontSize = 18.sp,
+                                            modifier = Modifier.padding(horizontal = 4.dp)
                                         )
+                                        // Botón para añadir 1
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                if (daoCarrito.addCarrito(
+                                                        item.producto,
+                                                        1.0
+                                                    )
+                                                ) recargarCarrito() else Toast.makeText(
+                                                    context,
+                                                    "Error",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }) {
+                                            Icon(
+                                                Icons.Default.Add,
+                                                "Añadir",
+                                                tint = colors.onBackground
+                                            )
+                                        }
                                     }
                                 }
                                 val precioOriginal = item.producto.precio * item.cantidad
                                 val hayDescuento = precioFinal < precioOriginal
+
+                                // Precio final del producto(s)
                                 Text(
                                     text = "%.2f €".format(precioFinal),
                                     color = if (hayDescuento) MaterialTheme.colorScheme.onError else colors.onBackground,
@@ -290,14 +359,13 @@ fun Carrito(
                     }
                 }
 
-                // UI persistente (botones y total) solo tras la carga
                 if (carrito.isNotEmpty()) {
+                    // Botón para ver los cupones
                     IconButton(
                         onClick = { navController.navigate(AppScreens.Cupones.route) },
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.onPrimary.copy(
-                                alpha = 0.8f
-                            ), contentColor = colors.onSurface
+                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                            contentColor = colors.onSurface
                         ),
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -315,6 +383,7 @@ fun Carrito(
                         horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Precio total del carrito con descuentos
                         Text(
                             text = "Total: %.2f €".format(total),
                             color = colors.onBackground,
@@ -324,10 +393,24 @@ fun Carrito(
                             overflow = TextOverflow.Clip
                         )
                         Spacer(modifier = Modifier.width(50.dp))
+
+                        // Botón para pagar
                         Button(
                             onClick = {
-                                //navController.navigate("pago_stripe/${total.toFloat()}")
-                                navController.navigate(AppScreens.PagoRedsys.passTotal(total.toFloat()))
+                                scope.launch {
+                                    val clientSecret = crearPaymentIntent(total)
+
+                                    if (clientSecret != null) {
+                                        paymentSheet.presentWithPaymentIntent(
+                                            clientSecret,
+                                            PaymentSheet.Configuration(
+                                                merchantDisplayName = "Pronto"
+                                            )
+                                        )
+                                    } else {
+                                        Toast.makeText(context, "Error al iniciar pago", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary,
@@ -345,5 +428,35 @@ fun Carrito(
                 }
             }
         }
+    }
+}
+
+// Crear PaymentIntent en Stripe mediante backend
+suspend fun crearPaymentIntent(total: Double): String? {
+    return try {
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+
+            val client = OkHttpClient()
+
+            val json = JSONObject()
+            json.put("amount", (total * 100).toInt())
+
+            val body = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("https://stripebackend-zg26.onrender.com/create-payment-intent") // URL del endpoint en Render
+                .post(body)
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string()
+
+            JSONObject(responseBody!!).getString("clientSecret") // Clave secreta de Stripe
+        }
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }

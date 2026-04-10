@@ -9,12 +9,10 @@ import kotlinx.coroutines.tasks.await
 class CarritoDao {
 
     // Obtener todos los productos del carrito del usuario actual
-    suspend fun getCarrito(): List<Pair<String, Int>> {
-        // Obtener el usuario actual. Si no hay usuario, devuelve una lista vacía
+    suspend fun getCarrito(): List<Pair<String, Double>> {
         val user = Firebase.auth.currentUser ?: return emptyList()
-        val uid = user.uid // ID del usuario
+        val uid = user.uid
 
-        // Obtener los productos del carrito del usuario
         val snapshot = Firebase.firestore
             .collection("carrito")
             .document(uid)
@@ -22,22 +20,18 @@ class CarritoDao {
             .get()
             .await()
 
-        // Devuelve una lista de pares (idProducto, cantidad)
         return snapshot.documents.mapNotNull { doc ->
-            // Si no hay cantidad, devuelve null
-            val cantidad = doc.getLong("cantidad")?.toInt() ?: return@mapNotNull null
-            Pair(doc.id, cantidad) // idProducto, cantidad
+            // Ahora esperamos un Double en Firestore
+            val cantidad = doc.getDouble("cantidad") ?: return@mapNotNull null
+            Pair(doc.id, cantidad)
         }
     }
 
-
-    // Añadir o quitar productos del carrito
-    suspend fun addCarrito(producto: Producto, cantidad: Int): Boolean {
-        // Obtener el usuario actual
+    // Añadir o quitar productos del carrito (cantidad en Double)
+    suspend fun addCarrito(producto: Producto, cantidad: Double): Boolean {
         val user = Firebase.auth.currentUser ?: return false
         val uid = user.uid
 
-        // Referencia al documento del producto en el carrito
         val carritoRef = Firebase.firestore
             .collection("carrito")
             .document(uid)
@@ -46,40 +40,28 @@ class CarritoDao {
 
         return try {
             Firebase.firestore.runTransaction { transaction ->
-
-                // Obtener el documento actual del producto en el carrito
                 val snapshot = transaction.get(carritoRef)
-
-                // Cantidad actual (0 si no existe)
                 val cantidadActual = if (snapshot.exists()) {
-                    snapshot.getLong("cantidad")?.toInt() ?: 0
-                } else 0
+                    snapshot.getDouble("cantidad") ?: 0.0
+                } else 0.0
 
-                // Nueva cantidad después de sumar o restar
                 val nuevaCantidad = cantidadActual + cantidad
 
-                // No permitir cantidades negativas
-                if (nuevaCantidad < 0) {
+                // Permitimos cantidades negativas para reducir, pero no por debajo de 0
+                if (nuevaCantidad < 0.0) {
                     throw IllegalArgumentException("Cantidad negativa no permitida")
                 }
 
-                // Si la cantidad queda en 0, eliminar el producto del carrito
-                if (nuevaCantidad == 0) {
+                if (nuevaCantidad == 0.0) {
                     transaction.delete(carritoRef)
                 } else {
-                    // Guardar solo la cantidad
-                    val datos = mapOf(
-                        "cantidad" to nuevaCantidad
-                    )
+                    val datos = mapOf("cantidad" to nuevaCantidad)
                     transaction.set(carritoRef, datos)
                 }
             }.await()
-
-            true // Operación exitosa
-
+            true
         } catch (e: Exception) {
-            false // Operación fallida
-
+            false
         }
     }
 

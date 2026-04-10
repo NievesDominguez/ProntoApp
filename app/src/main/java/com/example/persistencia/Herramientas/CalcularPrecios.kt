@@ -12,25 +12,22 @@ fun aplicarSegundaUnidadCombinable(
 
     val descuento = ((oferta.formula?.get("descuento") ?: 0) as Number).toDouble()
 
-    // Expandir unidades
+    // Expandir unidades (ahora cantidad es Double, usamos toInt() para productos por unidad)
     val unidades = items.flatMap { item ->
-        List(item.cantidad) { item.producto.precio }
-    }.sorted() // de menor a mayor
+        List(item.cantidad.toInt()) { item.producto.precio }
+    }.sorted()
 
     var total = 0.0
     var index = 0
 
     while (index < unidades.size) {
         if (index + 1 < unidades.size) {
-            // Si hay pareja, aplicar descuento a la más barata (unidades[index])
             val barato = unidades[index]
             val caro = unidades[index + 1]
-
             total += barato * (1 - descuento / 100)
             total += caro
             index += 2
         } else {
-            // Unidad suelta: sin descuento
             total += unidades[index]
             index += 1
         }
@@ -38,7 +35,6 @@ fun aplicarSegundaUnidadCombinable(
 
     return total
 }
-
 
 // n por m combinable (3x2, 4x3…)
 fun aplicarNxMCombinable(
@@ -49,7 +45,7 @@ fun aplicarNxMCombinable(
     val m = ((oferta.formula?.get("m") ?: 0) as Number).toInt()
 
     val unidades = items.flatMap { item ->
-        List(item.cantidad) { item.producto.precio }
+        List(item.cantidad.toInt()) { item.producto.precio }
     }.sorted()
 
     var total = 0.0
@@ -87,43 +83,34 @@ fun calcularPreciosUnitariosSegundaUnidad(
 
     val descuento = ((oferta.formula?.get("descuento") ?: 0) as Number).toDouble()
 
-    data class Unidad(val producto: com.example.persistencia.Modelos.Producto, val index: Int)
+    data class Unidad(val producto: Producto, val index: Int)
 
-    // Expandir unidades con índice original
     val unidades = mutableListOf<Unidad>()
     var idx = 0
     for (item in items) {
-        repeat(item.cantidad) {
+        repeat(item.cantidad.toInt()) {
             unidades.add(Unidad(item.producto, idx))
             idx++
         }
     }
 
-    // Orden global por precio
     val ordenadas = unidades.sortedBy { u -> u.producto.precio }
-
-    // Número de unidades que deben llevar descuento
     val numDescuentos = ordenadas.size / 2
 
-    // Marcar descuento en las numDescuentos unidades más baratas
     val descuentoAplicado = BooleanArray(unidades.size)
     for (i in 0 until numDescuentos) {
         val unidadConDescuento = ordenadas[i]
         descuentoAplicado[unidadConDescuento.index] = true
     }
 
-    // Calcular precios finales en orden original
     val preciosFinales = MutableList(unidades.size) { 0.0 }
     for ((pos, unidad) in unidades.withIndex()) {
         val base = unidad.producto.precio
-        preciosFinales[pos] =
-            if (descuentoAplicado[pos]) base * (1 - descuento / 100)
-            else base
+        preciosFinales[pos] = if (descuentoAplicado[pos]) base * (1 - descuento / 100) else base
     }
 
     return preciosFinales
 }
-
 
 fun calcularPreciosUnitariosNxM(
     items: List<ProductoCarrito>,
@@ -138,34 +125,28 @@ fun calcularPreciosUnitariosNxM(
     val unidades = mutableListOf<Unidad>()
     var idx = 0
     for (item in items) {
-        repeat(item.cantidad) {
+        repeat(item.cantidad.toInt()) {
             unidades.add(Unidad(item.producto, idx))
             idx++
         }
     }
 
     val ordenadas = unidades.sortedBy { it.producto.precio }
-
     val total = unidades.size
     val gratis = total / n * (n - m)
 
     val paga = BooleanArray(unidades.size) { true }
-
-    // Marcar las más baratas como gratis
     for (i in 0 until gratis) {
         paga[ordenadas[i].index] = false
     }
 
     val preciosFinales = MutableList(unidades.size) { 0.0 }
-
     for ((pos, unidad) in unidades.withIndex()) {
-        preciosFinales[pos] =
-            if (paga[pos]) unidad.producto.precio else 0.0
+        preciosFinales[pos] = if (paga[pos]) unidad.producto.precio else 0.0
     }
 
     return preciosFinales
 }
-
 
 fun calcularPrecioProducto(
     item: ProductoCarrito,
@@ -179,7 +160,7 @@ fun calcularPrecioProducto(
         else -> {
             val lista = mutableListOf<Double>()
             for (ig in itemsGrupo) {
-                repeat(ig.cantidad) {
+                repeat(ig.cantidad.toInt()) {
                     lista.add(ig.producto.precio)
                 }
             }
@@ -187,10 +168,9 @@ fun calcularPrecioProducto(
         }
     }
 
-    // Expandir unidades del grupo en el mismo orden que se generaron arriba
-    val unidades = mutableListOf<com.example.persistencia.Modelos.Producto>()
+    val unidades = mutableListOf<Producto>()
     for (ig in itemsGrupo) {
-        repeat(ig.cantidad) {
+        repeat(ig.cantidad.toInt()) {
             unidades.add(ig.producto)
         }
     }
@@ -206,7 +186,6 @@ fun calcularPrecioProducto(
     return total
 }
 
-
 fun calcularTotalCarrito(
     carrito: List<ProductoCarrito>,
     ofertas: List<Descuento>,
@@ -215,60 +194,41 @@ fun calcularTotalCarrito(
 
     var total = 0.0
 
-    // Unificar ofertas + cupones que afectan a productos
     val descuentosProducto = (ofertas + cupones).filter {
         val tipo = (it.formula?.get("tipo") as? String) ?: it.tipo
         tipo == "segunda_unidad" || tipo == "n_por_m"
     }
 
-    // Agrupar productos por código (oferta o cupón)
     val grupos = carrito
         .filter { it.producto.oferta != null }
         .groupBy { it.producto.oferta }
 
     for ((codigo, itemsGrupo) in grupos) {
-
-        // Buscar si hay oferta o cupón con ese código
         val descuento = descuentosProducto.find { it.codigo == codigo }
-
         if (descuento != null) {
             total += calcularTotalGrupo(itemsGrupo, descuento)
         } else {
-            // Sin descuento válido
             total += itemsGrupo.sumOf { it.producto.precio * it.cantidad }
         }
     }
 
-    // Productos sin oferta/cupón
     val sinDescuento = carrito.filter { it.producto.oferta == null }
     total += sinDescuento.sumOf { it.producto.precio * it.cantidad }
 
-    // ---- CUPONES GLOBALES (solo estos van después) ----
-
     for (cupon in cupones) {
-
         val tipo = (cupon.formula?.get("tipo") as? String) ?: cupon.tipo
 
         when (tipo) {
-
             "fijo" -> {
                 val minimo = ((cupon.formula?.get("minimo") ?: 0) as Number).toDouble()
                 val valor = ((cupon.formula?.get("valor") ?: 0) as Number).toDouble()
-
-                if (total >= minimo) {
-                    total -= valor
-                }
+                if (total >= minimo) total -= valor
             }
-
             "porcentaje" -> {
                 val minimo = ((cupon.formula?.get("minimo") ?: 0) as Number).toDouble()
                 val porcentaje = ((cupon.formula?.get("valor") ?: 0) as Number).toDouble()
-
-                if (total >= minimo) {
-                    total *= (1 - porcentaje / 100.0)
-                }
+                if (total >= minimo) total *= (1 - porcentaje / 100.0)
             }
-
             "maximo" -> {
                 val max = cupon.max_descuento ?: total
                 if (total > max) total = max
