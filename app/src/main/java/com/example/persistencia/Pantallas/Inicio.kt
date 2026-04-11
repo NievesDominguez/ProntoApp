@@ -85,18 +85,35 @@ fun Inicio(navController: NavController) {
                     val user = authResult.user
                     if (user != null) {
                         val db = FirebaseFirestore.getInstance()
-                        val datosUsuario = mapOf(
-                            "uid" to user.uid,
-                            "nombre" to user.displayName,
-                            "email" to user.email,
-                            "foto" to user.photoUrl?.toString(),
-                            "fechaRegistro" to FieldValue.serverTimestamp()
-                        )
-                        db.collection("usuarios")
-                            .document(user.uid)
-                            .set(datosUsuario, SetOptions.merge())
+                        val docRef = db.collection("usuarios").document(user.uid)
+
+                        docRef.get().addOnSuccessListener { snapshot ->
+                            if (!snapshot.exists()) {
+                                // Usuario nuevo: guardamos los datos básicos de Google
+                                val datosUsuario = hashMapOf<String, Any>(
+                                    "uid" to user.uid,
+                                    "nombre" to (user.displayName ?: ""),
+                                    "email" to (user.email ?: ""),
+                                    "foto" to (user.photoUrl?.toString() ?: ""),
+                                    "fechaRegistro" to FieldValue.serverTimestamp()
+                                )
+                                docRef.set(datosUsuario)
+                                    .addOnSuccessListener {
+                                        navController.navigate(AppScreens.PantallaPrincipal.route)
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Error al guardar datos: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                            } else {
+                                // Usuario ya existente: NO hacemos nada, solo navegamos
+                                navController.navigate(AppScreens.PantallaPrincipal.route)
+                            }
+                        }.addOnFailureListener { e ->
+                            Toast.makeText(context, "Error al verificar usuario: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        Toast.makeText(context, "Error: usuario nulo", Toast.LENGTH_SHORT).show()
                     }
-                    navController.navigate(AppScreens.PantallaPrincipal.route)
                 }.addOnFailureListener { e ->
                     Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
@@ -278,15 +295,24 @@ fun Inicio(navController: NavController) {
                             val pass = contrasena.text
 
                             if (correo.isEmpty()) {
-                                Toast.makeText(context, "Introduce un email", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Introduce un email", Toast.LENGTH_SHORT)
+                                    .show()
                                 return@Button
                             }
                             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
-                                Toast.makeText(context, "Introduce un email válido", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Introduce un email válido",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 return@Button
                             }
                             if (pass.isEmpty()) {
-                                Toast.makeText(context, "Introduce una contraseña", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Introduce una contraseña",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 return@Button
                             }
 
@@ -295,16 +321,27 @@ fun Inicio(navController: NavController) {
                                     if (task.isSuccessful) {
                                         val user = FirebaseAuth.getInstance().currentUser
                                         if (user == null || !user.isEmailVerified) {
-                                            Toast.makeText(context, "Valida tu correo electrónico", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Valida tu correo electrónico",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                             Firebase.auth.signOut()
                                         } else {
-                                            Toast.makeText(context, "Inicio de sesión correcto", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Inicio de sesión correcto",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                             navController.navigate(AppScreens.PantallaPrincipal.route) {
-                                                popUpTo(AppScreens.Inicio.route) { inclusive = true }
+                                                popUpTo(AppScreens.Inicio.route) {
+                                                    inclusive = true
+                                                }
                                             }
                                         }
                                     } else {
-                                        val mensaje = task.exception?.localizedMessage ?: "Error al iniciar sesión"
+                                        val mensaje = task.exception?.localizedMessage
+                                            ?: "Error al iniciar sesión"
                                         Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
                                     }
                                 }
