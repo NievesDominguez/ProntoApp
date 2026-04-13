@@ -8,10 +8,13 @@ class Aplicacion : Application() {
     override fun onCreate() {
         super.onCreate()
         // Clave pública de Stripe desde BuildConfig
-        PaymentConfiguration.init(
-            applicationContext,
-            BuildConfig.STRIPE_PUBLISHABLE_KEY
-        )
+        val stripeKey = BuildConfig.STRIPE_PUBLISHABLE_KEY
+        if (stripeKey.isNotBlank() && stripeKey.startsWith("pk_")) {
+            PaymentConfiguration.init(
+                applicationContext,
+                stripeKey
+            )
+        }
     }
 }
 

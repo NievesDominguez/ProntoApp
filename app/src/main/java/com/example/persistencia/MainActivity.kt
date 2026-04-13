@@ -26,10 +26,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // Inicializa Stripe con la clave pública desde BuildConfig
-        PaymentConfiguration.init(
-            applicationContext,
-            BuildConfig.STRIPE_PUBLISHABLE_KEY
-        )
+        val stripeKey = BuildConfig.STRIPE_PUBLISHABLE_KEY
+        if (stripeKey.isNotBlank() && stripeKey.startsWith("pk_")) {
+            PaymentConfiguration.init(
+                applicationContext,
+                stripeKey
+            )
+        }
 
         // Crea la instancia de PaymentSheet que maneja la interfaz de pago
         lateinit var paymentSheet: PaymentSheet

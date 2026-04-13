@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep Firestore model classes — toObject() uses reflection to map
+# document fields to class fields; R8 must not rename them.
+-keep class com.example.persistencia.Modelos.** { *; }
