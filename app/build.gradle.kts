@@ -19,7 +19,11 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+// Variables que representan información que no queremos tener añadida en la app
 val groqApiKey: String = localProperties.getProperty("GROQ_API_KEY") ?: ""
+val stripePublishableKey: String = localProperties.getProperty("STRIPE_PUBLISHABLE_KEY") ?: ""
+val cloudinaryCloudName: String = localProperties.getProperty("CLOUDINARY_CLOUD_NAME") ?: ""
+val cloudinaryUploadPreset: String = localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET") ?: ""
 
 android {
     namespace = "com.example.persistencia"
@@ -36,8 +40,11 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Añadir la API key al BuildConfig
+        // Añadir la API key al BuildConfig y otra información crítica
         buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
+        buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"$stripePublishableKey\"")
+        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudinaryCloudName\"")
+        buildConfigField("String", "CLOUDINARY_UPLOAD_PRESET", "\"$cloudinaryUploadPreset\"")
 
         /*ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
@@ -46,7 +53,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

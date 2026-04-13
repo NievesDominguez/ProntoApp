@@ -292,6 +292,14 @@ fun Registro(navController: NavController) {
                                 Toast.makeText(context, "Introduce una contraseña", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
+                            if (pass.length < 8) {
+                                Toast.makeText(context, "La contraseña debe tener al menos 8 caracteres", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            if (!pass.any { it.isUpperCase() } || !pass.any { it.isDigit() }) {
+                                Toast.makeText(context, "La contraseña debe contener al menos una mayúscula y un número", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
                             if (telefono.isNotEmpty() && (telefono.length < 9 || !telefono.all { it.isDigit() })) {
                                 Toast.makeText(context, "Introduce un teléfono válido", Toast.LENGTH_SHORT).show()
                                 return@Button

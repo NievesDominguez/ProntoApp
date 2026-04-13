@@ -111,7 +111,6 @@ fun Chatbot(
             inputText = ""
             focusRequester.requestFocus()
         }
-        Log.d("API_KEY_TEST", "Key: ${BuildConfig.GROQ_API_KEY}")
     }
 
     Scaffold(

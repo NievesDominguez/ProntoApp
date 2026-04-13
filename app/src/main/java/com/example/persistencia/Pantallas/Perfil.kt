@@ -47,6 +47,7 @@ import com.google.firebase.auth.auth
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import com.example.persistencia.BuildConfig
 
 //--------------------------------------------------------------------------
 // PANTALLA DE PERFIL
@@ -708,11 +709,11 @@ suspend fun subirImagen(uri: Uri, context: Context): String? {
                     bytes
                 )
             )
-            .addFormDataPart("upload_preset", "Pronto")
+            .addFormDataPart("upload_preset", BuildConfig.CLOUDINARY_UPLOAD_PRESET)
             .build()
 
         val request = okhttp3.Request.Builder()
-            .url("https://api.cloudinary.com/v1_1/ddofwf5aq/image/upload")
+            .url("https://api.cloudinary.com/v1_1/${BuildConfig.CLOUDINARY_CLOUD_NAME}/image/upload")
             .post(requestBody)
             .build()
 

@@ -27,8 +27,7 @@ class MainActivity : ComponentActivity() {
 
         // Inicializa Stripe con la clave pública de prueba
         PaymentConfiguration.init(
-            applicationContext,
-            "pk_test_51TE5qDCNZxzYE0FEay0v0s8J5F1BhPmXzIogyoTUQAwYmLNMmFBgBUCna9eYdMZahW7RvQWEbewlg4k1Ts2qSg2R007qkaME2A"
+            applicationContext,BuildConfig.STRIPE_PUBLISHABLE_KEY
         )
 
         // Crea la instancia de PaymentSheet que maneja la interfaz de pago

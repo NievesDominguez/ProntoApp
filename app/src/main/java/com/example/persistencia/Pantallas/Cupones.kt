@@ -79,7 +79,7 @@ fun Cupones(navController: NavController) {
 
     val db = FirebaseFirestore.getInstance()
     val usuario = FirebaseAuth.getInstance().currentUser
-    val uid: String = usuario!!.uid
+    val uid: String = usuario?.uid ?: return
 
     val daoOfertas = DescuentosDao()
     val daoCarrito = CarritoDao()
