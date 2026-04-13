@@ -46,6 +46,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
+import com.example.persistencia.BuildConfig
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import com.example.persistencia.BuildConfig
 

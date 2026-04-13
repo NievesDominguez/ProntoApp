@@ -25,9 +25,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicializa Stripe con la clave pública de prueba
+        // Inicializa Stripe con la clave pública desde BuildConfig
         PaymentConfiguration.init(
-            applicationContext,BuildConfig.STRIPE_PUBLISHABLE_KEY
+            applicationContext,
+            BuildConfig.STRIPE_PUBLISHABLE_KEY
         )
 
         // Crea la instancia de PaymentSheet que maneja la interfaz de pago

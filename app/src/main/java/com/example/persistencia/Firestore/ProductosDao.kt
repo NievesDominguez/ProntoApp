@@ -101,15 +101,23 @@ class ProductosDao {
         }
     }
 
-    // Actualiza un producto en Firestore
+    // Actualiza un producto en Firestore (con validación de entrada)
     suspend fun actualizarProducto(id: String, nombre: String, precio: Double, descripcion: String) {
+        require(id.isNotBlank()) { "Product ID must not be blank" }
+        require(nombre.isNotBlank()) { "Product name must not be blank" }
+        require(precio >= 0) { "Price must not be negative" }
+        require(descripcion.length <= 2000) { "Description too long" }
+
+        val nombreSanitizado = nombre.trim().take(200)
+        val descripcionSanitizada = descripcion.trim().take(2000)
+
         coleccion
             .document(id)
             .update(
                 mapOf(
-                    "nombre" to nombre,
+                    "nombre" to nombreSanitizado,
                     "precio" to precio,
-                    "descripcion" to descripcion
+                    "descripcion" to descripcionSanitizada
                 )
             )
     }

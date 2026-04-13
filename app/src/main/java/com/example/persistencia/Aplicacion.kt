@@ -7,7 +7,7 @@ import com.stripe.android.PaymentConfiguration
 class Aplicacion : Application() {
     override fun onCreate() {
         super.onCreate()
-        // Clave pública de Stripe
+        // Clave pública de Stripe desde BuildConfig
         PaymentConfiguration.init(
             applicationContext,
             BuildConfig.STRIPE_PUBLISHABLE_KEY

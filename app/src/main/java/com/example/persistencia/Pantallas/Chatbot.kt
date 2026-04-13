@@ -1,6 +1,5 @@
 package com.example.persistencia.Pantallas
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,7 +34,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Lucide
-import com.example.persistencia.BuildConfig
 import com.example.persistencia.Herramientas.ChatViewModel
 import com.example.persistencia.Modelos.Mensaje
 import kotlinx.coroutines.delay
@@ -111,6 +109,7 @@ fun Chatbot(
             inputText = ""
             focusRequester.requestFocus()
         }
+        // API key logging removed for security
     }
 
     Scaffold(
