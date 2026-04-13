@@ -30,10 +30,6 @@ sealed class AppScreens (val route: String, val icon: ImageVector) {
     object Chatbot: AppScreens("Chatbot", Lucide.Bot)
     object ListaCompra: AppScreens("ListaCompra", Icons.Default.FormatListBulleted)
 
-    object PagoRedsys : AppScreens("pago_redsys/{total}", Icons.Default.Euro) {
-        fun passTotal(total: Float) = "pago_redsys/$total"
-    }
-
 
     companion object {
     }

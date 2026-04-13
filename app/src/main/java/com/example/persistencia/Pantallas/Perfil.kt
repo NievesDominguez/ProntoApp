@@ -1,5 +1,6 @@
 package com.example.persistencia.Pantallas
 
+import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,12 +40,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import com.example.persistencia.Navegacion.AppScreens
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 //--------------------------------------------------------------------------
 // PANTALLA DE PERFIL
 //--------------------------------------------------------------------------
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
 @Composable
 fun Perfil(navController: NavController) {
 
@@ -69,6 +77,8 @@ fun Perfil(navController: NavController) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     var showConfirmDialog by remember { mutableStateOf(false) }
+
+    var showDialog by remember { mutableStateOf(false) } // Variable que determina si se muestra el dialogo para cerrar sesión o no
 
     // Cargar datos del usuario desde Firestore
     LaunchedEffect(usuario?.uid) {
@@ -107,19 +117,35 @@ fun Perfil(navController: NavController) {
             val height = size.height
 
             drawRect(
-                brush = Brush.verticalGradient(listOf(primaryColor, Color.Transparent), 0f, edgeWidth),
+                brush = Brush.verticalGradient(
+                    listOf(primaryColor, Color.Transparent),
+                    0f,
+                    edgeWidth
+                ),
                 topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
             )
             drawRect(
-                brush = Brush.verticalGradient(listOf(Color.Transparent, primaryColor), height - edgeWidth, height),
+                brush = Brush.verticalGradient(
+                    listOf(Color.Transparent, primaryColor),
+                    height - edgeWidth,
+                    height
+                ),
                 topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
             )
             drawRect(
-                brush = Brush.horizontalGradient(listOf(secondaryColor, Color.Transparent), 0f, edgeWidth),
+                brush = Brush.horizontalGradient(
+                    listOf(secondaryColor, Color.Transparent),
+                    0f,
+                    edgeWidth
+                ),
                 topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
             )
             drawRect(
-                brush = Brush.horizontalGradient(listOf(Color.Transparent, secondaryColor), width - edgeWidth, width),
+                brush = Brush.horizontalGradient(
+                    listOf(Color.Transparent, secondaryColor),
+                    width - edgeWidth,
+                    width
+                ),
                 topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
             )
         }
@@ -143,7 +169,11 @@ fun Perfil(navController: NavController) {
                             modoEdicion = false
                             nuevaPassword = ""
                         }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancelar", tint = colors.onBackground)
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Cancelar",
+                                tint = colors.onBackground
+                            )
                         }
                     }
                     if (selectedTab == 0 && !cargando) {
@@ -201,7 +231,9 @@ fun Perfil(navController: NavController) {
                             AsyncImage(
                                 model = imagenMostrar,
                                 contentDescription = "Foto perfil",
-                                modifier = Modifier.size(120.dp).clip(CircleShape),
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         }
@@ -248,10 +280,18 @@ fun Perfil(navController: NavController) {
                             if (!modoEdicion) {
                                 PerfilView(nombre, apellidos, telefono, usuario?.email)
                             } else {
-                                PerfilEdit(nombre, apellidos, telefono, nuevaPassword,
-                                    { nombre = it }, { apellidos = it }, { telefono = it }, { nuevaPassword = it })
+                                PerfilEdit(
+                                    nombre,
+                                    apellidos,
+                                    telefono,
+                                    nuevaPassword,
+                                    { nombre = it },
+                                    { apellidos = it },
+                                    { telefono = it },
+                                    { nuevaPassword = it })
                             }
                         }
+
                         1 -> TarjetaPlaceholder("Datos de compras.", colors)
                         2 -> AjustesScreenCompact(themeManager, colors)
                     }
@@ -261,32 +301,52 @@ fun Perfil(navController: NavController) {
                     // Botón para cerrar sesión
                     Button(
                         onClick = {
-                            // Cerramos la sesión en Firebase
-                            FirebaseAuth.getInstance().signOut()
+                            showDialog = true
 
-                            // Navegamos al login y limpiamos el historial
-                            navController.navigate(AppScreens.Inicio.route) {
-                                // Buscamos el inicio del grafo (0) para borrar todas las pantallas
-                                popUpTo(0) {
-                                    inclusive = true
-                                }
-                                // Evitamos que se creen múltiples instancias de la pantalla de login
-                                launchSingleTop = true
-                            }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = colors.primary,
-                            contentColor = Color.White
-                        ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp)
+                            .padding(0.dp, 15.dp)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                     ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Cerrar sesión")
+                        Text(
+                            text = "Cerrar sesión",
+                            fontSize = 18.sp,
+                            color = Color(0xFF6C3AEC)
+                        )
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Diálogo para cerrar sesión
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                // Se ejecuta cuando el usuario toca fuera del diálogo o pulsa atrás
+                                showDialog = false
+                            },
+                            title = {
+                                Text(text = "Cerrar sesión")
+                            },
+                            text = {
+                                Text(text = "¿Estás seguro de que quieres cerrar sesión?")
+                            },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showDialog = false
+                                    signOut(context, navController)
+                                }) {
+                                    Text("Cerrar sesión")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDialog = false }) {
+                                    Text("Cancelar")
+                                }
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(90.dp))
                 }
             }
 
@@ -295,17 +355,43 @@ fun Perfil(navController: NavController) {
                     nuevaPassword = nuevaPassword,
                     onDismiss = { showConfirmDialog = false },
                     onConfirm = { passActual, _ ->
-                        val credential = EmailAuthProvider.getCredential(usuario?.email!!, passActual)
+                        val credential =
+                            EmailAuthProvider.getCredential(usuario?.email!!, passActual)
                         usuario.reauthenticate(credential).addOnSuccessListener {
-                            val datos = hashMapOf("nombre" to nombre, "apellidos" to apellidos, "telefono" to telefono)
-                            firestore.collection("usuarios").document(usuario.uid).update(datos as Map<String, Any>)
+                            val datos = mutableMapOf<String, Any>(
+                                "nombre" to nombre,
+                                "apellidos" to apellidos,
+                                "telefono" to telefono
+                            )
+
+                            val uid = usuario.uid
+
+                            // Si el usuario ha seleccionado una nueva imagen
+                            imageUri?.let { uri ->
+                                // Subir a Cloudinary
+                                kotlinx.coroutines.GlobalScope.launch {
+                                    val url = subirImagen(uri, context)
+                                    if (url != null) {
+                                        datos["foto"] = url
+                                        fotoFirestore = url
+                                    }
+
+                                    firestore.collection("usuarios")
+                                        .document(uid)
+                                        .update(datos)
+                                }
+                            }
+
+                            firestore.collection("usuarios").document(usuario.uid)
+                                .update(datos as Map<String, Any>)
                             if (nuevaPassword.isNotEmpty()) usuario.updatePassword(nuevaPassword)
                             nuevaPassword = ""
                             modoEdicion = false
                             showConfirmDialog = false
                             Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT).show()
                         }.addOnFailureListener {
-                            Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                 )
@@ -314,9 +400,8 @@ fun Perfil(navController: NavController) {
     }
 }
 
-// --------------------------------------------------------------------------
+
 // VISTA DE PERFIL (MODO VISUALIZACIÓN)
-// --------------------------------------------------------------------------
 @Composable
 fun PerfilView(nombre: String, apellidos: String, telefono: String, email: String?) {
     val colors = MaterialTheme.colorScheme
@@ -372,9 +457,28 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
     }
 }
 
-// --------------------------------------------------------------------------
+
+// Función para cerrar sesión
+fun signOut(context: Context, navController: NavController) {
+    // Sesión de google
+    val googleSignInClient = GoogleSignIn.getClient(
+        context,
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+    )
+    // Cerrar sesión de Google
+    googleSignInClient.signOut()
+
+    // Cerrar sesión de Firebase
+    Firebase.auth.signOut()
+
+    // Navegar a Inicio limpiando la pila
+    navController.navigate(AppScreens.Inicio.route) {
+        popUpTo(0) { inclusive = true }
+    }
+}
+
+
 // VISTA DE PERFIL (MODO EDICIÓN)
-// --------------------------------------------------------------------------
 @Composable
 fun PerfilEdit(
     nombre: String,
@@ -386,7 +490,6 @@ fun PerfilEdit(
     onTelefono: (String) -> Unit,
     onPassword: (String) -> Unit
 ) {
-    val scrollState = rememberScrollState()
     val colors = MaterialTheme.colorScheme
 
     Card(
@@ -397,8 +500,7 @@ fun PerfilEdit(
     ) {
         Column(
             modifier = Modifier
-                .padding(24.dp)
-                .verticalScroll(scrollState),
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
@@ -435,9 +537,8 @@ fun PerfilEdit(
     }
 }
 
-// --------------------------------------------------------------------------
+
 // TARJETA PLACEHOLDER PARA TAB "COMPRAS"
-// --------------------------------------------------------------------------
 @Composable
 fun TarjetaPlaceholder(texto: String, colors: androidx.compose.material3.ColorScheme) {
     Card(
@@ -455,9 +556,8 @@ fun TarjetaPlaceholder(texto: String, colors: androidx.compose.material3.ColorSc
     }
 }
 
-// --------------------------------------------------------------------------
-// SELECTOR DE TEMA COMPACTO (para la pestaña "Ajustes")
-// --------------------------------------------------------------------------
+
+// SELECTOR DE TEMA
 @Composable
 fun AjustesScreenCompact(
     themeManager: com.example.persistencia.Herramientas.ThemeManager,
@@ -517,9 +617,8 @@ fun AjustesScreenCompact(
     }
 }
 
-// --------------------------------------------------------------------------
-// DIÁLOGO DE CONFIRMACIÓN (SIN CAMBIOS)
-// --------------------------------------------------------------------------
+
+// DIÁLOGO DE CONFIRMACIÓN
 @Composable
 fun ConfirmacionDialog(
     nuevaPassword: String,
@@ -591,4 +690,39 @@ fun ConfirmacionDialog(
             }
         }
     )
+}
+
+suspend fun subirImagen(uri: Uri, context: Context): String? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val bytes = inputStream.readBytes()
+        inputStream.close()
+
+        val requestBody = okhttp3.MultipartBody.Builder()
+            .setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart(
+                "file",
+                "perfil.jpg",
+                okhttp3.RequestBody.create(
+                    "image/*".toMediaTypeOrNull(),
+                    bytes
+                )
+            )
+            .addFormDataPart("upload_preset", "Pronto")
+            .build()
+
+        val request = okhttp3.Request.Builder()
+            .url("https://api.cloudinary.com/v1_1/ddofwf5aq/image/upload")
+            .post(requestBody)
+            .build()
+
+        val client = okhttp3.OkHttpClient()
+        val response = client.newCall(request).execute()
+
+        val json = org.json.JSONObject(response.body?.string() ?: return null)
+        json.getString("secure_url")
+
+    } catch (e: Exception) {
+        null
+    }
 }

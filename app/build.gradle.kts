@@ -73,9 +73,6 @@ dependencies {
     // Reproducir vídeos de youtube
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
-    // Dependencia local para el SDK de Redsys
-    implementation(files("libs/redsys-sdk-inApp-2.4.5.aar"))
-
     // Dependencias necesarias para el SDK de Redsys
     implementation("com.google.code.gson:gson:2.8.2")
     implementation("androidx.webkit:webkit:1.14.0")

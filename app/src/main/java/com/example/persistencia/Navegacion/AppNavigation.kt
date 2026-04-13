@@ -24,8 +24,6 @@ import com.example.persistencia.Pantallas.Chatbot
 import com.example.persistencia.Pantallas.Cupones
 import com.example.persistencia.Pantallas.Inicio
 import com.example.persistencia.Pantallas.ListaCompra
-import com.example.persistencia.Pantallas.PagoStripe
-import com.example.persistencia.Pantallas.PantallaPagoRedsys
 import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.PantallaProducto
 import com.example.persistencia.Pantallas.Perfil
@@ -190,11 +188,6 @@ fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la i
                 Chatbot(onBack = { navController.popBackStack() })
             }
 
-            composable("pago_stripe/{total}") { backStackEntry ->
-                val total = backStackEntry.arguments?.getString("total")?.toFloatOrNull() ?: 0f
-                PagoStripe(navController, total, paymentSheet)
-            }
-
             composable(route = AppScreens.ListaCompra.route) { backStackEntry ->
                 // Permite volver a la pantalla anterior
                 BackHandler {
@@ -203,13 +196,6 @@ fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la i
                 ListaCompra(navController)
             }
 
-            composable(
-                route = AppScreens.PagoRedsys.route,
-                arguments = listOf(navArgument("total") { type = NavType.FloatType })
-            ) { backStackEntry ->
-                val total = backStackEntry.arguments?.getFloat("total") ?: 0f
-                PantallaPagoRedsys(navController, total)
-            }
 
 
         }
