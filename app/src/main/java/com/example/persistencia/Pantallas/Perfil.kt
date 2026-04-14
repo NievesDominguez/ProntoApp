@@ -2,11 +2,15 @@ package com.example.persistencia.Pantallas
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +43,9 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextOverflow
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.TicketPercent
 import com.example.persistencia.Navegacion.AppScreens
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -48,6 +55,9 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import com.example.persistencia.BuildConfig
+import com.example.persistencia.Firestore.TicketsDao
+import com.example.persistencia.Herramientas.toFormattedString
+import com.example.persistencia.Modelos.Ticket
 
 //--------------------------------------------------------------------------
 // PANTALLA DE PERFIL
@@ -204,11 +214,11 @@ fun Perfil(navController: NavController) {
                     CircularProgressIndicator(color = colors.primary)
                 }
             } else {
+                // Columna principal sin scroll (cada pestaña gestiona su propio scroll si es necesario)
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 24.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
@@ -276,35 +286,162 @@ fun Perfil(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // Contenido de las pestañas (cada una con su propio manejo de scroll)
                     when (selectedTab) {
                         0 -> {
-                            if (!modoEdicion) {
-                                PerfilView(nombre, apellidos, telefono, usuario?.email)
-                            } else {
-                                PerfilEdit(
-                                    nombre,
-                                    apellidos,
-                                    telefono,
-                                    nuevaPassword,
-                                    { nombre = it },
-                                    { apellidos = it },
-                                    { telefono = it },
-                                    { nuevaPassword = it })
+                            // Pestaña "Datos" con scroll vertical
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                if (!modoEdicion) {
+                                    PerfilView(nombre, apellidos, telefono, usuario?.email)
+                                } else {
+                                    PerfilEdit(
+                                        nombre,
+                                        apellidos,
+                                        telefono,
+                                        nuevaPassword,
+                                        { nombre = it },
+                                        { apellidos = it },
+                                        { telefono = it },
+                                        { nuevaPassword = it }
+                                    )
+                                }
                             }
                         }
 
-                        1 -> TarjetaPlaceholder("Datos de compras.", colors)
-                        2 -> AjustesScreenCompact(themeManager, colors)
+                        1 -> {
+                            // Pestaña "Compras" – sin scroll en el contenedor padre, LazyColumn maneja su propio scroll
+                            val ticketsDao = remember { TicketsDao() }
+                            var tickets by remember { mutableStateOf<List<Ticket>?>(null) } // null = cargando
+                            var errorCarga by remember { mutableStateOf(false) }
+
+                            LaunchedEffect(Unit) {
+                                try {
+                                    val lista = ticketsDao.getTickets()
+                                    tickets = lista
+                                    Log.d("Perfil", "Tickets cargados: ${lista.size}")
+                                } catch (e: Exception) {
+                                    Log.e("Perfil", "Error al cargar tickets", e)
+                                    errorCarga = true
+                                    tickets = emptyList()
+                                }
+                            }
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                when {
+                                    tickets == null -> {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(32.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(color = colors.primary)
+                                        }
+                                    }
+
+                                    errorCarga -> {
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(24.dp),
+                                            colors = CardDefaults.cardColors(containerColor = colors.errorContainer)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(24.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Error,
+                                                    contentDescription = null,
+                                                    tint = colors.error,
+                                                    modifier = Modifier.size(48.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    "Error al cargar las compras",
+                                                    color = colors.error,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                                TextButton(onClick = {
+                                                    errorCarga = false
+                                                    tickets = null
+                                                }) {
+                                                    Text("Reintentar")
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    tickets!!.isEmpty() -> {
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(24.dp),
+                                            colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
+                                            elevation = CardDefaults.cardElevation(4.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.padding(32.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.ShoppingCart,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(48.dp),
+                                                        tint = colors.onSurfaceVariant.copy(alpha = 0.6f)
+                                                    )
+                                                    Spacer(modifier = Modifier.height(16.dp))
+                                                    Text(
+                                                        text = "Aún no has realizado ninguna compra",
+                                                        fontSize = 16.sp,
+                                                        color = colors.onSurfaceVariant,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    else -> {
+                                        val listaTickets = tickets ?: return@Box
+                                        LazyColumn(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            items(listaTickets, key = { it.id }) { ticket ->
+                                                TicketResumenCard(
+                                                    ticket = ticket,
+                                                    onClick = {
+                                                        navController.navigate("${AppScreens.TicketDetalle.route}/${ticket.id}")
+                                                    })
+                                            }
+                                            item { Spacer(modifier = Modifier.height(16.dp)) }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        2 -> {
+                            // Pestaña "Ajustes" con scroll vertical
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                AjustesScreenCompact(themeManager, colors)
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Botón para cerrar sesión
                     Button(
-                        onClick = {
-                            showDialog = true
-
-                        },
+                        onClick = { showDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(0.dp, 15.dp)
@@ -322,16 +459,9 @@ fun Perfil(navController: NavController) {
                     // Diálogo para cerrar sesión
                     if (showDialog) {
                         AlertDialog(
-                            onDismissRequest = {
-                                // Se ejecuta cuando el usuario toca fuera del diálogo o pulsa atrás
-                                showDialog = false
-                            },
-                            title = {
-                                Text(text = "Cerrar sesión")
-                            },
-                            text = {
-                                Text(text = "¿Estás seguro de que quieres cerrar sesión?")
-                            },
+                            onDismissRequest = { showDialog = false },
+                            title = { Text(text = "Cerrar sesión") },
+                            text = { Text(text = "¿Estás seguro de que quieres cerrar sesión?") },
                             confirmButton = {
                                 TextButton(onClick = {
                                     showDialog = false
@@ -351,6 +481,7 @@ fun Perfil(navController: NavController) {
                 }
             }
 
+            // Diálogo de confirmación de edición
             if (showConfirmDialog) {
                 ConfirmacionDialog(
                     nuevaPassword = nuevaPassword,
@@ -367,16 +498,13 @@ fun Perfil(navController: NavController) {
 
                             val uid = usuario.uid
 
-                            // Si el usuario ha seleccionado una nueva imagen
                             imageUri?.let { uri ->
-                                // Subir a Cloudinary
                                 kotlinx.coroutines.GlobalScope.launch {
                                     val url = subirImagen(uri, context)
                                     if (url != null) {
                                         datos["foto"] = url
                                         fotoFirestore = url
                                     }
-
                                     firestore.collection("usuarios")
                                         .document(uid)
                                         .update(datos)
@@ -725,5 +853,46 @@ suspend fun subirImagen(uri: Uri, context: Context): String? {
 
     } catch (e: Exception) {
         null
+    }
+}
+
+
+@Composable
+fun TicketResumenCard(
+    ticket: Ticket,
+    onClick: () -> Unit
+) {
+    val colors = MaterialTheme.colorScheme
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = ticket.fecha.toFormattedString(),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.onSurfaceVariant
+            )
+
+            Text(
+                text = "%.2f €".format(ticket.total),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.primary
+            )
+        }
     }
 }

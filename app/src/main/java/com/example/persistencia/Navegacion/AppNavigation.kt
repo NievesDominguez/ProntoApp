@@ -28,6 +28,7 @@ import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.PantallaProducto
 import com.example.persistencia.Pantallas.Perfil
 import com.example.persistencia.Pantallas.Registro
+import com.example.persistencia.Pantallas.TicketDetalleScreen
 import com.stripe.android.paymentsheet.PaymentSheet
 
 
@@ -194,6 +195,14 @@ fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la i
                     navController.popBackStack()
                 }
                 ListaCompra(navController)
+            }
+
+            composable(
+                route = AppScreens.TicketDetalle.route + "/{ticketId}",
+                arguments = listOf(navArgument("ticketId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val ticketId = backStackEntry.arguments?.getString("ticketId") ?: return@composable
+                TicketDetalleScreen(ticketId = ticketId, navController = navController)
             }
 
 

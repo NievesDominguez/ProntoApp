@@ -1,6 +1,6 @@
 package com.example.persistencia.Firestore
 
-import com.example.persistencia.Modelos.ItemLista
+import com.example.persistencia.Modelos.ProductoLista
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -15,12 +15,12 @@ class ListasDao {
         db.collection("listas").document(it).collection("items")
     }
 
-    suspend fun getLista(): List<ItemLista> {
+    suspend fun getLista(): List<ProductoLista> {
         val ref = getItemsRef() ?: return emptyList()
         return try {
             val snapshot = ref.get().await()
             snapshot.documents.mapNotNull { doc ->
-                doc.toObject(ItemLista::class.java)?.copy(id = doc.id)
+                doc.toObject(ProductoLista::class.java)?.copy(id = doc.id)
             }
         } catch (e: Exception) { emptyList() }
     }
@@ -33,7 +33,7 @@ class ListasDao {
                 val nuevaCant = (doc.getLong("cantidad") ?: 0).toInt() + cantidad
                 ref.update("cantidad", nuevaCant).await()
             } else {
-                ref.set(ItemLista(id = idProducto, cantidad = cantidad, comprado = false)).await()
+                ref.set(ProductoLista(id = idProducto, cantidad = cantidad, comprado = false)).await()
             }
         } catch (e: Exception) { }
     }

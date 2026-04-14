@@ -28,7 +28,7 @@ import androidx.navigation.NavController
 import com.example.persistencia.Firestore.ListasDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Firestore.UsuariosDao
-import com.example.persistencia.Modelos.ItemLista
+import com.example.persistencia.Modelos.ProductoLista
 import com.example.persistencia.Modelos.Producto
 import kotlinx.coroutines.launch
 
@@ -43,7 +43,7 @@ fun ListaCompra(navController: NavController) {
     val density = LocalDensity.current
 
     // Estados de datos
-    var itemsLista by remember { mutableStateOf(listOf<ItemLista>()) }
+    var itemsLista by remember { mutableStateOf(listOf<ProductoLista>()) }
     var productosCatalogo by remember { mutableStateOf(listOf<Producto>()) }
     var textoBusqueda by remember { mutableStateOf("") }
     var sugerencias by remember { mutableStateOf(listOf<Producto>()) }

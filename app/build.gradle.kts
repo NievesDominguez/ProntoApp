@@ -141,6 +141,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.ui.text)
     implementation(libs.firebase.crashlytics.buildtools)
+    implementation(libs.androidx.ui.graphics)
     ksp("androidx.room:room-compiler:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation(libs.androidx.core.ktx)

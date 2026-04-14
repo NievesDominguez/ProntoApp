@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,17 +14,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Herramientas.CameraScannerView
@@ -31,32 +31,50 @@ import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
 import kotlinx.coroutines.launch
 
-// Estados posibles del snackbar personalizado
+// Estado del snackbar cuando se detecta un producto en el escaneo
 sealed class BarcodeSnackbarState {
     data class ProductoNormal(val producto: Producto) : BarcodeSnackbarState()
     data class ProductoPeso(
-        val productoOriginal: Producto,  // Producto base sin modificar
-        val pesoKg: Double               // Peso en kg escaneado
+        val producto: Producto,
+        val pesoKg: Double
     ) : BarcodeSnackbarState()
     data class Error(val mensaje: String) : BarcodeSnackbarState()
 }
 
+// Estado del snackbar cuando se añade automáticamente al carrito
+data class AddToCartSnackbarState(
+    val texto: String,
+    val producto: Producto,
+    val cantidad: Double
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarcodeScannerScreen(navController: NavHostController) {
+
     val context = LocalContext.current
     val activity = context as Activity
-    val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
 
     val productosDao = remember { ProductosDao() }
     val carritoDao = remember { CarritoDao() }
 
-    var ultimoCodigo by remember { mutableStateOf("") }
-    var snackbarVisible by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // Estado del snackbar de producto detectado
     var snackbarState by remember { mutableStateOf<BarcodeSnackbarState?>(null) }
 
-    // Permiso de cámara
+    // Estado del snackbar de añadido al carrito
+    var addSnackbar by remember { mutableStateOf<AddToCartSnackbarState?>(null) }
+
+    // Activa o desactiva el modo de auto añadido al carrito
+    var autoAddToCart by remember { mutableStateOf(false) }
+
+    // Evita duplicados rápidos en modo automático
+    var lastAddTime by remember { mutableStateOf(0L) }
+
+    var lastScanTime by remember { mutableStateOf(0L) }
+
+    // Solicitud de permiso de cámara al iniciar
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED
@@ -69,99 +87,90 @@ fun BarcodeScannerScreen(navController: NavHostController) {
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    val snackbarHost = @Composable {
 
-    // SnackbarHost personalizado que muestra el diseño adecuado según el estado
-    val customSnackbarHost = @Composable {
+        // Snackbar de producto detectado manualmente
         snackbarState?.let { state ->
             when (state) {
+
                 is BarcodeSnackbarState.ProductoNormal -> {
                     ProductoEncontradoSnackbar(
                         producto = state.producto,
-                        onDismiss = {
-                            snackbarState = null
-                            snackbarVisible = false
-                            ultimoCodigo = ""
-                        },
+                        onDismiss = { snackbarState = null },
                         onAddToCart = {
                             scope.launch {
-                                carritoDao.addCarrito(state.producto, 1.toDouble())
-                                // Pequeña confirmación con el Snackbar estándar (opcional)
-                                snackbarHostState.showSnackbar("Producto añadido")
+                                carritoDao.addCarrito(state.producto, 1.0)
+                                addSnackbar = AddToCartSnackbarState(
+                                    "${state.producto.nombre} añadido al carrito",
+                                    state.producto,
+                                    1.0
+                                )
                             }
                             snackbarState = null
-                            snackbarVisible = false
-                            ultimoCodigo = ""
                         },
                         onViewProduct = {
-                            navController.navigate("${AppScreens.PantallaProducto.route}/${state.producto.id}")
+                            navController.navigate(
+                                "${AppScreens.PantallaProducto.route}/${state.producto.id}"
+                            )
                             snackbarState = null
-                            snackbarVisible = false
-                            ultimoCodigo = ""
                         }
                     )
                 }
 
                 is BarcodeSnackbarState.ProductoPeso -> {
-                    // Creamos el producto con la cantidad y unidad adecuadas para añadir al carrito
-                    val productoConPeso = state.productoOriginal.copy(
-                        cantidad = state.pesoKg,
-                        unidad = "kg"
-                    )
                     ProductoEncontradoSnackbar(
-                        producto = state.productoOriginal, // Mostramos el nombre original
-                        onDismiss = {
-                            snackbarState = null
-                            snackbarVisible = false
-                            ultimoCodigo = ""
-                        },
+                        producto = state.producto,
+                        onDismiss = { snackbarState = null },
                         onAddToCart = {
                             scope.launch {
-                                // Añadimos la cantidad como el peso
-                                carritoDao.addCarrito(productoConPeso, state.pesoKg)
-                                snackbarHostState.showSnackbar("${state.pesoKg} kg de ${state.productoOriginal.nombre} añadido")
+                                carritoDao.addCarrito(state.producto, state.pesoKg)
+                                addSnackbar = AddToCartSnackbarState(
+                                    "${state.producto.nombre} añadido al carrito",
+                                    state.producto,
+                                    state.pesoKg
+                                )
                             }
                             snackbarState = null
-                            snackbarVisible = false
-                            ultimoCodigo = ""
                         },
                         onViewProduct = {
-                            // Navegamos usando el id original del producto base
-                            navController.navigate("${AppScreens.PantallaProducto.route}/${state.productoOriginal.id}")
+                            navController.navigate(
+                                "${AppScreens.PantallaProducto.route}/${state.producto.id}"
+                            )
                             snackbarState = null
-                            snackbarVisible = false
-                            ultimoCodigo = ""
                         }
                     )
                 }
 
                 is BarcodeSnackbarState.Error -> {
-                    Snackbar(
-                        modifier = Modifier.padding(16.dp),
-                        action = {
-                            TextButton(onClick = {
-                                snackbarState = null
-                                snackbarVisible = false
-                                ultimoCodigo = ""
-                            }) {
-                                Text("Cerrar")
-                            }
-                        },
-                        dismissAction = {
-                            IconButton(onClick = {
-                                snackbarState = null
-                                snackbarVisible = false
-                                ultimoCodigo = ""
-                            }) {
-                                Icon(Icons.Default.Close, contentDescription = "Cerrar")
-                            }
-                        }
-                    ) {
+                    Snackbar(Modifier.padding(16.dp)) {
                         Text(state.mensaje)
                     }
                 }
+            }
+        }
 
+        // Snackbar de añadido automático o manual con opción de deshacer
+        addSnackbar?.let { state ->
+
+            Snackbar(
+                modifier = Modifier.padding(16.dp),
+                action = {
+                    TextButton(onClick = {
+                        scope.launch {
+
+                            // Si el producto es al peso se usa la cantidad real añadida
+                            val undoAmount =
+                                if (state.producto.al_peso == true) state.cantidad else 1.0
+
+                            carritoDao.addCarrito(state.producto, -undoAmount)
+                        }
+                        addSnackbar = null
+                    }) {
+                        Text("Deshacer")
+                    }
+                }
+            ) {
+                Text(state.texto)
             }
         }
     }
@@ -170,142 +179,117 @@ fun BarcodeScannerScreen(navController: NavHostController) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Escanea un código",
-                        color = colors.onBackground,
-                        fontSize = MaterialTheme.typography.titleLarge.fontSize,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
+                    Text("Escanea un código", fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = colors.onBackground
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = colors.onBackground
-                )
+                actions = {
+                    // Activa o desactiva el modo automático de añadir al carrito
+                    IconButton(onClick = { autoAddToCart = !autoAddToCart }) {
+                        Icon(
+                            imageVector = if (autoAddToCart)
+                                Icons.Default.ToggleOn
+                            else
+                                Icons.Default.ToggleOff,
+                            contentDescription = "Auto añadir al carrito",
+                            tint = if (autoAddToCart)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
             )
         },
-        containerColor = Color.Transparent,
-        snackbarHost = { customSnackbarHost() }
+        snackbarHost = { snackbarHost() },
+        containerColor = Color.Transparent
     ) { padding ->
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colors.background)
-                .drawBehind {
-                    val edgeWidth = with(density) { 25.dp.toPx() }
-                    val primaryColor = colors.primary.copy(alpha = 0.1f)
-                    val secondaryColor = colors.secondary.copy(alpha = 0.05f)
-                    val width = size.width
-                    val height = size.height
-
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(primaryColor, Color.Transparent),
-                            startY = 0f,
-                            endY = edgeWidth
-                        ),
-                        topLeft = Offset(0f, 0f),
-                        size = Size(width, edgeWidth)
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, primaryColor),
-                            startY = height - edgeWidth,
-                            endY = height
-                        ),
-                        topLeft = Offset(0f, height - edgeWidth),
-                        size = Size(width, edgeWidth)
-                    )
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(secondaryColor, Color.Transparent),
-                            startX = 0f,
-                            endX = edgeWidth
-                        ),
-                        topLeft = Offset(0f, 0f),
-                        size = Size(edgeWidth, height)
-                    )
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(Color.Transparent, secondaryColor),
-                            startX = width - edgeWidth,
-                            endX = width
-                        ),
-                        topLeft = Offset(width - edgeWidth, 0f),
-                        size = Size(edgeWidth, height)
-                    )
-                }
                 .padding(padding)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = colors.surfaceVariant.copy(alpha = 0.9f)
-                    ),
-                    elevation = CardDefaults.cardElevation(8.dp)
-                ) {
-                    CameraScannerView(
-                        modifier = Modifier.fillMaxSize()
-                    ) { codigo ->
-                        // Ignorar si es el mismo código y el snackbar sigue visible
-                        if (snackbarVisible && codigo == ultimoCodigo) {
-                            return@CameraScannerView
-                        }
 
-                        // Cerrar snackbar anterior si existe (código diferente)
-                        if (snackbarVisible) {
-                            snackbarState = null
-                            snackbarVisible = false
-                        }
+            CameraScannerView(
+                modifier = Modifier.fillMaxSize()
+            ) { codigo ->
 
-                        ultimoCodigo = codigo
-                        snackbarVisible = true
+                val now = System.currentTimeMillis()
 
-                        scope.launch {
-                            try {
-                                // 1. Buscar producto normal
-                                val productoNormal = productosDao.getProducto(codigo)
-                                if (productoNormal != null) {
-                                    snackbarState = BarcodeSnackbarState.ProductoNormal(productoNormal)
-                                    return@launch
-                                }
+                // Evita múltiples disparos del scanner por el mismo frame
+                if (now - lastScanTime < 1200) return@CameraScannerView
 
-                                // 2. Producto al peso (EAN-13 que empieza por 23)
-                                if (codigo.length == 13 && codigo.startsWith("23")) {
-                                    val codigoInterno = codigo.substring(2, 7)
-                                    val pesoGramos = codigo.substring(7, 12).toIntOrNull() ?: 0
-                                    val pesoKg = pesoGramos / 1000.0
+                lastScanTime = now
 
-                                    val productoBase = productosDao.getProducto(codigoInterno)
-                                    if (productoBase != null) {
-                                        snackbarState = BarcodeSnackbarState.ProductoPeso(productoBase, pesoKg)
-                                        return@launch
-                                    }
-                                }
+                scope.launch {
 
-                                // 3. Código no reconocido
-                                snackbarState = BarcodeSnackbarState.Error("Código no reconocido: $codigo")
-                            } catch (e: Exception) {
-                                snackbarState = BarcodeSnackbarState.Error("Error: ${e.message}")
+                    val productoNormal = productosDao.getProducto(codigo)
+
+                    // Producto estándar encontrado
+                    if (productoNormal != null) {
+
+                        if (autoAddToCart) {
+
+                            // Evita añadir varias veces seguidas el mismo producto
+                            if (now - lastAddTime > 1500) {
+                                carritoDao.addCarrito(productoNormal, 1.0)
+                                lastAddTime = now
+
+                                addSnackbar = AddToCartSnackbarState(
+                                    "${productoNormal.nombre} añadido al carrito",
+                                    productoNormal,
+                                    1.0
+                                )
                             }
+
+                            return@launch
+                        }
+
+                        snackbarState = BarcodeSnackbarState.ProductoNormal(productoNormal)
+                        return@launch
+                    }
+
+                    // Producto vendido por peso (EAN-13 especial)
+                    if (codigo.length == 13 && codigo.startsWith("23")) {
+
+                        val codigoInterno = codigo.substring(2, 7)
+                        val pesoKg =
+                            (codigo.substring(7, 12).toIntOrNull() ?: 0) / 1000.0
+
+                        val productoBase = productosDao.getProducto(codigoInterno)
+
+                        if (productoBase != null) {
+
+                            if (autoAddToCart) {
+
+                                if (now - lastAddTime > 1500) {
+                                    carritoDao.addCarrito(productoBase, pesoKg)
+                                    lastAddTime = now
+
+                                    addSnackbar = AddToCartSnackbarState(
+                                        "${productoBase.nombre} añadido al carrito",
+                                        productoBase,
+                                        pesoKg
+                                    )
+                                }
+
+                                return@launch
+                            }
+
+                            snackbarState = BarcodeSnackbarState.ProductoPeso(
+                                productoBase,
+                                pesoKg
+                            )
+                            return@launch
                         }
                     }
+
+                    // Código no reconocido en base de datos
+                    snackbarState = BarcodeSnackbarState.Error("Código no reconocido")
                 }
             }
         }
@@ -313,9 +297,10 @@ fun BarcodeScannerScreen(navController: NavHostController) {
 }
 
 /**
- * Snackbar personalizado para productos encontrados (normales o al peso).
- * Muestra el nombre del producto y dos acciones: añadir al carrito y ver producto.
+ * Snackbar que muestra información del producto escaneado.
+ * Permite añadir al carrito o ver detalle del producto.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductoEncontradoSnackbar(
     producto: Producto,
@@ -323,36 +308,64 @@ fun ProductoEncontradoSnackbar(
     onAddToCart: () -> Unit,
     onViewProduct: () -> Unit
 ) {
-    Snackbar(
-        modifier = Modifier.padding(16.dp),
-        action = {
-            Row {
-                IconButton(onClick = onAddToCart) {
-                    Icon(
-                        Icons.Outlined.ShoppingCart,
-                        contentDescription = "Añadir al carrito",
-                        tint = MaterialTheme.colorScheme.primary
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    // Detecta swipe para cerrar el snackbar
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd ||
+            dismissState.currentValue == SwipeToDismissBoxValue.EndToStart
+        ) {
+            onDismiss()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {},
+        content = {
+            Snackbar(Modifier.padding(16.dp)) {
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onViewProduct() },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    AsyncImage(
+                        model = producto.imagenUrl,
+                        contentDescription = "Imagen producto",
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit
                     )
-                }
-                IconButton(onClick = onViewProduct) {
-                    Icon(
-                        Icons.Default.Visibility,
-                        contentDescription = "Ver producto",
-                        tint = MaterialTheme.colorScheme.primary
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        Text(
+                            text = producto.nombre,
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Text(
+                        text = "${producto.precio} €",
+                        modifier = Modifier.padding(end = 8.dp)
                     )
+
+                    IconButton(onClick = onAddToCart) {
+                        Icon(
+                            Icons.Outlined.ShoppingCart,
+                            contentDescription = "Añadir al carrito"
+                        )
+                    }
                 }
-            }
-        },
-        dismissAction = {
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Cerrar")
             }
         }
-    ) {
-        Text(
-            text = producto.nombre.take(40),
-            maxLines = 2,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-        )
-    }
+    )
 }

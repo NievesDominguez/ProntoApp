@@ -11,6 +11,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.persistencia.Herramientas.CheckoutHelper
 import com.example.persistencia.Herramientas.LocalThemeManager
 import com.example.persistencia.Herramientas.ThemeManager
 import com.example.persistencia.Herramientas.ThemePreference
@@ -19,6 +21,7 @@ import com.example.persistencia.Navegacion.AppNavigation
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -36,6 +39,14 @@ class MainActivity : ComponentActivity() {
             when (result) {
                 is PaymentSheetResult.Completed -> {
                     Toast.makeText(this, "Pago completado", Toast.LENGTH_SHORT).show()
+                    lifecycleScope.launch {
+                        val ticketId = CheckoutHelper.finalizarCompra(limpiarCarrito = true)
+                        if (ticketId != null) {
+                            Toast.makeText(this@MainActivity, "Compra registrada", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@MainActivity, "Error al guardar la compra", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
                 is PaymentSheetResult.Canceled -> {
                     Toast.makeText(this, "Pago cancelado", Toast.LENGTH_SHORT).show()

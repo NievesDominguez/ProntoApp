@@ -137,6 +137,26 @@ class CarritoDao {
             false
         }
     }
+
+    // Vacía el carrito de cupones y productos
+    suspend fun vaciarCarrito() {
+        val uid = Firebase.auth.currentUser?.uid ?: return
+        val productosRef = Firebase.firestore.collection("carrito").document(uid).collection("productos")
+        val cuponesRef = Firebase.firestore.collection("carrito").document(uid).collection("cupones")
+
+        try {
+            val productosSnap = productosRef.get().await()
+            for (doc in productosSnap.documents) {
+                doc.reference.delete().await()
+            }
+            val cuponesSnap = cuponesRef.get().await()
+            for (doc in cuponesSnap.documents) {
+                doc.reference.delete().await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
 
 
