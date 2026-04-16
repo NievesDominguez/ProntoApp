@@ -4,6 +4,7 @@ import com.example.persistencia.Modelos.Producto
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import kotlin.compareTo
 
 
 class ProductosDao {
@@ -102,7 +103,12 @@ class ProductosDao {
     }
 
     // Actualiza un producto en Firestore
-    suspend fun actualizarProducto(id: String, nombre: String, precio: Double, descripcion: String) {
+    suspend fun actualizarProducto(
+        id: String,
+        nombre: String,
+        precio: Double,
+        descripcion: String
+    ) {
         coleccion
             .document(id)
             .update(
@@ -114,4 +120,53 @@ class ProductosDao {
             )
     }
 
+    // Obtener productos similares al dado
+    suspend fun getProductosSimilares(
+        productoReferencia: Producto,
+        limite: Int = 3,
+        excluirIds: Set<String> = emptySet()
+    ): List<Producto> {
+        val palabras = extraerPalabrasClave(productoReferencia.nombre)
+        if (palabras.isEmpty()) return emptyList()
+
+        // Obtener productos candidatos: con stock > 0 y que no estén excluidos
+        val todos = getTodos().filter {
+            it.stock > 0 &&
+                    it.id != productoReferencia.id &&
+                    it.id !in excluirIds
+        }
+
+        // Puntuar cada producto por coincidencia de palabras clave
+        val puntuados = todos.map { prod ->
+            val palabrasProd = extraerPalabrasClave(prod.nombre)
+            val coincidencias = palabrasProd.count { it in palabras }
+            prod to coincidencias
+        }.filter { it.second > 0 }
+
+        // Ordenar por coincidencias y luego por cercanía de categoría
+        return puntuados
+            .sortedWith(
+                compareByDescending<Pair<Producto, Int>> { it.second }
+                    .thenBy { if (it.first.categoria == productoReferencia.categoria) 0 else 1 }
+                    .thenBy { if (it.first.subcategoria == productoReferencia.subcategoria) 0 else 1 }
+            )
+            .take(limite)
+            .map { it.first }
+    }
+
+    //Extrae palabras clave del nombre de un producto
+    fun extraerPalabrasClave(texto: String): List<String> {
+        // Palabras a ignorar
+        val stopWords = setOf(
+            "de", "la", "el", "los", "las", "un", "una", "y", "con", "sin",
+            "para", "por", "en", "a", "ante", "bajo", "cabe", "contra", "desde",
+            "durante", "entre", "hacia", "hasta", "mediante", "según", "sobre", "tras"
+        )
+        return texto.lowercase()
+            .split(Regex("[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]"))  // separar por caracteres no alfabéticos
+            .filter { it.length > 2 && it !in stopWords }
+            .distinct()
+    }
+
 }
+

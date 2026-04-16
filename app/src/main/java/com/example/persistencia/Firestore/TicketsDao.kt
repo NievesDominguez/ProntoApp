@@ -67,4 +67,21 @@ class TicketsDao {
             null
         }
     }
+
+    // Devuelve los tickets más recientes
+    suspend fun getUltimosTickets(limit: Int = 5): List<Ticket> {
+        val collection = getTicketsCollection() ?: return emptyList()
+        return try {
+            val snapshot = collection
+                .orderBy("fecha", Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Ticket::class.java)?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }

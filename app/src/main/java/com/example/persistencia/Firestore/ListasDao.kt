@@ -25,12 +25,12 @@ class ListasDao {
         } catch (e: Exception) { emptyList() }
     }
 
-    suspend fun addItem(idProducto: String, cantidad: Int = 1) {
+    suspend fun addItem(idProducto: String, cantidad: Double = 1.0) {
         val ref = getItemsRef()?.document(idProducto) ?: return
         try {
             val doc = ref.get().await()
             if (doc.exists()) {
-                val nuevaCant = (doc.getLong("cantidad") ?: 0).toInt() + cantidad
+                val nuevaCant = (doc.getDouble("cantidad") ?: 0.0) + cantidad
                 ref.update("cantidad", nuevaCant).await()
             } else {
                 ref.set(ProductoLista(id = idProducto, cantidad = cantidad, comprado = false)).await()
@@ -46,8 +46,8 @@ class ListasDao {
         getItemsRef()?.document(id)?.update("comprado", estado)?.await()
     }
 
-    suspend fun actualizarCantidad(id: String, nuevaCantidad: Int) {
-        if (nuevaCantidad > 0) {
+    suspend fun actualizarCantidad(id: String, nuevaCantidad: Double) {
+        if (nuevaCantidad > 0.0) {
             getItemsRef()?.document(id)?.update("cantidad", nuevaCantidad)?.await()
         } else {
             eliminarItem(id)
