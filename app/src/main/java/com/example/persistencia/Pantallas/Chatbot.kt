@@ -40,15 +40,20 @@ import com.example.persistencia.Herramientas.ChatViewModel
 import com.example.persistencia.Modelos.Mensaje
 import kotlinx.coroutines.delay
 
+/**
+ * Pantalla principal del chatbot.
+ * Muestra el historial de mensajes, un campo de entrada y envía mensajes al ViewModel.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Chatbot(
     viewModel: ChatViewModel = viewModel(),
     onBack: () -> Unit
 ) {
-    val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
+    val colors = MaterialTheme.colorScheme // Colores del tema
+    val density = LocalDensity.current // Para convertir dp a píxeles
 
+    // Dibuja un degradado en los bordes de la pantalla
     val backgroundModifier = Modifier
         .fillMaxSize()
         .background(colors.background)
@@ -58,7 +63,7 @@ fun Chatbot(
             val secondaryColor = colors.secondary.copy(alpha = 0.05f)
             val width = size.width
             val height = size.height
-
+            // Borde superior
             drawRect(
                 brush = Brush.verticalGradient(
                     colors = listOf(primaryColor, Color.Transparent),
@@ -66,6 +71,7 @@ fun Chatbot(
                 ),
                 topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
             )
+            // Borde inferior
             drawRect(
                 brush = Brush.verticalGradient(
                     colors = listOf(Color.Transparent, primaryColor),
@@ -73,6 +79,7 @@ fun Chatbot(
                 ),
                 topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
             )
+            // Borde izquierdo
             drawRect(
                 brush = Brush.horizontalGradient(
                     colors = listOf(secondaryColor, Color.Transparent),
@@ -80,6 +87,7 @@ fun Chatbot(
                 ),
                 topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
             )
+            // Borde derecho
             drawRect(
                 brush = Brush.horizontalGradient(
                     colors = listOf(Color.Transparent, secondaryColor),
@@ -89,30 +97,33 @@ fun Chatbot(
             )
         }
 
-    val messages by viewModel.messages
-    val isLoading by viewModel.isLoading
+    // Estados del ViewModel
+    val messages by viewModel.messages // Lista de mensajes
+    val isLoading by viewModel.isLoading // Indicador de carga
 
-    var inputText by remember { mutableStateOf("") }
+    var inputText by remember { mutableStateOf("") } // Texto que el usuario está escribiendo
 
-    val listState = rememberLazyListState()
+    val listState = rememberLazyListState() // Estado para el scroll automático de la lista
     val context = LocalContext.current
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() } // Para solicitar foco al campo de texto
 
+    // Cada vez que se añade un mensaje nuevo, se desplaza automáticamente al final
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.lastIndex)
         }
     }
 
+    // Función para enviar el mensaje. Limpia el input y llama al ViewModel
     fun sendMessage() {
         if (inputText.isNotBlank() && !isLoading) {
             viewModel.sendMessage(inputText, context)
             inputText = ""
-            focusRequester.requestFocus()
+            focusRequester.requestFocus() // Mantiene el foco para seguir escribiendo
         }
     }
 
+    // Barra superior y contenido
     Scaffold(
         topBar = {
             TopAppBar(
@@ -125,6 +136,7 @@ fun Chatbot(
                     )
                 },
                 navigationIcon = {
+                    // Botón para volver atrás
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Lucide.ChevronLeft,
@@ -146,9 +158,10 @@ fun Chatbot(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
+                // Área de mensajes
                 LazyColumn(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f) // Ocupa todo el espacio disponible
                         .padding(horizontal = 12.dp),
                     state = listState,
                     contentPadding = PaddingValues(vertical = 16.dp)
@@ -157,6 +170,7 @@ fun Chatbot(
                         MessageBubble(message = message)
                     }
 
+                    // Animación de ... para indicar que el bot está escribiendo
                     if (isLoading) {
                         item {
                             var dotCount by remember { mutableStateOf(1) }
@@ -164,7 +178,7 @@ fun Chatbot(
                             LaunchedEffect(Unit) {
                                 while (true) {
                                     delay(500)
-                                    dotCount = (dotCount % 3) + 1
+                                    dotCount = (dotCount % 3) + 1 // Ciclo 1,2,3,1,2,3...
                                 }
                             }
 
@@ -192,19 +206,21 @@ fun Chatbot(
                     }
                 }
 
+                // Barra inferior con el campo de texto y botón de enviar
                 ChatInputBar(
                     inputText = inputText,
                     onTextChange = { inputText = it },
                     isLoading = isLoading,
                     onSend = { sendMessage() },
                     focusRequester = focusRequester,
-                    modifier = Modifier.imePadding()
+                    modifier = Modifier.imePadding() // Se ajusta cuando el teclado está abierto
                 )
             }
         }
     }
 }
 
+// Barra de entrada de texto y botón de enviar.
 @Composable
 fun ChatInputBar(
     inputText: String,
@@ -216,19 +232,19 @@ fun ChatInputBar(
 ) {
     val colors = MaterialTheme.colorScheme
 
-
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Contenedor del campo de texto con fondo redondeado
         Box(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(24.dp))
                 .background(colors.onPrimary.copy(alpha = 0.8f))
-                .focusRequester(focusRequester)
+                .focusRequester(focusRequester) // Permite solicitar el foco automáticamente
         ) {
             BasicTextField(
                 value = inputText,
@@ -247,11 +263,12 @@ fun ChatInputBar(
                     autoCorrect = true
                 ),
                 keyboardActions = KeyboardActions(
-                    onSend = { onSend() }
+                    onSend = { onSend() } // Enviar al presionar el botón enviar del teclado
                 ),
                 decorationBox = { innerTextField ->
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (inputText.isEmpty()) {
+                            // Placeholder cuando no se ha escrito
                             Text(
                                 text = "Escribe un mensaje...",
                                 color = colors.onSurface.copy(alpha = 0.5f),
@@ -266,6 +283,7 @@ fun ChatInputBar(
 
         Spacer(modifier = Modifier.width(10.dp))
 
+        // Botón de enviar
         FilledIconButton(
             onClick = onSend,
             enabled = !isLoading,
@@ -274,6 +292,7 @@ fun ChatInputBar(
                 containerColor = colors.primary
             )
         ) {
+            // Muestra un progreso mientras se espera respuesta
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
@@ -286,15 +305,19 @@ fun ChatInputBar(
     }
 }
 
+// Burbuja de mensaje individual
 @Composable
 fun MessageBubble(message: Mensaje) {
     val colors = MaterialTheme.colorScheme
     val isUser = message.sender == Mensaje.Sender.USER
 
+    // Colores y forma según el emisor
     val bubbleColor = if (isUser) colors.primary else colors.onPrimary.copy(alpha = 0.8f)
     val textColor = if (isUser) Color.White else colors.onSurfaceVariant
+    // Usuario: esquina superior derecha recta
     val shape = if (isUser)
         RoundedCornerShape(16.dp, 0.dp, 16.dp, 16.dp)
+    // Bot: esquina superior izquierda recta
     else
         RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)
 
@@ -309,7 +332,7 @@ fun MessageBubble(message: Mensaje) {
             shape = shape,
             tonalElevation = 3.dp,
             shadowElevation = 6.dp,
-            modifier = Modifier.widthIn(max = 280.dp)
+            modifier = Modifier.widthIn(max = 280.dp) // Evita que la burbuja sea demasiado ancha
         ) {
             Text(
                 text = message.content,
