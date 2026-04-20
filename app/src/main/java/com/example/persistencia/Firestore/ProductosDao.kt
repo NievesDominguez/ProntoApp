@@ -123,35 +123,43 @@ class ProductosDao {
     // Obtener productos similares al dado
     suspend fun getProductosSimilares(
         productoReferencia: Producto,
-        limite: Int = 3,
+        limite: Int = 5,
         excluirIds: Set<String> = emptySet()
     ): List<Producto> {
-        val palabras = extraerPalabrasClave(productoReferencia.nombre)
-        if (palabras.isEmpty()) return emptyList()
-
-        // Obtener productos candidatos: con stock > 0 y que no estén excluidos
         val todos = getTodos().filter {
             it.stock > 0 &&
                     it.id != productoReferencia.id &&
                     it.id !in excluirIds
         }
 
-        // Puntuar cada producto por coincidencia de palabras clave
-        val puntuados = todos.map { prod ->
-            val palabrasProd = extraerPalabrasClave(prod.nombre)
-            val coincidencias = palabrasProd.count { it in palabras }
-            prod to coincidencias
-        }.filter { it.second > 0 }
+        // Buscar por palabras clave
+        val palabras = extraerPalabrasClave(productoReferencia.nombre)
+        if (palabras.isNotEmpty()) {
+            val candidatos = todos.mapNotNull { prod ->
+                val palabrasProd = extraerPalabrasClave(prod.nombre)
+                val coincidencias = palabrasProd.count { it in palabras }
+                if (coincidencias > 0) prod to coincidencias else null
+            }
+            if (candidatos.isNotEmpty()) {
+                return candidatos
+                    .sortedWith(
+                        compareByDescending<Pair<Producto, Int>> { it.second }
+                            .thenBy { if (it.first.categoria == productoReferencia.categoria) 0 else 1 }
+                            .thenBy { if (it.first.subcategoria == productoReferencia.subcategoria) 0 else 1 }
+                    )
+                    .take(limite)
+                    .map { it.first }
+            }
+        }
 
-        // Ordenar por coincidencias y luego por cercanía de categoría
-        return puntuados
-            .sortedWith(
-                compareByDescending<Pair<Producto, Int>> { it.second }
-                    .thenBy { if (it.first.categoria == productoReferencia.categoria) 0 else 1 }
-                    .thenBy { if (it.first.subcategoria == productoReferencia.subcategoria) 0 else 1 }
-            )
-            .take(limite)
-            .map { it.first }
+        // Misma subcategoría
+        val mismaSub = todos.filter { it.subcategoria == productoReferencia.subcategoria }
+        if (mismaSub.isNotEmpty()) {
+            return mismaSub.take(limite)
+        }
+
+        // Misma categoría
+        return todos.filter { it.categoria == productoReferencia.categoria }.take(limite)
     }
 
     //Extrae palabras clave del nombre de un producto
@@ -160,7 +168,7 @@ class ProductosDao {
         val stopWords = setOf(
             "de", "la", "el", "los", "las", "un", "una", "y", "con", "sin",
             "para", "por", "en", "a", "ante", "bajo", "cabe", "contra", "desde",
-            "durante", "entre", "hacia", "hasta", "mediante", "según", "sobre", "tras"
+            "durante", "entre", "hacia", "hasta", "mediante", "según", "tras"
         )
         return texto.lowercase()
             .split(Regex("[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]"))  // separar por caracteres no alfabéticos

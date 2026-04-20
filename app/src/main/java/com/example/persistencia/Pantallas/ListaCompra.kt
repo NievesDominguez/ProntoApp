@@ -1,5 +1,6 @@
 package com.example.persistencia.Pantallas
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -40,6 +42,7 @@ fun ListaCompra(navController: NavController) {
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
     val density = LocalDensity.current
+    val context = LocalContext.current
 
     val itemsLista by viewModel.itemsLista.collectAsState()
     val productosCatalogo by viewModel.productosCatalogo.collectAsState()
@@ -339,7 +342,10 @@ fun ListaCompra(navController: NavController) {
                                                 }
                                             },
                                             onVerAlternativas = { prod ->
-                                                // Mostrar diálogo con alternativas
+                                                scope.launch {
+                                                    viewModel.generarSugerencias()
+                                                    mostrarSugerencias = true
+                                                }
                                             }
                                         )
                                     }
@@ -418,7 +424,7 @@ fun ListaCompra(navController: NavController) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Sugerencias basadas en tus compras",
+                        "Sugerencias para tu lista",
                         style = MaterialTheme.typography.titleLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -428,16 +434,21 @@ fun ListaCompra(navController: NavController) {
                                 headlineContent = { Text(producto.nombre) },
                                 supportingContent = { Text("${producto.precio} €") },
                                 trailingContent = {
-                                    Button(onClick = {
-                                        scope.launch {
-                                            viewModel.addItem(producto.id)
-                                            mostrarSugerencias = false
-                                            viewModel.limpiarSugerencias()
-                                        }
-                                    }) {
-                                        Text(
-                                            text = "Añadir",
-                                            color = colors.onBackground
+
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                viewModel.addItem(producto.id)
+                                                mostrarSugerencias = false
+                                                viewModel.limpiarSugerencias()
+                                            }
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AddCircleOutline,
+                                            contentDescription = "Añadir",
+                                            tint = colors.onBackground
                                         )
                                     }
                                 }
@@ -462,6 +473,7 @@ fun TarjetaProductoLista(
 ) {
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -501,7 +513,14 @@ fun TarjetaProductoLista(
                         )
                         if (datosProducto?.stock == 0) {
                             IconButton(
-                                onClick = { onVerAlternativas(datosProducto) },
+                                onClick = {
+                                    Toast.makeText(
+                                        context,
+                                        "Producto no disponible",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    onVerAlternativas(datosProducto)
+                                },
                                 modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(

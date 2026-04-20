@@ -1,5 +1,6 @@
 package com.example.persistencia.Herramientas
 
+import android.util.Log
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ListasDao
 import com.example.persistencia.Firestore.ProductosDao
@@ -9,7 +10,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoLista
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,42 +69,67 @@ class ListaCompraViewModel : ViewModel() {
     fun generarSugerencias() {
         viewModelScope.launch {
             _isLoading.value = true
-            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
 
-            // Obtener últimos 5 tickets
+            val userId = Firebase.auth.currentUser?.uid
+            if (userId == null) {
+                _isLoading.value = false
+                return@launch
+            }
+
+            // Sugerencias basadas en historial de compras
             val ultimosTickets = ticketsDao.getUltimosTickets(5)
-
-            // Contar frecuencia de productos
             val frecuencia = mutableMapOf<String, Int>()
             ultimosTickets.forEach { ticket ->
-                ticket.productos.forEach { item ->
-                    frecuencia[item.productoId] = frecuencia.getOrDefault(item.productoId, 0) + 1
+                ticket.productos.forEach { prod ->
+                    frecuencia[prod.productoId] = frecuencia.getOrDefault(prod.productoId, 0) + 1
                 }
             }
 
-            // Filtrar productos que ya están en la lista
             val idsEnLista = _itemsLista.value.map { it.id }.toSet()
             val idsSugeridos = frecuencia.keys.filter { it !in idsEnLista }
 
-            // Obtener productos sugeridos
-            val productosSugeridos = idsSugeridos
+            val productosFrecuentes = idsSugeridos
                 .mapNotNull { productosDao.getProducto(it) }
                 .filter { it.stock > 0 }
                 .sortedByDescending { frecuencia[it.id] ?: 0 }
                 .take(10)
 
-            _sugerencias.value = productosSugeridos
+            // Alternativas para productos agotados en la lista
+            Log.d("ListaCompraVM", "Iniciando generación de sugerencias")
+
+            val productosAgotados = _itemsLista.value
+                .mapNotNull { item -> productosCatalogo.value.find { it.id == item.id } }
+                .filter { it.stock == 0 }
+
+            Log.d("ListaCompraVM", "Productos agotados en lista: ${productosAgotados.size}")
+            productosAgotados.forEach { Log.d("ListaCompraVM", " - ${it.nombre} (stock: ${it.stock})") }
+
+            val alternativasAgotados = mutableListOf<Producto>()
+            val idsYaEnLista = _itemsLista.value.map { it.id }.toSet()
+            val idsProcesados = mutableSetOf<String>()
+
+            for (prodAgotado in productosAgotados) {
+                Log.d("ListaCompraVM", "Buscando similares para: ${prodAgotado.nombre}")
+                val similares = productosDao.getProductosSimilares(
+                    productoReferencia = prodAgotado,
+                    limite = 3,
+                    excluirIds = idsYaEnLista + idsProcesados
+                )
+                Log.d("ListaCompraVM", "Similares encontrados: ${similares.size}")
+                similares.forEach { Log.d("ListaCompraVM", "   -> ${it.nombre}") }
+                alternativasAgotados.addAll(similares)
+                idsProcesados.addAll(similares.map { it.id })
+            }
+
+            // Combinar listas (primero alternativas por agotado, luego frecuentes)
+            val todasSugerencias = (alternativasAgotados + productosFrecuentes).distinctBy { it.id }
+            _sugerencias.value = todasSugerencias
             _isLoading.value = false
         }
     }
 
-    suspend fun getAlternativas(producto: Producto): List<Producto> {
-        val idsExcluidos = _itemsLista.value.map { it.id }.toSet()
-        return productosDao.getProductosSimilares(
-            productoReferencia = producto,
-            limite = 5,
-            excluirIds = idsExcluidos
-        )
+    fun limpiarSugerencias() {
+        _sugerencias.value = emptyList()
     }
 
     suspend fun addItem(idProducto: String, cantidad: Double = 1.0) {
@@ -132,9 +160,5 @@ class ListaCompraViewModel : ViewModel() {
     suspend fun eliminarTodo() {
         listasDao.eliminarTodo()
         _itemsLista.value = emptyList()
-    }
-
-    fun limpiarSugerencias() {
-        _sugerencias.value = emptyList()
     }
 }
