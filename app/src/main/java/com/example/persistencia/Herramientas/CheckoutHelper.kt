@@ -63,7 +63,7 @@ object CheckoutHelper {
         }
     }
 
-    private fun calcularTicket(
+    fun calcularTicket(
         productosCarrito: List<ProductoCarrito>,
         ofertas: List<Descuento>,
         cupones: List<Descuento>
@@ -97,8 +97,8 @@ object CheckoutHelper {
             if (oferta != null && oferta.formula?.get("tipo") in listOf("segunda_unidad", "n_por_m")) {
                 val precioOriginalGrupo = itemsGrupo.sumOf { it.producto.precio * it.cantidad }
                 val precioConOferta = when (oferta.formula?.get("tipo")) {
-                    "segunda_unidad" -> aplicarSegundaUnidadCombinable(itemsGrupo, oferta)
-                    "n_por_m" -> aplicarNxMCombinable(itemsGrupo, oferta)
+                    "segunda_unidad" -> segundaUnidad(itemsGrupo, oferta)
+                    "n_por_m" -> aplicarNxM(itemsGrupo, oferta)
                     else -> precioOriginalGrupo
                 }
                 val ahorro = precioOriginalGrupo - precioConOferta

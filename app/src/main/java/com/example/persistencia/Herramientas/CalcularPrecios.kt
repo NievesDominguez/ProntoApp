@@ -5,7 +5,7 @@ import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoCarrito
 
 // Segunda unidad combinable
-fun aplicarSegundaUnidadCombinable(
+fun segundaUnidad(
     items: List<ProductoCarrito>,
     oferta: Descuento
 ): Double {
@@ -37,7 +37,7 @@ fun aplicarSegundaUnidadCombinable(
 }
 
 // n por m combinable (3x2, 4x3…)
-fun aplicarNxMCombinable(
+fun aplicarNxM(
     items: List<ProductoCarrito>,
     oferta: Descuento
 ): Double {
@@ -70,13 +70,13 @@ fun calcularTotalGrupo(
     oferta: Descuento
 ): Double {
     return when (oferta.formula?.get("tipo")) {
-        "segunda_unidad" -> aplicarSegundaUnidadCombinable(items, oferta)
-        "n_por_m" -> aplicarNxMCombinable(items, oferta)
+        "segunda_unidad" -> segundaUnidad(items, oferta)
+        "n_por_m" -> aplicarNxM(items, oferta)
         else -> items.sumOf { it.producto.precio * it.cantidad }
     }
 }
 
-fun calcularPreciosUnitariosSegundaUnidad(
+fun precioUnitario2Ud(
     items: List<ProductoCarrito>,
     oferta: Descuento
 ): List<Double> {
@@ -112,7 +112,7 @@ fun calcularPreciosUnitariosSegundaUnidad(
     return preciosFinales
 }
 
-fun calcularPreciosUnitariosNxM(
+fun precioUnitarioNxM(
     items: List<ProductoCarrito>,
     oferta: Descuento
 ): List<Double> {
@@ -155,8 +155,8 @@ fun calcularPrecioProducto(
 ): Double {
 
     val preciosUnitarios: List<Double> = when (oferta.formula?.get("tipo")) {
-        "segunda_unidad" -> calcularPreciosUnitariosSegundaUnidad(itemsGrupo, oferta)
-        "n_por_m" -> calcularPreciosUnitariosNxM(itemsGrupo, oferta)
+        "segunda_unidad" -> precioUnitario2Ud(itemsGrupo, oferta)
+        "n_por_m" -> precioUnitarioNxM(itemsGrupo, oferta)
         else -> {
             val lista = mutableListOf<Double>()
             for (ig in itemsGrupo) {
