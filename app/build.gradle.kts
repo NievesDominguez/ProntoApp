@@ -51,6 +51,10 @@ android {
         }*/
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true  // Evita crash por android.util.Log
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -152,11 +156,18 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Implementaciones para los tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("com.google.firebase:firebase-common:21.0.0")
+    testImplementation("org.json:json:20231013")
 }

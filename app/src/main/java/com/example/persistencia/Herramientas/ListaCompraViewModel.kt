@@ -72,7 +72,8 @@ class ListaCompraViewModel(
         viewModelScope.launch {
             _isLoading.value = true
 
-            val userId = Firebase.auth.currentUser?.uid
+            //val userId = Firebase.auth.currentUser?.uid
+            val userId = authProvider() // Así para que funcionen los tests
             if (userId == null) {
                 _isLoading.value = false
                 return@launch
