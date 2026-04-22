@@ -18,12 +18,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ListaCompraViewModel : ViewModel() {
-    private val listasDao = ListasDao()
-    private val productosDao = ProductosDao()
-    private val usuariosDao = UsuariosDao()
-    private val carritoDao = CarritoDao()
-    private val ticketsDao = TicketsDao()
+class ListaCompraViewModel(
+    private val listasDao: ListasDao = ListasDao(),
+    private val productosDao: ProductosDao = ProductosDao(),
+    private val usuariosDao: UsuariosDao = UsuariosDao(),
+    private val carritoDao: CarritoDao = CarritoDao(),
+    private val ticketsDao: TicketsDao = TicketsDao(),
+    private val authProvider: () -> String? = { Firebase.auth.currentUser?.uid }
+) : ViewModel() {
 
     // Estado
     private val _itemsLista = MutableStateFlow<List<ProductoLista>>(emptyList())
@@ -102,7 +104,12 @@ class ListaCompraViewModel : ViewModel() {
                 .filter { it.stock == 0 }
 
             Log.d("ListaCompraVM", "Productos agotados en lista: ${productosAgotados.size}")
-            productosAgotados.forEach { Log.d("ListaCompraVM", " - ${it.nombre} (stock: ${it.stock})") }
+            productosAgotados.forEach {
+                Log.d(
+                    "ListaCompraVM",
+                    " - ${it.nombre} (stock: ${it.stock})"
+                )
+            }
 
             val alternativasAgotados = mutableListOf<Producto>()
             val idsYaEnLista = _itemsLista.value.map { it.id }.toSet()

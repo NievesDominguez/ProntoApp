@@ -13,9 +13,9 @@ class CalcularTicketTest {
     private fun item(id: String, precio: Double, cantidad: Double, oferta: String? = null) =
         ProductoCarrito(producto(id, precio, oferta), cantidad)
 
-    // ── CT-01: Ticket sin descuentos ──
+    // CT-01: Ticket sin descuentos
     @Test
-    fun `CT-01 ticket sin descuentos`() {
+    fun CT01() {
         val productos = listOf(item("A", 10.0, 2.0))
         val (productosTicket, descuentosTicket, total) =
             CheckoutHelper.calcularTicket(productos, emptyList(), emptyList())
@@ -27,9 +27,9 @@ class CalcularTicketTest {
         assertEquals(20.0, total, 0.001)
     }
 
-    // ── CT-02: Ticket con oferta segunda unidad ──
+    // CT-02: Ticket con oferta segunda unidad
     @Test
-    fun `CT-02 ticket con oferta segunda unidad`() {
+    fun CT02() {
         val productos = listOf(item("A", 10.0, 2.0, oferta = "OF1"))
         val ofertas = listOf(
             Descuento(codigo = "OF1", formula = mapOf("tipo" to "segunda_unidad", "descuento" to 50))
@@ -43,9 +43,9 @@ class CalcularTicketTest {
         assertEquals(5.0, descuentosTicket[0].descuentoAplicado, 0.001)
     }
 
-    // ── CT-03: Ticket con cupón fijo ──
+    // CT-03: Ticket con cupón fijo
     @Test
-    fun `CT-03 ticket con cupon fijo`() {
+    fun CT03() {
         val productos = listOf(item("A", 30.0, 1.0))
         val cupones = listOf(
             Descuento(codigo = "C1", formula = mapOf("tipo" to "fijo", "minimo" to 20, "valor" to 5))
@@ -58,9 +58,9 @@ class CalcularTicketTest {
         assertEquals(5.0, descuentosTicket[0].descuentoAplicado, 0.001)
     }
 
-    // ── CT-04: Cupón fijo mayor que total ──
+    // CT-04: Cupón fijo mayor que total
     @Test
-    fun `CT-04 cupon fijo mayor que total se limita al total`() {
+    fun CT04() {
         val productos = listOf(item("A", 3.0, 1.0))
         val cupones = listOf(
             Descuento(codigo = "C1", formula = mapOf("tipo" to "fijo", "minimo" to 0, "valor" to 10))
@@ -73,9 +73,9 @@ class CalcularTicketTest {
         assertEquals(3.0, descuentosTicket[0].descuentoAplicado, 0.001)
     }
 
-    // ── CT-05: Oferta + cupón combinados ──
+    // CT-05: Oferta + cupón combinados
     @Test
-    fun `CT-05 oferta mas cupon combinados`() {
+    fun CT05() {
         val productos = listOf(item("A", 10.0, 2.0, oferta = "OF1"))
         val ofertas = listOf(
             Descuento(codigo = "OF1", formula = mapOf("tipo" to "segunda_unidad", "descuento" to 50))

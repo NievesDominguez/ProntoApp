@@ -35,16 +35,18 @@ class CalcularPreciosTest {
 
 
     // SU: aplicarSegundaUnidadCombinable
+    // SU-01 dos unidades iguales 50 porciento segunda unidad
     @Test
-    fun `SU-01 dos unidades iguales 50 porciento segunda unidad`() {
+    fun SU01() {
         val items = listOf(item(precio = 10.0, cantidad = 2.0))
         val resultado = segundaUnidad(items, ofertaSU(descuento = 50))
         // Ordenado: [10, 10]. Par: barato=10*0.5=5, caro=10. Total=15
         assertEquals(15.0, resultado, 0.001)
     }
 
+    // SU-02 dos unidades distintas 50 porciento segunda unidad
     @Test
-    fun `SU-02 dos unidades distintas 50 porciento segunda unidad`() {
+    fun SU02() {
         val items = listOf(
             item(precio = 5.0, cantidad = 1.0, id = "A"),
             item(precio = 10.0, cantidad = 1.0, id = "B")
@@ -54,80 +56,90 @@ class CalcularPreciosTest {
         assertEquals(12.5, resultado, 0.001)
     }
 
+    // SU-03 tres unidades impar 50 porciento segunda unidad
     @Test
-    fun `SU-03 tres unidades impar 50 porciento segunda unidad`() {
+    fun SU03() {
         val items = listOf(item(precio = 10.0, cantidad = 3.0))
         val resultado = segundaUnidad(items, ofertaSU(descuento = 50))
         // Ordenado: [10, 10, 10]. Par: 10*0.5+10=15, sobrante: 10. Total=25
         assertEquals(25.0, resultado, 0.001)
     }
 
+    // SU-04 una sola unidad sin par
     @Test
-    fun `SU-04 una sola unidad sin par`() {
+    fun SU04() {
         val items = listOf(item(precio = 10.0, cantidad = 1.0))
         val resultado = segundaUnidad(items, ofertaSU(descuento = 50))
         // Solo 1 unidad, no hay par -> paga completo
         assertEquals(10.0, resultado, 0.001)
     }
 
+    // SU-05 cuatro unidades 100 porciento segunda unidad gratis
     @Test
-    fun `SU-05 cuatro unidades 100 porciento segunda unidad gratis`() {
+    fun SU05() {
         val items = listOf(item(precio = 8.0, cantidad = 4.0))
         val resultado = segundaUnidad(items, ofertaSU(descuento = 100))
         // 2 pares: (8*0 + 8) + (8*0 + 8) = 16
         assertEquals(16.0, resultado, 0.001)
     }
 
+    // SU-06 dos unidades 0 porciento descuento
     @Test
-    fun `SU-06 dos unidades 0 porciento descuento`() {
+    fun SU06() {
         val items = listOf(item(precio = 10.0, cantidad = 2.0))
         val resultado = segundaUnidad(items, ofertaSU(descuento = 0))
         // 0% descuento = paga todo: 10+10=20
         assertEquals(20.0, resultado, 0.001)
     }
 
+    // SU-07 lista vacia
     @Test
-    fun `SU-07 lista vacia`() {
+    fun SU07() {
         val resultado = segundaUnidad(emptyList(), ofertaSU(descuento = 50))
         assertEquals(0.0, resultado, 0.001)
     }
 
 
     // NM: aplicarNxMCombinable
+// NM-01 3x2 con exactamente 3 unidades iguales
     @Test
-    fun `NM-01 3x2 con exactamente 3 unidades iguales`() {
+    fun NM01() {
         val items = listOf(item(precio = 6.0, cantidad = 3.0))
         val resultado = aplicarNxM(items, ofertaNM(n = 3, m = 2))
         // Ordenado: [6,6,6]. Grupo completo de 3 -> paga 2 más baratos: 6+6=12
         assertEquals(12.0, resultado, 0.001)
     }
 
+    // NM-02 3x2 con 5 unidades grupo incompleto
     @Test
-    fun `NM-02 3x2 con 5 unidades grupo incompleto`() {
+    fun NM02() {
         val items = listOf(item(precio = 6.0, cantidad = 5.0))
         val resultado = aplicarNxM(items, ofertaNM(n = 3, m = 2))
         // Grupo1 (3 uds): take(2)=6+6=12. Grupo2 (2 uds, incompleto): 6+6=12. Total=24
         assertEquals(24.0, resultado, 0.001)
     }
 
+    // NM-03 3x2 con 6 unidades dos grupos completos
     @Test
-    fun `NM-03 3x2 con 6 unidades dos grupos completos`() {
+    fun NM03() {
         val items = listOf(item(precio = 5.0, cantidad = 6.0))
         val resultado = aplicarNxM(items, ofertaNM(n = 3, m = 2))
         // 2 grupos de 3: cada uno paga 2 -> (5+5)+(5+5)=20
         assertEquals(20.0, resultado, 0.001)
     }
 
+    // NM-04 4x3 con 4 unidades
     @Test
-    fun `NM-04 4x3 con 4 unidades`() {
+    fun NM04() {
         val items = listOf(item(precio = 10.0, cantidad = 4.0))
         val resultado = aplicarNxM(items, ofertaNM(n = 4, m = 3))
         // Grupo de 4, paga 3: 10+10+10=30
         assertEquals(30.0, resultado, 0.001)
     }
 
+    // NM-05 3x2 con precios distintos
     @Test
-    fun `NM-05 3x2 con precios distintos`() {
+    fun NM05() {
         val items = listOf(
             item(precio = 2.0, cantidad = 1.0, id = "A"),
             item(precio = 5.0, cantidad = 1.0, id = "B"),
@@ -138,23 +150,26 @@ class CalcularPreciosTest {
         assertEquals(7.0, resultado, 0.001)
     }
 
+    // NM-06 3x2 con 1 sola unidad grupo incompleto
     @Test
-    fun `NM-06 3x2 con 1 sola unidad grupo incompleto`() {
+    fun NM06() {
         val items = listOf(item(precio = 6.0, cantidad = 1.0))
         val resultado = aplicarNxM(items, ofertaNM(n = 3, m = 2))
         // Grupo incompleto (1 < 3) -> paga todo: 6
         assertEquals(6.0, resultado, 0.001)
     }
 
+    // NM-07 lista vacia
     @Test
-    fun `NM-07 lista vacia`() {
+    fun NM07() {
         val resultado = aplicarNxM(emptyList(), ofertaNM(n = 3, m = 2))
         assertEquals(0.0, resultado, 0.001)
     }
 
     // TG: calcularTotalGrupo
+// TG-01 tipo segunda_unidad delega correctamente
     @Test
-    fun `TG-01 tipo segunda_unidad delega correctamente`() {
+    fun TG01() {
         val items = listOf(item(precio = 10.0, cantidad = 2.0))
         val oferta = Descuento(
             codigo = "OF1",
@@ -163,31 +178,35 @@ class CalcularPreciosTest {
         assertEquals(15.0, calcularTotalGrupo(items, oferta), 0.001)
     }
 
+    // TG-02 tipo n_por_m delega correctamente
     @Test
-    fun `TG-02 tipo n_por_m delega correctamente`() {
+    fun TG02() {
         val items = listOf(item(precio = 6.0, cantidad = 3.0))
         val oferta =
             Descuento(codigo = "OF2", formula = mapOf("tipo" to "n_por_m", "n" to 3, "m" to 2))
         assertEquals(12.0, calcularTotalGrupo(items, oferta), 0.001)
     }
 
+    // TG-03 tipo desconocido suma precio por cantidad
     @Test
-    fun `TG-03 tipo desconocido suma precio por cantidad`() {
+    fun TG03() {
         val items = listOf(item(precio = 10.0, cantidad = 2.0))
         val oferta = Descuento(codigo = "OF3", formula = mapOf("tipo" to "otro"))
         assertEquals(20.0, calcularTotalGrupo(items, oferta), 0.001)
     }
 
+    // TG-04 formula null suma precio por cantidad
     @Test
-    fun `TG-04 formula null suma precio por cantidad`() {
+    fun TG04() {
         val items = listOf(item(precio = 5.0, cantidad = 3.0))
         val oferta = Descuento(codigo = "OF4", formula = null)
         assertEquals(15.0, calcularTotalGrupo(items, oferta), 0.001)
     }
 
     // PP: calcularPrecioProducto
+// PP-01 segunda unidad 50pct producto barato paga con descuento
     @Test
-    fun `PP-01 segunda unidad 50pct producto barato paga con descuento`() {
+    fun PP01() {
         val pA = producto("A", 5.0)
         val pB = producto("B", 10.0)
         val itemA = ProductoCarrito(pA, 1.0)
@@ -203,8 +222,9 @@ class CalcularPreciosTest {
         assertEquals(2.5, resultado, 0.001)
     }
 
+    // PP-02 segunda unidad 50pct producto caro paga completo
     @Test
-    fun `PP-02 segunda unidad 50pct producto caro paga completo`() {
+    fun PP02() {
         val pA = producto("A", 5.0)
         val pB = producto("B", 10.0)
         val itemA = ProductoCarrito(pA, 1.0)
@@ -220,8 +240,9 @@ class CalcularPreciosTest {
         assertEquals(10.0, resultado, 0.001)
     }
 
+    // PP-03 3x2 producto mas barato es gratis
     @Test
-    fun `PP-03 3x2 producto mas barato es gratis`() {
+    fun PP03() {
         val pA = producto("A", 2.0)
         val pB = producto("B", 5.0)
         val pC = producto("C", 8.0)
@@ -237,8 +258,9 @@ class CalcularPreciosTest {
         assertEquals(0.0, resultado, 0.001)
     }
 
+    // PP-04 sin oferta paga precio por cantidad
     @Test
-    fun `PP-04 sin oferta paga precio por cantidad`() {
+    fun PP04() {
         val p = producto("A", 7.0)
         val itemP = ProductoCarrito(p, 2.0)
         val grupo = listOf(itemP)
@@ -250,8 +272,9 @@ class CalcularPreciosTest {
     }
 
     // PU: precioUnitario2Ud
+// PU-01 dos unidades iguales 50pct
     @Test
-    fun `PU-01 dos unidades iguales 50pct`() {
+    fun PU01() {
         val items = listOf(item(precio = 10.0, cantidad = 2.0))
         val oferta = Descuento(
             codigo = "OF1",
@@ -267,8 +290,9 @@ class CalcularPreciosTest {
         assertEquals(10.0, resultado[1], 0.001) // sin descuento
     }
 
+    // PU-02 tres unidades iguales 50pct
     @Test
-    fun `PU-02 tres unidades iguales 50pct`() {
+    fun PU02() {
         val items = listOf(item(precio = 10.0, cantidad = 3.0))
         val oferta = Descuento(
             codigo = "OF1",
@@ -283,8 +307,9 @@ class CalcularPreciosTest {
         assertEquals(10.0, resultado[2], 0.001)  // sin descuento
     }
 
+    // PU-03 cuatro unidades 100pct gratis
     @Test
-    fun `PU-03 cuatro unidades 100pct gratis`() {
+    fun PU03() {
         val items = listOf(item(precio = 8.0, cantidad = 4.0))
         val oferta = Descuento(
             codigo = "OF1",
@@ -301,8 +326,9 @@ class CalcularPreciosTest {
     }
 
     // PNM: precioUnitarioNxM
+// PNM-01 3x2 con 3 unidades iguales
     @Test
-    fun `PNM-01 3x2 con 3 unidades iguales`() {
+    fun PNM01() {
         val items = listOf(item(precio = 6.0, cantidad = 3.0))
         val oferta = Descuento(
             codigo = "OF2",
@@ -317,8 +343,9 @@ class CalcularPreciosTest {
         assertEquals(6.0, resultado[2], 0.001)   // paga
     }
 
+    // PNM-02 3x2 con 3 unidades precios distintos
     @Test
-    fun `PNM-02 3x2 con 3 unidades precios distintos`() {
+    fun PNM02() {
         val items = listOf(
             item(precio = 2.0, cantidad = 1.0, id = "A"),
             item(precio = 5.0, cantidad = 1.0, id = "B"),
@@ -337,8 +364,9 @@ class CalcularPreciosTest {
         assertEquals(8.0, resultado[2], 0.001)   // C: paga
     }
 
+    // PNM-03 3x2 con 5 unidades grupo incompleto
     @Test
-    fun `PNM-03 3x2 con 5 unidades grupo incompleto`() {
+    fun PNM03() {
         val items = listOf(item(precio = 6.0, cantidad = 5.0))
         val oferta = Descuento(
             codigo = "OF2",
