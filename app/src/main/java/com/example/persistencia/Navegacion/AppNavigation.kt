@@ -7,8 +7,10 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,7 +36,11 @@ import com.stripe.android.paymentsheet.PaymentSheet
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la información del destino
+fun AppNavigation(
+    destino: String?,
+    paymentSheet: PaymentSheet,
+    onNavControllerReady: (NavController) -> Unit = {}
+) { // Recibe la información del destino
     val startDestination =
         when (destino) { // Verifica con un when la información leída para determinar la ventana que se abrirá
             "Inicio" -> AppScreens.Inicio.route
@@ -56,6 +62,11 @@ fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la i
     }
 
     val navController = rememberNavController()
+
+    // Notificar que el NavController está listo
+    LaunchedEffect(navController) {
+        onNavControllerReady(navController)
+    }
 
     // Pantallas en las que aparece la barra inferior
     val bottomBarScreens = listOf(
@@ -204,7 +215,6 @@ fun AppNavigation(destino: String?, paymentSheet: PaymentSheet) { // Recibe la i
                 val ticketId = backStackEntry.arguments?.getString("ticketId") ?: return@composable
                 TicketDetalleScreen(ticketId = ticketId, navController = navController)
             }
-
 
 
         }
