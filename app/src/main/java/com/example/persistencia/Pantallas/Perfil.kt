@@ -56,12 +56,16 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import com.example.persistencia.BuildConfig
 import com.example.persistencia.Firestore.TicketsDao
+import com.example.persistencia.Herramientas.CarritoRepository
+import com.example.persistencia.Herramientas.DescuentosRepository
+import com.example.persistencia.Herramientas.ListasRepository
+import com.example.persistencia.Herramientas.ProductosRepository
+import com.example.persistencia.Herramientas.TicketsRepository
+import com.example.persistencia.Herramientas.UsuariosRepository
+import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Herramientas.toFormattedString
 import com.example.persistencia.Modelos.Ticket
 
-//--------------------------------------------------------------------------
-// PANTALLA DE PERFIL
-//--------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
 @Composable
@@ -69,7 +73,6 @@ fun Perfil(navController: NavController) {
 
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
     val usuario = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
     val themeManager = LocalThemeManager.current
@@ -116,50 +119,7 @@ fun Perfil(navController: NavController) {
         imageUri = uri
     }
 
-    // Modificador para el degradado de los bordes
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 25.dp.toPx() }
-            val primaryColor = colors.primary.copy(alpha = 0.1f)
-            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
-            val width = size.width
-            val height = size.height
-
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(primaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ),
-                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(Color.Transparent, primaryColor),
-                    height - edgeWidth,
-                    height
-                ),
-                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    listOf(secondaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ),
-                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
-            )
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    listOf(Color.Transparent, secondaryColor),
-                    width - edgeWidth,
-                    width
-                ),
-                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
-            )
-        }
+    val backgroundModifier = Modifier.fondoDegradado()
 
     Scaffold(
         topBar = {
@@ -313,14 +273,13 @@ fun Perfil(navController: NavController) {
                         }
 
                         1 -> {
-                            // Pestaña "Compras" – sin scroll en el contenedor padre, LazyColumn maneja su propio scroll
-                            val ticketsDao = remember { TicketsDao() }
+                            // Pestaña Compras
                             var tickets by remember { mutableStateOf<List<Ticket>?>(null) } // null = cargando
                             var errorCarga by remember { mutableStateOf(false) }
 
                             LaunchedEffect(Unit) {
                                 try {
-                                    val lista = ticketsDao.getTickets()
+                                    val lista = TicketsRepository.getTickets()
                                     tickets = lista
                                     Log.d("Perfil", "Tickets cargados: ${lista.size}")
                                 } catch (e: Exception) {
@@ -600,6 +559,14 @@ fun signOut(context: Context, navController: NavController) {
     // Cerrar sesión de Firebase
     Firebase.auth.signOut()
 
+    // Limpiar todos los cachés en memoria
+    CarritoRepository.invalidar()
+    ListasRepository.invalidar()
+    TicketsRepository.invalidar()
+    UsuariosRepository.invalidar()
+    ProductosRepository.invalidar()
+    DescuentosRepository.invalidar()
+
     // Navegar a Inicio limpiando la pila
     navController.navigate(AppScreens.Inicio.route) {
         popUpTo(0) { inclusive = true }
@@ -607,7 +574,7 @@ fun signOut(context: Context, navController: NavController) {
 }
 
 
-// VISTA DE PERFIL (MODO EDICIÓN)
+// Modo edición
 @Composable
 fun PerfilEdit(
     nombre: String,

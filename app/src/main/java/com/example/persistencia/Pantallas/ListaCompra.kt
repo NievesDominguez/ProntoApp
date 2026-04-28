@@ -33,6 +33,7 @@ import androidx.navigation.NavController
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoLista
 import com.example.persistencia.Herramientas.ListaCompraViewModel
+import com.example.persistencia.Herramientas.fondoDegradado
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,8 +42,6 @@ fun ListaCompra(navController: NavController) {
     val viewModel: ListaCompraViewModel = viewModel()
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
-    val context = LocalContext.current
 
     val itemsLista by viewModel.itemsLista.collectAsState()
     val productosCatalogo by viewModel.productosCatalogo.collectAsState()
@@ -105,42 +104,7 @@ fun ListaCompra(navController: NavController) {
         }
     }
 
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 25.dp.toPx() }
-            val primaryColor = colors.primary.copy(alpha = 0.1f)
-            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(primaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ), topLeft = Offset(0f, 0f), size = Size(size.width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(Color.Transparent, primaryColor),
-                    size.height - edgeWidth,
-                    size.height
-                ), topLeft = Offset(0f, size.height - edgeWidth), size = Size(size.width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    listOf(secondaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ), topLeft = Offset(0f, 0f), size = Size(edgeWidth, size.height)
-            )
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    listOf(Color.Transparent, secondaryColor),
-                    size.width - edgeWidth,
-                    size.width
-                ), topLeft = Offset(size.width - edgeWidth, 0f), size = Size(edgeWidth, size.height)
-            )
-        }
+    val backgroundModifier = Modifier.fondoDegradado()
 
     Box(modifier = backgroundModifier) {
         Scaffold(

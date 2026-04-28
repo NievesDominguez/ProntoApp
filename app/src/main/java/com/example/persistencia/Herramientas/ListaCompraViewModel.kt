@@ -19,30 +19,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ListaCompraViewModel(
-    private val listasDao: ListasDao = ListasDao(),
-    private val productosDao: ProductosDao = ProductosDao(),
-    private val usuariosDao: UsuariosDao = UsuariosDao(),
-    private val carritoDao: CarritoDao = CarritoDao(),
-    private val ticketsDao: TicketsDao = TicketsDao(),
     private val authProvider: () -> String? = { Firebase.auth.currentUser?.uid }
 ) : ViewModel() {
 
-    // Estado
+    // Estado de la lista de la compra
     private val _itemsLista = MutableStateFlow<List<ProductoLista>>(emptyList())
     val itemsLista: StateFlow<List<ProductoLista>> = _itemsLista.asStateFlow()
 
+    // Catálogo completo de productos
     private val _productosCatalogo = MutableStateFlow<List<Producto>>(emptyList())
     val productosCatalogo: StateFlow<List<Producto>> = _productosCatalogo.asStateFlow()
 
+    // Cantidades en el carrito
     private val _carritoCantidades = MutableStateFlow<Map<String, Double>>(emptyMap())
     val carritoCantidades: StateFlow<Map<String, Double>> = _carritoCantidades.asStateFlow()
 
+    // Sugerencias de productos basadas en historial
     private val _sugerencias = MutableStateFlow<List<Producto>>(emptyList())
     val sugerencias: StateFlow<List<Producto>> = _sugerencias.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    // Preferencia de orden del usuario
     private val _ordenActual = MutableStateFlow("fecha")
     val ordenActual: StateFlow<String> = _ordenActual.asStateFlow()
 
@@ -53,10 +52,12 @@ class ListaCompraViewModel(
     fun cargarDatosIniciales() {
         viewModelScope.launch {
             _isLoading.value = true
-            _itemsLista.value = listasDao.getLista()
-            _productosCatalogo.value = productosDao.getTodos()
-            _ordenActual.value = usuariosDao.getOrdenLista()
-            _carritoCantidades.value = carritoDao.getCarrito().associate { it.first to it.second }
+            // Si el usuario ya visitó el Catálogo, getTodos() sale del caché instantáneamente
+            _itemsLista.value = ListasRepository.getLista()
+            _productosCatalogo.value = ProductosRepository.getTodos()
+            _ordenActual.value = UsuariosRepository.getOrdenLista()
+            _carritoCantidades.value =
+                CarritoRepository.getCarrito().associate { it.first to it.second }
             _isLoading.value = false
         }
     }
@@ -64,7 +65,8 @@ class ListaCompraViewModel(
     fun actualizarOrden(orden: String) {
         _ordenActual.value = orden
         viewModelScope.launch {
-            usuariosDao.setOrdenLista(orden)
+            // Guarda la preferencia y actualiza el caché del repositorio internamente
+            UsuariosRepository.setOrdenLista(orden)
         }
     }
 
@@ -72,15 +74,14 @@ class ListaCompraViewModel(
         viewModelScope.launch {
             _isLoading.value = true
 
-            //val userId = Firebase.auth.currentUser?.uid
-            val userId = authProvider() // Así para que funcionen los tests
+            val userId = authProvider()
             if (userId == null) {
                 _isLoading.value = false
                 return@launch
             }
 
             // Sugerencias basadas en historial de compras
-            val ultimosTickets = ticketsDao.getUltimosTickets(5)
+            val ultimosTickets = TicketsRepository.getUltimosTickets(5)
             val frecuencia = mutableMapOf<String, Int>()
             ultimosTickets.forEach { ticket ->
                 ticket.productos.forEach { prod ->
@@ -92,7 +93,7 @@ class ListaCompraViewModel(
             val idsSugeridos = frecuencia.keys.filter { it !in idsEnLista }
 
             val productosFrecuentes = idsSugeridos
-                .mapNotNull { productosDao.getProducto(it) }
+                .mapNotNull { ProductosRepository.getProducto(it) } // Usa caché individual
                 .filter { it.stock > 0 }
                 .sortedByDescending { frecuencia[it.id] ?: 0 }
                 .take(10)
@@ -105,12 +106,6 @@ class ListaCompraViewModel(
                 .filter { it.stock == 0 }
 
             Log.d("ListaCompraVM", "Productos agotados en lista: ${productosAgotados.size}")
-            productosAgotados.forEach {
-                Log.d(
-                    "ListaCompraVM",
-                    " - ${it.nombre} (stock: ${it.stock})"
-                )
-            }
 
             val alternativasAgotados = mutableListOf<Producto>()
             val idsYaEnLista = _itemsLista.value.map { it.id }.toSet()
@@ -118,18 +113,17 @@ class ListaCompraViewModel(
 
             for (prodAgotado in productosAgotados) {
                 Log.d("ListaCompraVM", "Buscando similares para: ${prodAgotado.nombre}")
-                val similares = productosDao.getProductosSimilares(
+                val similares = ProductosRepository.getProductosSimilares(
                     productoReferencia = prodAgotado,
                     limite = 3,
                     excluirIds = idsYaEnLista + idsProcesados
                 )
                 Log.d("ListaCompraVM", "Similares encontrados: ${similares.size}")
-                similares.forEach { Log.d("ListaCompraVM", "   -> ${it.nombre}") }
                 alternativasAgotados.addAll(similares)
                 idsProcesados.addAll(similares.map { it.id })
             }
 
-            // Combinar listas (primero alternativas por agotado, luego frecuentes)
+            // Combinar listas de alternativas
             val todasSugerencias = (alternativasAgotados + productosFrecuentes).distinctBy { it.id }
             _sugerencias.value = todasSugerencias
             _isLoading.value = false
@@ -140,33 +134,35 @@ class ListaCompraViewModel(
         _sugerencias.value = emptyList()
     }
 
+    // Operaciones de escritura
     suspend fun addItem(idProducto: String, cantidad: Double = 1.0) {
-        listasDao.addItem(idProducto, cantidad)
-        _itemsLista.value = listasDao.getLista()
+        ListasRepository.addItem(idProducto, cantidad)
+        _itemsLista.value =
+            ListasRepository.getLista(forceRefresh = true) // Forzar recarga tras escritura
     }
 
     suspend fun eliminarItem(id: String) {
-        listasDao.eliminarItem(id)
-        _itemsLista.value = listasDao.getLista()
+        ListasRepository.eliminarItem(id)
+        _itemsLista.value = ListasRepository.getLista(forceRefresh = true)
     }
 
     suspend fun cambiarEstado(id: String, estado: Boolean) {
-        listasDao.cambiarEstado(id, estado)
-        _itemsLista.value = listasDao.getLista()
+        ListasRepository.cambiarEstado(id, estado)
+        _itemsLista.value = ListasRepository.getLista(forceRefresh = true)
     }
 
     suspend fun actualizarCantidad(id: String, nuevaCantidad: Double) {
-        listasDao.actualizarCantidad(id, nuevaCantidad)
-        _itemsLista.value = listasDao.getLista()
+        ListasRepository.actualizarCantidad(id, nuevaCantidad)
+        _itemsLista.value = ListasRepository.getLista(forceRefresh = true)
     }
 
     suspend fun desmarcarTodo() {
-        listasDao.desmarcarTodo()
-        _itemsLista.value = listasDao.getLista()
+        ListasRepository.desmarcarTodo()
+        _itemsLista.value = ListasRepository.getLista(forceRefresh = true)
     }
 
     suspend fun eliminarTodo() {
-        listasDao.eliminarTodo()
+        ListasRepository.eliminarTodo()
         _itemsLista.value = emptyList()
     }
 }

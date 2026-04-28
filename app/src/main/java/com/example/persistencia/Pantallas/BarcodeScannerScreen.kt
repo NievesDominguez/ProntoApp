@@ -27,6 +27,8 @@ import coil.compose.AsyncImage
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Herramientas.CameraScannerView
+import com.example.persistencia.Herramientas.CarritoRepository
+import com.example.persistencia.Herramientas.ProductosRepository
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
 import kotlinx.coroutines.launch
@@ -54,9 +56,6 @@ fun BarcodeScannerScreen(navController: NavHostController) {
 
     val context = LocalContext.current
     val activity = context as Activity
-
-    val productosDao = remember { ProductosDao() }
-    val carritoDao = remember { CarritoDao() }
 
     val scope = rememberCoroutineScope()
 
@@ -99,7 +98,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                         onDismiss = { snackbarState = null },
                         onAddToCart = {
                             scope.launch {
-                                carritoDao.addCarrito(state.producto, 1.0)
+                                CarritoRepository.addCarrito(state.producto, 1.0)
                                 addSnackbar = AddToCartSnackbarState(
                                     "${state.producto.nombre} añadido al carrito",
                                     state.producto,
@@ -123,7 +122,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                         onDismiss = { snackbarState = null },
                         onAddToCart = {
                             scope.launch {
-                                carritoDao.addCarrito(state.producto, state.pesoKg)
+                                CarritoRepository.addCarrito(state.producto, state.pesoKg)
                                 addSnackbar = AddToCartSnackbarState(
                                     "${state.producto.nombre} añadido al carrito",
                                     state.producto,
@@ -162,7 +161,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                             val undoAmount =
                                 if (state.producto.al_peso == true) state.cantidad else 1.0
 
-                            carritoDao.addCarrito(state.producto, -undoAmount)
+                            CarritoRepository.addCarrito(state.producto, -undoAmount)
                         }
                         addSnackbar = null
                     }) {
@@ -227,7 +226,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
 
                 scope.launch {
 
-                    val productoNormal = productosDao.getProducto(codigo)
+                    val productoNormal = ProductosRepository.getProducto(codigo)
 
                     // Producto estándar encontrado
                     if (productoNormal != null) {
@@ -236,7 +235,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
 
                             // Evita añadir varias veces seguidas el mismo producto
                             if (now - lastAddTime > 1500) {
-                                carritoDao.addCarrito(productoNormal, 1.0)
+                                CarritoRepository.addCarrito(productoNormal, 1.0)
                                 lastAddTime = now
 
                                 addSnackbar = AddToCartSnackbarState(
@@ -260,14 +259,14 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                         val pesoKg =
                             (codigo.substring(7, 12).toIntOrNull() ?: 0) / 1000.0
 
-                        val productoBase = productosDao.getProducto(codigoInterno)
+                        val productoBase = ProductosRepository.getProducto(codigoInterno)
 
                         if (productoBase != null) {
 
                             if (autoAddToCart) {
 
                                 if (now - lastAddTime > 1500) {
-                                    carritoDao.addCarrito(productoBase, pesoKg)
+                                    CarritoRepository.addCarrito(productoBase, pesoKg)
                                     lastAddTime = now
 
                                     addSnackbar = AddToCartSnackbarState(

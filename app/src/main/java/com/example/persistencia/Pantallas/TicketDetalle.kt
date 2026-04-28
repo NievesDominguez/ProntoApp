@@ -1,13 +1,11 @@
 package com.example.persistencia.Pantallas
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
-import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,9 +31,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.example.persistencia.Firestore.TicketsDao
+import com.example.persistencia.Herramientas.TicketsRepository
 import com.example.persistencia.Herramientas.toFormattedString
 import com.example.persistencia.Modelos.DescuentoTicket
 import com.example.persistencia.Modelos.ProductoTicket
@@ -43,18 +41,15 @@ import com.example.persistencia.Modelos.Ticket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TicketDetalleScreen(ticketId: String, navController: NavController) {
-    val ticketsDao = remember { TicketsDao() }
     var ticket by remember { mutableStateOf<Ticket?>(null) }
     var cargando by remember { mutableStateOf(true) }
 
     LaunchedEffect(ticketId) {
-        ticket = ticketsDao.getTicketById(ticketId)
+        ticket = TicketsRepository.getTicketById(ticketId)
         cargando = false
     }
 

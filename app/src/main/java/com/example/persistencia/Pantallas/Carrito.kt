@@ -41,8 +41,12 @@ import com.composables.icons.lucide.TicketPercent
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Firestore.ProductosDao
+import com.example.persistencia.Herramientas.CarritoRepository
+import com.example.persistencia.Herramientas.DescuentosRepository
+import com.example.persistencia.Herramientas.ProductosRepository
 import com.example.persistencia.Herramientas.calcularPrecioProducto
 import com.example.persistencia.Herramientas.calcularTotalCarrito
+import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Descuento
 import com.example.persistencia.Modelos.ProductoCarrito
 import com.example.persistencia.Navegacion.AppScreens
@@ -61,77 +65,35 @@ import org.json.JSONObject
 @Composable
 fun Carrito(
     navController: NavController,
-    paymentSheet: PaymentSheet,
-    daoCarrito: CarritoDao = CarritoDao(),
-    daoProductos: ProductosDao = ProductosDao(),
-    daoOfertas: DescuentosDao = DescuentosDao()
+    paymentSheet: PaymentSheet
 ) {
     val colors = MaterialTheme.colorScheme // Colores del tema actual
-    val density = LocalDensity.current // Densidad para conversion de dp a px
     val scope = rememberCoroutineScope() // Para acciones asíncronas
     val context = LocalContext.current // Para toasts
-
-    // Fondo con bordes degradados
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 25.dp.toPx() }
-            val primaryColor = colors.primary.copy(alpha = 0.1f)
-            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
-            val width = size.width
-            val height = size.height
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(primaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ), topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(Color.Transparent, primaryColor),
-                    height - edgeWidth,
-                    height
-                ), topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    listOf(secondaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ), topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
-            )
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    listOf(Color.Transparent, secondaryColor),
-                    width - edgeWidth,
-                    width
-                ), topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
-            )
-        }
 
     var carrito by remember { mutableStateOf<List<ProductoCarrito>>(emptyList()) }
     var ofertas by remember { mutableStateOf<List<Descuento>>(emptyList()) }
     var cuponesActivos by remember { mutableStateOf<List<Descuento>>(emptyList()) }
 
+    val backgroundModifier = Modifier.fondoDegradado()
+
     var cargando by remember { mutableStateOf(true) }
 
     // Recarga el carrito desde Firestore
     suspend fun recargarCarrito() {
-        val items = daoCarrito.getCarrito()
+        val items = CarritoRepository.getCarrito()
         carrito = items.mapNotNull { (id, cantidad) ->
-            daoProductos.getProducto(id)?.let { ProductoCarrito(it, cantidad) }
+            ProductosRepository.getProducto(id)?.let { ProductoCarrito(it, cantidad) }
         }
     }
 
     // Carga inicial de datos
     LaunchedEffect(Unit) {
         cargando = true
-        ofertas = daoOfertas.getOfertas()
+        ofertas = DescuentosRepository.getOfertas()
         recargarCarrito()
-        val codigosCupones = daoCarrito.getCupones()
-        val todosCupones = daoOfertas.getCupones()
+        val codigosCupones = CarritoRepository.getCupones()
+        val todosCupones = DescuentosRepository.getCupones()
         cuponesActivos = todosCupones.filter { it.codigo in codigosCupones }
         delay(200L)
         cargando = false
@@ -273,7 +235,7 @@ fun Carrito(
 
                                         IconButton(onClick = {
                                             scope.launch {
-                                                if (daoCarrito.addCarrito(
+                                                if (CarritoRepository.addCarrito(
                                                         item.producto,
                                                         -item.cantidad
                                                     )
@@ -297,7 +259,7 @@ fun Carrito(
                                         // Botón para quitar 1
                                         IconButton(onClick = {
                                             scope.launch {
-                                                if (daoCarrito.addCarrito(
+                                                if (CarritoRepository.addCarrito(
                                                         item.producto,
                                                         -1.0
                                                     )
@@ -324,7 +286,7 @@ fun Carrito(
                                         // Botón para añadir 1
                                         IconButton(onClick = {
                                             scope.launch {
-                                                if (daoCarrito.addCarrito(
+                                                if (CarritoRepository.addCarrito(
                                                         item.producto,
                                                         1.0
                                                     )

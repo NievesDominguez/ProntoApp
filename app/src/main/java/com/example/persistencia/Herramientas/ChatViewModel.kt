@@ -25,13 +25,6 @@ class ChatViewModel : ViewModel() {
     // Servicio que se comunicará con la API de Groq
     private lateinit var groqApiService: GroqApiService
 
-    // DAOs para obtener datos del usuario
-    private val carritoDao = CarritoDao()
-    private val listasDao = ListasDao()
-    private val productosDao = ProductosDao()
-    private val descuentosDao = DescuentosDao()
-    private val usuariosDao = UsuariosDao()
-
     // Mensaje de bienvenida
     init {
         messages.value = listOf(
@@ -55,18 +48,17 @@ class ChatViewModel : ViewModel() {
         val uid = user.uid
 
         // Carrito
-        val carritoItems = carritoDao.getCarrito()
+        val carritoItems = CarritoRepository.getCarrito()
         val carritoTexto = if (carritoItems.isNotEmpty()) {
             val productosCarrito = mutableListOf<String>()
             for ((id, cantidad) in carritoItems) {
-                val prod = productosDao.getProducto(id)
+                // Obtiene el producto de ProductosRepository
+                val prod = ProductosRepository.getProducto(id)
                 prod?.let {
                     val esAlPeso = prod.al_peso == true
                     val texto = if (esAlPeso) {
-                        // Producto al peso: siempre mostrar kg
                         "${it.nombre} (${"%.2f".format(cantidad)} kg)"
                     } else {
-                        // Producto normal: mostrar xN solo si cantidad > 1
                         val cantidadInt = cantidad.toInt()
                         if (cantidadInt == 1) it.nombre
                         else "${it.nombre} (x$cantidadInt)"
@@ -76,15 +68,15 @@ class ChatViewModel : ViewModel() {
             }
             "Carrito: ${productosCarrito.joinToString(", ")}"
         } else {
-            "🛒 Carrito vacío"
+            "Carrito vacío"
         }
 
         // Lista de la compra
-        val listaItems = listasDao.getLista()
+        val listaItems = ListasRepository.getLista()
         val listaTexto = if (listaItems.isNotEmpty()) {
             val productosLista = mutableListOf<String>()
             for (item in listaItems) {
-                val prod = productosDao.getProducto(item.id)
+                val prod = ProductosRepository.getProducto(item.id)
                 prod?.let {
                     val esAlPeso = prod.al_peso == true
                     val texto = if (esAlPeso) {
@@ -103,13 +95,13 @@ class ChatViewModel : ViewModel() {
         }
 
         // Cupones del usuario
-        val cuponesUsuario = usuariosDao.getCupones()
+        val cuponesUsuario = UsuariosRepository.getCupones()
         val cuponesTexto = if (cuponesUsuario.isNotEmpty()) {
             "Tus cupones activos: ${cuponesUsuario.joinToString(", ")}"
         } else "No tienes cupones activos"
 
         // Ofertas
-        val ofertas = descuentosDao.getOfertas()
+        val ofertas = DescuentosRepository.getOfertas()
         val ofertasTexto = if (ofertas.isNotEmpty()) {
             val descOfertas = ofertas.mapNotNull { it.nombre ?: it.codigo }
             "Ofertas actuales: ${descOfertas.joinToString(", ")}"
@@ -125,9 +117,9 @@ class ChatViewModel : ViewModel() {
         }
     }
 
+
     // Envía un mensaje del usuario al asistente
     fun sendMessage(text: String, context: Context) {
-        // Crear el mensaje del usuario y añadirlo a la lista de mensajes
         val userMessage = Mensaje(text, Mensaje.Sender.USER)
         messages.value += userMessage
         isLoading.value = true
@@ -136,15 +128,12 @@ class ChatViewModel : ViewModel() {
             try {
                 // Asegurar que el servicio de Groq esté inicializado
                 initService(context)
-
                 // Obtener toda la información personalizada del usuario
                 val userContext = getUserContext()
-
                 // Llamar a Groq en un hilo de IO para no bloquear la UI
                 val reply = withContext(Dispatchers.IO) {
                     groqApiService.sendMessage(messages.value, userContext)
                 }
-
                 // Añadir la respuesta del bot o un mensaje de error
                 if (reply != null) {
                     messages.value += Mensaje(reply, Mensaje.Sender.BOT)

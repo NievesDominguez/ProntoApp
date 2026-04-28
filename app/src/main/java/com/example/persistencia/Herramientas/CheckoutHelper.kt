@@ -4,7 +4,11 @@ import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Firestore.TicketsDao
-import com.example.persistencia.Modelos.*
+import com.example.persistencia.Modelos.Descuento
+import com.example.persistencia.Modelos.DescuentoTicket
+import com.example.persistencia.Modelos.ProductoCarrito
+import com.example.persistencia.Modelos.ProductoTicket
+import com.example.persistencia.Modelos.Ticket
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,36 +17,27 @@ object CheckoutHelper {
 
     suspend fun finalizarCompra(limpiarCarrito: Boolean = true): String? {
         return withContext(Dispatchers.IO) {
-            val carritoDao = CarritoDao()
-            val productosDao = ProductosDao()
-            val descuentosDao = DescuentosDao()
-            val ticketsDao = TicketsDao()
-
-            // Obtener carrito actual
-            val itemsCarrito = carritoDao.getCarrito()
+            val itemsCarrito = CarritoRepository.getCarrito()
             if (itemsCarrito.isEmpty()) return@withContext null
 
-            // Convertir a ProductoCarrito
+            // Obtener los datos de cada producto del carrito
             val productosCarrito = itemsCarrito.mapNotNull { (id, cantidad) ->
-                productosDao.getProducto(id)?.let { producto ->
+                ProductosRepository.getProducto(id)?.let { producto ->
                     ProductoCarrito(producto, cantidad)
                 }
             }
 
-            // Obtener todas las ofertas y cupones disponibles
-            val ofertas = descuentosDao.getOfertas()
-            val todosCupones = descuentosDao.getCupones()
-
-            // Obtener los códigos de cupones activos en el carrito del usuario
-            val codigosCuponesActivos = carritoDao.getCupones()
+            // Obtener ofertas y cupones desde los repositorios
+            val ofertas = DescuentosRepository.getOfertas()
+            val todosCupones = DescuentosRepository.getCupones()
+            val codigosCuponesActivos = CarritoRepository.getCupones()
             val cuponesActivos = todosCupones.filter { it.codigo in codigosCuponesActivos }
 
-            // Calcular productos, descuentos y total final
+            // Calcular el ticket
             val (productosTicket, descuentosTicket, total) = calcularTicket(
                 productosCarrito, ofertas, cuponesActivos
             )
 
-            // Crear ticket
             val ticket = Ticket(
                 fecha = Timestamp.now(),
                 productos = productosTicket,
@@ -51,17 +46,18 @@ object CheckoutHelper {
                 metodoPago = "Stripe"
             )
 
-            // Guardar en Firestore
-            val ticketId = ticketsDao.guardarTicket(ticket) ?: return@withContext null
+            // Guardar ticket a través del repositorio
+            val ticketId = TicketsRepository.guardarTicket(ticket) ?: return@withContext null
 
-            // Limpiar carrito si se solicita
+            // Vaciar carrito a través del repositorio
             if (limpiarCarrito) {
-                limpiarCarrito(carritoDao)
+                CarritoRepository.vaciarCarrito()
             }
 
             ticketId
         }
     }
+
 
     fun calcularTicket(
         productosCarrito: List<ProductoCarrito>,
@@ -94,7 +90,11 @@ object CheckoutHelper {
         for ((codigoOferta, itemsGrupo) in gruposPorOferta) {
             if (codigoOferta == null) continue
             val oferta = ofertas.find { it.codigo == codigoOferta }
-            if (oferta != null && oferta.formula?.get("tipo") in listOf("segunda_unidad", "n_por_m")) {
+            if (oferta != null && oferta.formula?.get("tipo") in listOf(
+                    "segunda_unidad",
+                    "n_por_m"
+                )
+            ) {
                 val precioOriginalGrupo = itemsGrupo.sumOf { it.producto.precio * it.cantidad }
                 val precioConOferta = when (oferta.formula?.get("tipo")) {
                     "segunda_unidad" -> segundaUnidad(itemsGrupo, oferta)
@@ -137,6 +137,7 @@ object CheckoutHelper {
                         )
                     }
                 }
+
                 "porcentaje" -> {
                     val minimo = (cupon.formula?.get("minimo") as? Number)?.toDouble() ?: 0.0
                     val porcentaje = (cupon.formula?.get("valor") as? Number)?.toDouble() ?: 0.0
@@ -153,6 +154,7 @@ object CheckoutHelper {
                         )
                     }
                 }
+
                 "maximo" -> {
                     val max = cupon.max_descuento ?: totalFinal
                     if (totalFinal > max) {

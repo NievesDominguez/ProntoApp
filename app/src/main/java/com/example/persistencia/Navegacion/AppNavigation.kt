@@ -1,14 +1,18 @@
 package com.example.persistencia.Navegacion
 
+import android.app.Activity
 import android.os.Build
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -32,6 +36,34 @@ import com.example.persistencia.Pantallas.Perfil
 import com.example.persistencia.Pantallas.Registro
 import com.example.persistencia.Pantallas.TicketDetalleScreen
 import com.stripe.android.paymentsheet.PaymentSheet
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+
+/**  
+ * Composable reutilizable: al pulsar atrás una vez muestra un Toast,  
+ * al pulsar atrás otra vez en menos de 2 segundos cierra la app.
+ */
+@Composable
+fun DoubleBackToExit() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var backPressedOnce by remember { mutableStateOf(false) }
+
+    BackHandler {
+        if (backPressedOnce) {
+            // Cierra la app
+            (context as? Activity)?.finish()
+        } else {
+            backPressedOnce = true
+            Toast.makeText(context, "Pulsa atrás de nuevo para salir", Toast.LENGTH_SHORT).show()
+            scope.launch {
+                delay(2000)
+                backPressedOnce = false
+            }
+        }
+    }
+}
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -40,9 +72,9 @@ fun AppNavigation(
     destino: String?,
     paymentSheet: PaymentSheet,
     onNavControllerReady: (NavController) -> Unit = {}
-) { // Recibe la información del destino
+) {
     val startDestination =
-        when (destino) { // Verifica con un when la información leída para determinar la ventana que se abrirá
+        when (destino) {
             "Inicio" -> AppScreens.Inicio.route
             "Perfil" -> AppScreens.Perfil.route
             "Carrito" -> AppScreens.Carrito.route
@@ -52,7 +84,6 @@ fun AppNavigation(
             else -> AppScreens.PantallaPrincipal.route
         }
 
-    val context = LocalContext.current
     val user = Firebase.auth.currentUser
 
     val destinoFinal = when {
@@ -63,12 +94,10 @@ fun AppNavigation(
 
     val navController = rememberNavController()
 
-    // Notificar que el NavController está listo
     LaunchedEffect(navController) {
         onNavControllerReady(navController)
     }
 
-    // Pantallas en las que aparece la barra inferior
     val bottomBarScreens = listOf(
         AppScreens.PantallaPrincipal.route,
         AppScreens.Perfil.route,
@@ -77,11 +106,10 @@ fun AppNavigation(
         AppScreens.ListaCompra.route
     )
 
-    val navBackStackEntry by navController.currentBackStackEntryAsState() // Indica la pantalla actual
-    val currentRoute = navBackStackEntry?.destination?.route // Indica la ruta a la pantalla actual
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
-        // Muestra la barra inferior solo en las pantallas indicadas
         bottomBar = {
             if (currentRoute in bottomBarScreens) {
                 BottomBar(navController)
@@ -89,100 +117,67 @@ fun AppNavigation(
         }
     ) { innerPadding ->
 
-        //NavHost(navController = navController, startDestination = AppScreens.Formulario.route) {
         NavHost(
             navController = navController,
             startDestination = destinoFinal,
-            //modifier = Modifier.padding(innerPadding)
         ) {
+            // Pantallas raíz: doble click atrás para salir
+
             composable(route = AppScreens.Inicio.route) {
+                DoubleBackToExit()
                 Inicio(navController)
             }
 
             composable(route = AppScreens.PantallaPrincipal.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                DoubleBackToExit()
                 PantallaPrincipal(navController)
             }
 
+            // Pantallas con back normal
+
             composable(route = AppScreens.Registro.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
                 Registro(navController)
             }
 
             composable(route = AppScreens.Perfil.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
                 Perfil(navController)
             }
 
             composable(route = AppScreens.Catalogo.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
                 Catalogo(navController)
             }
 
             composable(route = AppScreens.Carrito.route) {
-                BackHandler(true) {
-                    Toast.makeText(
-                        context,
-                        "Presionaste atrás, pero está restringido volver atrás",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
                 Carrito(navController, paymentSheet)
             }
 
+            composable(route = AppScreens.ListaCompra.route) {
+                ListaCompra(navController)
+            }
+
+            // Pantallas secundarias: back = popBackStack
+
             composable(route = AppScreens.Escaner.route) {
-                // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
-                val callback: OnBackPressedCallback =
-                    object : OnBackPressedCallback(true) {
-                        override fun handleOnBackPressed() {
-                            AppScreens.PantallaPrincipal.route
-                        }
-                    }
+                BackHandler {
+                    navController.popBackStack()
+                }
                 BarcodeScannerScreen(navController)
             }
 
             composable(
-                // Ruta con argumento para llevar a la pantalla del producto con su id
                 route = AppScreens.PantallaProducto.route + "/{idProducto}",
                 arguments = listOf(
                     navArgument("idProducto") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                // Permite volver a la pantalla anterior
                 BackHandler {
                     navController.popBackStack()
                 }
                 val id = backStackEntry.arguments?.getString("idProducto") ?: return@composable
                 PantallaProducto(idProducto = id, navController)
-
             }
 
-            composable(route = AppScreens.Cupones.route) { backStackEntry ->
-                // Permite volver a la pantalla anterior
+            composable(route = AppScreens.Cupones.route) {
                 BackHandler {
                     navController.popBackStack()
                 }
@@ -190,22 +185,10 @@ fun AppNavigation(
             }
 
             composable(route = AppScreens.Chatbot.route) {
-                // Se encarga de controlar lo que ocurre al presionar el botón para volver atrás
-                val callback: OnBackPressedCallback =
-                    object : OnBackPressedCallback(true) {
-                        override fun handleOnBackPressed() {
-                            AppScreens.PantallaPrincipal.route
-                        }
-                    }
-                Chatbot(onBack = { navController.popBackStack() })
-            }
-
-            composable(route = AppScreens.ListaCompra.route) { backStackEntry ->
-                // Permite volver a la pantalla anterior
                 BackHandler {
                     navController.popBackStack()
                 }
-                ListaCompra(navController)
+                Chatbot(onBack = { navController.popBackStack() })
             }
 
             composable(
@@ -215,8 +198,6 @@ fun AppNavigation(
                 val ticketId = backStackEntry.arguments?.getString("ticketId") ?: return@composable
                 TicketDetalleScreen(ticketId = ticketId, navController = navController)
             }
-
-
         }
     }
 }

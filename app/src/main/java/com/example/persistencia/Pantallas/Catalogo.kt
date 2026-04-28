@@ -38,6 +38,8 @@ import com.composables.icons.lucide.*
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ListasDao
 import com.example.persistencia.Firestore.ProductosDao
+import com.example.persistencia.Herramientas.ProductosRepository
+import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
 import kotlinx.coroutines.delay
@@ -49,9 +51,7 @@ import okhttp3.internal.wait
 @Composable
 fun Catalogo(navController: NavController) {
     val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
-    val dao = remember { ProductosDao() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     var productos by remember { mutableStateOf<List<Producto>>(emptyList()) }
@@ -71,7 +71,7 @@ fun Catalogo(navController: NavController) {
 
     LaunchedEffect(Unit) {
         cargando = true
-        productos = dao.getTodos()
+        productos = ProductosRepository.getTodos()
         delay(200L)
         cargando = false // Finaliza la carga
     }
@@ -83,20 +83,7 @@ fun Catalogo(navController: NavController) {
         }
     }
 
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 30.dp.toPx() }
-            val primaryAlpha = colors.primary.copy(alpha = 0.08f)
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(primaryAlpha, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ), size = Size(size.width, edgeWidth)
-            )
-        }
+    val backgroundModifier = Modifier.fondoDegradado()
 
     val categoriasNav = listOf(
         NavigationItems("Todos", Lucide.Store, Lucide.Store),

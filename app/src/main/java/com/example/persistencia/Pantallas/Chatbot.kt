@@ -1,6 +1,5 @@
 package com.example.persistencia.Pantallas
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,16 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -35,8 +28,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Lucide
-import com.example.persistencia.BuildConfig
 import com.example.persistencia.Herramientas.ChatViewModel
+import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Mensaje
 import kotlinx.coroutines.delay
 
@@ -51,51 +44,8 @@ fun Chatbot(
     onBack: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme // Colores del tema
-    val density = LocalDensity.current // Para convertir dp a píxeles
 
-    // Dibuja un degradado en los bordes de la pantalla
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 25.dp.toPx() }
-            val primaryColor = colors.primary.copy(alpha = 0.1f)
-            val secondaryColor = colors.secondary.copy(alpha = 0.05f)
-            val width = size.width
-            val height = size.height
-            // Borde superior
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(primaryColor, Color.Transparent),
-                    startY = 0f, endY = edgeWidth
-                ),
-                topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
-            )
-            // Borde inferior
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, primaryColor),
-                    startY = height - edgeWidth, endY = height
-                ),
-                topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
-            )
-            // Borde izquierdo
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(secondaryColor, Color.Transparent),
-                    startX = 0f, endX = edgeWidth
-                ),
-                topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
-            )
-            // Borde derecho
-            drawRect(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(Color.Transparent, secondaryColor),
-                    startX = width - edgeWidth, endX = width
-                ),
-                topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
-            )
-        }
+    val backgroundModifier = Modifier.fondoDegradado()
 
     // Estados del ViewModel
     val messages by viewModel.messages // Lista de mensajes

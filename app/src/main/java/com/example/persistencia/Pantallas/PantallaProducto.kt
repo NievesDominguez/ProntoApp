@@ -55,6 +55,11 @@ import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Firestore.UsuariosDao
+import com.example.persistencia.Herramientas.CarritoRepository
+import com.example.persistencia.Herramientas.DescuentosRepository
+import com.example.persistencia.Herramientas.ProductosRepository
+import com.example.persistencia.Herramientas.UsuariosRepository
+import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.Descuento
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -81,33 +86,7 @@ fun ProductoTemp() {
     val colors = MaterialTheme.colorScheme
     val density = LocalDensity.current
 
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 25.dp.toPx() }
-            val primaryColor = colors.primary.copy(alpha = 0.1f)
-            val width = size.width
-            val height = size.height
-
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(primaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ),
-                size = Size(width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(Color.Transparent, primaryColor),
-                    height - edgeWidth,
-                    height
-                ),
-                topLeft = Offset(0f, height - edgeWidth),
-                size = Size(width, edgeWidth)
-            )
-        }
+    val backgroundModifier = Modifier.fondoDegradado()
 
     Box(modifier = backgroundModifier.padding(24.dp)) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -145,15 +124,8 @@ fun ProductoTemp() {
 @Composable
 fun PantallaProducto(idProducto: String, navController: NavController) {
     val colors = MaterialTheme.colorScheme
-    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
-    // Inicialización de DAOs para la gestión de datos
-    val daoCarrito = remember { CarritoDao() }
-    val daoProductos = remember { ProductosDao() }
-    val daoOfertas = remember { DescuentosDao() }
-    val daoUsuario = remember { UsuariosDao() }
 
     // Estados para almacenar la información recuperada de la base de datos
     var producto by remember { mutableStateOf<Producto?>(null) }
@@ -167,10 +139,10 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     // Carga de datos sincronizada al iniciar la pantalla
     LaunchedEffect(idProducto) {
         cargando = true
-        producto = daoProductos.getProducto(idProducto)
-        ofertas = daoOfertas.getOfertas()
-        cuponesDisponibles = daoOfertas.getCupones()
-        cuponesUsuario = daoUsuario.getCupones()
+        producto = ProductosRepository.getProducto(idProducto)
+        ofertas = DescuentosRepository.getOfertas()
+        cuponesDisponibles = DescuentosRepository.getCupones()
+        cuponesUsuario = UsuariosRepository.getCupones()
         cargando = false
     }
 
@@ -186,32 +158,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     val cuponAplicable = cuponesDisponibles.find { it.codigo == p.oferta }
         ?.takeIf { it.codigo in cuponesUsuario }
 
-    val backgroundModifier = Modifier
-        .fillMaxSize()
-        .background(colors.background)
-        .drawBehind {
-            val edgeWidth = with(density) { 25.dp.toPx() }
-            val primaryColor = colors.primary.copy(alpha = 0.1f)
-            val width = size.width
-            val height = size.height
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(primaryColor, Color.Transparent),
-                    0f,
-                    edgeWidth
-                ),
-                size = Size(width, edgeWidth)
-            )
-            drawRect(
-                brush = Brush.verticalGradient(
-                    listOf(Color.Transparent, primaryColor),
-                    height - edgeWidth,
-                    height
-                ),
-                topLeft = Offset(0f, height - edgeWidth),
-                size = Size(width, edgeWidth)
-            )
-        }
+    val backgroundModifier = Modifier.fondoDegradado()
 
     Scaffold(
         topBar = {
@@ -223,11 +170,11 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         Icon(Icons.Default.ArrowBackIosNew, null, tint = colors.onBackground)
                     }
                 },
-                actions = {
-                    IconButton(onClick = { mostrarDialogo = true }) {
-                        Icon(Lucide.Pencil, null, modifier = Modifier.size(20.dp))
-                    }
-                }
+//                actions = {
+//                    IconButton(onClick = { mostrarDialogo = true }) {
+//                        Icon(Lucide.Pencil, null, modifier = Modifier.size(20.dp))
+//                    }
+//                }
             )
         },
         containerColor = Color.Transparent
@@ -307,9 +254,9 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                             estadoSwitch = activo,
                             onSwitch = { isChecked ->
                                 scope.launch {
-                                    if (isChecked) daoCarrito.activarCupon(cupon.codigo!!)
-                                    else daoCarrito.desactivarCupon(cupon.codigo!!)
-                                    cuponesUsuario = daoUsuario.getCupones()
+                                    if (isChecked) CarritoRepository.activarCupon(cupon.codigo!!)
+                                    else CarritoRepository.desactivarCupon(cupon.codigo!!)
+                                    cuponesUsuario = CarritoRepository.getCupones()
                                 }
                             }
                         )
@@ -412,7 +359,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     Button(
                         onClick = {
                             scope.launch {
-                                daoCarrito.addCarrito(p, 1.toDouble())
+                                CarritoRepository.addCarrito(p, 1.toDouble())
                                 Toast.makeText(context, "Añadido al carrito", Toast.LENGTH_SHORT)
                                     .show()
                             }
@@ -441,21 +388,21 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
         }
     }
 
-    // Diálogo para la edición de detalles del producto
-    if (mostrarDialogo) {
-        EditarProductoDialog(
-            producto = p,
-            onDismiss = { mostrarDialogo = false },
-            onSave = { nombre, precio, descripcion ->
-                scope.launch {
-                    daoProductos.actualizarProducto(p.id, nombre, precio, descripcion)
-                    producto =
-                        producto?.copy(nombre = nombre, precio = precio, descripcion = descripcion)
-                    mostrarDialogo = false
-                }
-            }
-        )
-    }
+//    // Diálogo para la edición de detalles del producto
+//    if (mostrarDialogo) {
+//        EditarProductoDialog(
+//            producto = p,
+//            onDismiss = { mostrarDialogo = false },
+//            onSave = { nombre, precio, descripcion ->
+//                scope.launch {
+//                    ProductosRepository.actualizarProducto(p.id, nombre, precio, descripcion)
+//                    producto =
+//                        producto?.copy(nombre = nombre, precio = precio, descripcion = descripcion)
+//                    mostrarDialogo = false
+//                }
+//            }
+//        )
+//    }
 }
 
 // Controla el aspecto de las categorías de producto
