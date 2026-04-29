@@ -634,24 +634,6 @@ fun PerfilEdit(
 }
 
 
-// TARJETA PLACEHOLDER PARA TAB "COMPRAS"
-@Composable
-fun TarjetaPlaceholder(texto: String, colors: androidx.compose.material3.ColorScheme) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Text(
-            texto,
-            modifier = Modifier.padding(24.dp),
-            fontSize = 16.sp,
-            color = colors.onSurfaceVariant
-        )
-    }
-}
-
 
 // SELECTOR DE TEMA
 @Composable

@@ -1,5 +1,8 @@
 package com.example.persistencia.Herramientas
 
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Firestore.ProductosDao
@@ -15,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 object CheckoutHelper {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun finalizarCompra(limpiarCarrito: Boolean = true): String? {
         return withContext(Dispatchers.IO) {
             val itemsCarrito = CarritoRepository.getCarrito()
@@ -53,6 +57,26 @@ object CheckoutHelper {
             if (limpiarCarrito) {
                 CarritoRepository.vaciarCarrito()
             }
+
+            // Eliminar cupones que se han aplicado
+            val cuponesGastados = descuentosTicket
+                .filter { it.tipo == "cupon" && it.descuentoAplicado > 0 }
+                .map { it.codigo }
+
+            Log.d("CuponesGastados", cuponesGastados.toString())
+
+            for (codigo in cuponesGastados) {
+                UsuariosRepository.removeCupon(codigo)
+            }
+
+            // Asignar cupones de la semana siguiente
+            val dao = DescuentosDao()
+            val cuponesFuturos = dao.getCuponesSemanaProxima()
+            val codigosFuturos = cuponesFuturos.mapNotNull { it.codigo }
+            if (codigosFuturos.isNotEmpty()) {
+                UsuariosRepository.addCupones(codigosFuturos)
+            }
+            Log.d("CuponesNuevos", codigosFuturos.toString())
 
             ticketId
         }

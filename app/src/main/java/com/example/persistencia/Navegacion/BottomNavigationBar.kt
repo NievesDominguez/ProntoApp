@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ShoppingBag
 
 @Composable
 fun BottomBar(navController: NavController) {
@@ -55,7 +57,7 @@ fun BottomBar(navController: NavController) {
                     selectedTextColor = colors.onSurface.copy(alpha = 0.6f),
                     unselectedIconColor = colors.onSurface.copy(alpha = 0.6f),
                     unselectedTextColor = colors.onSurface.copy(alpha = 0.6f),
-                    indicatorColor = colors.primary  // Fondo sólido del elemento seleccionado
+                    indicatorColor = colors.primary // Fondo sólido del elemento seleccionado
                 )
             )
         }
@@ -65,7 +67,7 @@ fun BottomBar(navController: NavController) {
 // Cada item del bottombar con su icono y ruta a la que lleva
 sealed class BottomItem(val route: String, val icon: ImageVector, val label: String) {
     object Principal : BottomItem(AppScreens.PantallaPrincipal.route, Icons.Default.Home, "Inicio")
-    object Catalogo : BottomItem(AppScreens.Catalogo.route, Icons.Default.List, "Catálogo")
+    object Catalogo : BottomItem(AppScreens.Catalogo.route, Lucide.ShoppingBag, "Catálogo")
     object Carrito : BottomItem(AppScreens.Carrito.route, Icons.Default.ShoppingCart, "Carrito")
     object Perfil : BottomItem(AppScreens.Perfil.route, Icons.Default.Person, "Perfil")
     object ListaCompra : BottomItem(AppScreens.ListaCompra.route, Icons.Default.List, "Lista")

@@ -261,6 +261,18 @@ object UsuariosRepository {
         cacheOrden = orden // Actualización optimista del caché
     }
 
+    // Elimina un cupón del usuario e invalida caché
+    suspend fun removeCupon(codigo: String) {
+        dao.quitarCupon(codigo)
+        cacheCupones = null
+    }
+
+    // Añade cupones al usuario e invalida caché
+    suspend fun addCupones(codigos: List<String>) {
+        dao.addCupones(codigos)
+        cacheCupones = null
+    }
+
     // Limpia el caché
     fun invalidar() {
         cacheCupones = null
