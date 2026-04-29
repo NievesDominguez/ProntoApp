@@ -24,59 +24,69 @@ object CheckoutHelper {
             val itemsCarrito = CarritoRepository.getCarrito()
             if (itemsCarrito.isEmpty()) return@withContext null
 
-            // Obtener los datos de cada producto del carrito
             val productosCarrito = itemsCarrito.mapNotNull { (id, cantidad) ->
-                ProductosRepository.getProducto(id)?.let { producto ->
-                    ProductoCarrito(producto, cantidad)
-                }
+                ProductosRepository.getProducto(id)?.let { ProductoCarrito(it, cantidad) }
             }
 
-            // Obtener ofertas y cupones desde los repositorios
             val ofertas = DescuentosRepository.getOfertas()
             val todosCupones = DescuentosRepository.getCupones()
             val codigosCuponesActivos = CarritoRepository.getCupones()
             val cuponesActivos = todosCupones.filter { it.codigo in codigosCuponesActivos }
 
-            // Calcular el ticket
-            val (productosTicket, descuentosTicket, total) = calcularTicket(
+            // Calcular total sin cupones (solo ofertas)
+            val totalSinCupones = calcularTotalCarrito(productosCarrito, ofertas, emptyList())
+
+            // Calcular ticket real
+            val (productosTicket, descuentosTicket, totalConCupones) = calcularTicket(
                 productosCarrito, ofertas, cuponesActivos
             )
+
+            // Obtener todos los códigos de descuento que se aplicaron (tanto ofertas como cupones)
+            val codigosAplicados = descuentosTicket.map { it.codigo }.toSet()
+
+            // Determinar qué cupones activos se aplicaron:
+            // 1. Los que están en codigosAplicados
+            // 2. Si no están pero el total bajó, asumimos que fueron los cupones de tipo fijo/porcentaje que no se registraron (por error)
+            val hayDescuentoPorCupones = totalConCupones < totalSinCupones
+            val cuponesAEliminar = if (hayDescuentoPorCupones) {
+                // Si hay códigos aplicados, eliminamos esos; si no, eliminamos todos los activos
+                if (codigosAplicados.intersect(codigosCuponesActivos.toSet()).isNotEmpty()) {
+                    codigosAplicados.intersect(codigosCuponesActivos.toSet()).toList()
+                } else {
+                    // Fallback: eliminar todos los activos
+                    codigosCuponesActivos
+                }
+            } else {
+                emptyList()
+            }
+
+            Log.d("Checkout", "Cupones a eliminar: $cuponesAEliminar")
 
             val ticket = Ticket(
                 fecha = Timestamp.now(),
                 productos = productosTicket,
                 descuentos = descuentosTicket,
-                total = total,
+                total = totalConCupones,
                 metodoPago = "Stripe"
             )
 
-            // Guardar ticket a través del repositorio
             val ticketId = TicketsRepository.guardarTicket(ticket) ?: return@withContext null
 
-            // Vaciar carrito a través del repositorio
             if (limpiarCarrito) {
                 CarritoRepository.vaciarCarrito()
             }
 
-            // Eliminar cupones que se han aplicado
-            val cuponesGastados = descuentosTicket
-                .filter { it.tipo == "cupon" && it.descuentoAplicado > 0 }
-                .map { it.codigo }
-
-            Log.d("CuponesGastados", cuponesGastados.toString())
-
-            for (codigo in cuponesGastados) {
+            for (codigo in cuponesAEliminar) {
                 UsuariosRepository.removeCupon(codigo)
             }
 
-            // Asignar cupones de la semana siguiente
             val dao = DescuentosDao()
             val cuponesFuturos = dao.getCuponesSemanaProxima()
             val codigosFuturos = cuponesFuturos.mapNotNull { it.codigo }
             if (codigosFuturos.isNotEmpty()) {
                 UsuariosRepository.addCupones(codigosFuturos)
             }
-            Log.d("CuponesNuevos", codigosFuturos.toString())
+            Log.d("Checkout", "Cupones nuevos asignados: $codigosFuturos")
 
             ticketId
         }
@@ -91,7 +101,13 @@ object CheckoutHelper {
         val productosTicket = mutableListOf<ProductoTicket>()
         val descuentosTicket = mutableListOf<DescuentoTicket>()
 
-        // Calcular subtotal original (precio * cantidad) para cada producto
+        // Unir ofertas y cupones que sean de tipo "n_por_m" o "segunda_unidad"
+        val todosDescuentosProducto = ofertas + cupones.filter { cupon ->
+            val tipoFormula = cupon.formula?.get("tipo") as? String
+            tipoFormula == "n_por_m" || tipoFormula == "segunda_unidad"
+        }
+
+        // Calcular subtotal original
         var subtotalOriginal = 0.0
         for (item in productosCarrito) {
             val subtotal = item.producto.precio * item.cantidad
@@ -107,32 +123,29 @@ object CheckoutHelper {
             subtotalOriginal += subtotal
         }
 
-        // Aplicar ofertas de producto (segunda unidad, NxM) y acumular descuentos
         var totalConOfertas = subtotalOriginal
         val gruposPorOferta = productosCarrito.groupBy { it.producto.oferta }
 
         for ((codigoOferta, itemsGrupo) in gruposPorOferta) {
             if (codigoOferta == null) continue
-            val oferta = ofertas.find { it.codigo == codigoOferta }
-            if (oferta != null && oferta.formula?.get("tipo") in listOf(
-                    "segunda_unidad",
-                    "n_por_m"
-                )
-            ) {
+            val descuento = todosDescuentosProducto.find { it.codigo == codigoOferta }
+            if (descuento != null) {
                 val precioOriginalGrupo = itemsGrupo.sumOf { it.producto.precio * it.cantidad }
-                val precioConOferta = when (oferta.formula?.get("tipo")) {
-                    "segunda_unidad" -> segundaUnidad(itemsGrupo, oferta)
-                    "n_por_m" -> aplicarNxM(itemsGrupo, oferta)
+                val precioConOferta = when (descuento.formula?.get("tipo")) {
+                    "segunda_unidad" -> segundaUnidad(itemsGrupo, descuento)
+                    "n_por_m" -> aplicarNxM(itemsGrupo, descuento)
                     else -> precioOriginalGrupo
                 }
                 val ahorro = precioOriginalGrupo - precioConOferta
                 if (ahorro > 0) {
                     totalConOfertas -= ahorro
+                    // Determinar si es cupón u oferta
+                    val tipoDescuento = if (cupones.any { it.codigo == descuento.codigo }) "cupon" else "oferta"
                     descuentosTicket.add(
                         DescuentoTicket(
-                            codigo = oferta.codigo!!,
-                            nombre = oferta.nombre,
-                            tipo = "oferta",
+                            codigo = descuento.codigo!!,
+                            nombre = descuento.nombre,
+                            tipo = tipoDescuento,
                             descuentoAplicado = ahorro
                         )
                     )
@@ -140,10 +153,13 @@ object CheckoutHelper {
             }
         }
 
-        // Aplicar cupones sobre el total después de ofertas
+        // Aplicar cupones de total (fijo, porcentaje, maximo) excluyendo los ya procesados
         var totalFinal = totalConOfertas
         for (cupon in cupones) {
-            val tipo = cupon.formula?.get("tipo") as? String ?: cupon.tipo
+            val tipoFormula = cupon.formula?.get("tipo") as? String
+            if (tipoFormula == "n_por_m" || tipoFormula == "segunda_unidad") continue // Ya procesado
+
+            val tipo = cupon.tipo
             when (tipo) {
                 "fijo" -> {
                     val minimo = (cupon.formula?.get("minimo") as? Number)?.toDouble() ?: 0.0
@@ -161,7 +177,6 @@ object CheckoutHelper {
                         )
                     }
                 }
-
                 "porcentaje" -> {
                     val minimo = (cupon.formula?.get("minimo") as? Number)?.toDouble() ?: 0.0
                     val porcentaje = (cupon.formula?.get("valor") as? Number)?.toDouble() ?: 0.0
@@ -178,7 +193,6 @@ object CheckoutHelper {
                         )
                     }
                 }
-
                 "maximo" -> {
                     val max = cupon.max_descuento ?: totalFinal
                     if (totalFinal > max) {
@@ -198,7 +212,6 @@ object CheckoutHelper {
         }
 
         if (totalFinal < 0) totalFinal = 0.0
-
         return Triple(productosTicket, descuentosTicket, totalFinal)
     }
 

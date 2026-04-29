@@ -58,6 +58,7 @@ class UsuariosDao {
         } catch (e: Exception) { }
     }
 
+
     // Añade una lista de cupones al array del usuario (sin duplicados gracias a arrayUnion)
     suspend fun addCupones(codigos: List<String>) {
         val uid = Firebase.auth.currentUser?.uid ?: return
