@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingBasket
@@ -31,6 +32,7 @@ sealed class AppScreens (val route: String, val icon: ImageVector) {
     object Chatbot: AppScreens("Chatbot", Lucide.Bot)
     object ListaCompra: AppScreens("ListaCompra", Icons.Default.FormatListBulleted)
     object TicketDetalle: AppScreens("TicketDetalle", Icons.Default.Receipt)
+    object Invitaciones: AppScreens("Invitaciones", Icons.Default.Notifications)
 
 
     companion object {

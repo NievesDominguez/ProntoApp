@@ -1,5 +1,6 @@
 package com.example.persistencia.Firestore
 
+import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
@@ -68,5 +69,27 @@ class UsuariosDao {
                 .update("cupones", FieldValue.arrayUnion(*codigos.toTypedArray())).await()
         } catch (e: Exception) { }
     }
+
+    // Busca un usuario por email y devuelve su UID, o null si no existe
+    suspend fun buscarUsuarioPorEmail(email: String): String? {
+        return try {
+            Log.d("UsuariosDao", "Buscando email normalizado: '${email.lowercase().trim()}'")
+            Log.d("UsuariosDao", "Buscando email: '$email'")
+            val snapshot = Firebase.firestore
+                .collection("usuarios")
+                .whereEqualTo("email", email.lowercase().trim())
+                .limit(1)
+                .get()
+                .await()
+            Log.d("UsuariosDao", "Documentos encontrados: ${snapshot.size()}")
+            val uid = snapshot.documents.firstOrNull()?.id
+            Log.d("UsuariosDao", "UID encontrado: $uid")
+            uid
+        } catch (e: Exception) {
+            Log.e("UsuariosDao", "Error al buscar email", e)
+            null
+        }
+    }
+
 
 }

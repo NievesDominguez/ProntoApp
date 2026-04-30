@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
@@ -36,12 +37,14 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.composables.icons.lucide.ListCheck
 import com.composables.icons.lucide.Lucide
+import com.example.persistencia.Herramientas.ListasRepository
 import com.example.persistencia.Navegacion.AppScreens
 import com.example.persistencia.Herramientas.NotificationHandler
 import com.example.persistencia.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.firebase.auth.FirebaseAuth
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
@@ -54,6 +57,13 @@ fun PantallaPrincipal(navController: NavController) {
     // Permiso de notificaciones
     val postNotificationPermission = rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
     val notificationHandler = NotificationHandler(context)
+
+    var numInvitaciones by remember { mutableStateOf(0) }
+    val usuario = FirebaseAuth.getInstance().currentUser
+    LaunchedEffect(usuario!!.uid) {
+        numInvitaciones = ListasRepository.getInvitacionesPendientes(usuario.uid).size
+    }
+
     LaunchedEffect(Unit) {
         if (!postNotificationPermission.status.isGranted) {
             postNotificationPermission.launchPermissionRequest()
@@ -117,14 +127,41 @@ fun PantallaPrincipal(navController: NavController) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Título
-            Text(
-                modifier = Modifier.padding(24.dp, 40.dp, 24.dp, 10.dp),
-                text = "Pronto",
-                color = colors.onBackground,
-                fontSize = 34.sp,
-                fontWeight = FontWeight.Bold
-            )
+            // Fila superior: título y botón de notificaciones
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp, 40.dp, 24.dp, 0.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Pronto",
+                    color = colors.onBackground,
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                // Botón de notificaciones con badge
+                IconButton(onClick = {
+                    navController.navigate(AppScreens.Invitaciones.route)
+                }) {
+                    BadgedBox(
+                        badge = {
+                            if (numInvitaciones > 0) {
+                                Badge {
+                                    Text(numInvitaciones.toString())
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Invitaciones",
+                            tint = colors.onBackground
+                        )
+                    }
+                }
+            }
 
             // Lema
             Text(

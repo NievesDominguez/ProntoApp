@@ -122,39 +122,6 @@ fun Registro(navController: NavController) {
                 )
             }
     ) {
-        val themeManager = LocalThemeManager.current
-
-        // Botón debug (solo en debug)
-        if (BuildConfig.DEBUG) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .size(40.dp),
-                shape = CircleShape,
-                color = colors.surface.copy(alpha = 0.8f),
-                shadowElevation = 4.dp
-            ) {
-                IconButton(
-                    onClick = {
-                        val newPreference = when (themeManager.themePreference) {
-                            ThemePreference.System -> ThemePreference.Light
-                            ThemePreference.Light -> ThemePreference.Dark
-                            ThemePreference.Dark -> ThemePreference.System
-                            else -> ThemePreference.System
-                        }
-                        themeManager.themePreference = newPreference
-                    },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Brightness4,
-                        contentDescription = "Cambiar tema",
-                        tint = colors.onBackground
-                    )
-                }
-            }
-        }
 
         Column(
             modifier = Modifier

@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.persistencia.Herramientas.CheckoutHelper
+import com.example.persistencia.Herramientas.ListasRepository
 import com.example.persistencia.Herramientas.LocalThemeManager
 import com.example.persistencia.Herramientas.ThemeManager
 import com.example.persistencia.Herramientas.ThemePreference
@@ -30,12 +31,13 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ListasRepository.init(applicationContext)
 
         var navController: NavController? = null
 
         // Inicializa Stripe con la clave pública de prueba
         PaymentConfiguration.init(
-            applicationContext,BuildConfig.STRIPE_PUBLISHABLE_KEY
+            applicationContext, BuildConfig.STRIPE_PUBLISHABLE_KEY
         )
 
         // Crea la instancia de PaymentSheet que maneja la interfaz de pago
@@ -48,9 +50,17 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         val ticketId = CheckoutHelper.finalizarCompra(limpiarCarrito = true)
                         if (ticketId != null) {
-                            Toast.makeText(this@MainActivity, "Compra registrada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Compra registrada",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         } else {
-                            Toast.makeText(this@MainActivity, "Error al guardar la compra", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Error al guardar la compra",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                     navController?.navigate(AppScreens.PantallaPrincipal.route) {
@@ -73,11 +83,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val themeManager = remember { ThemeManager() }
-
+            val themeManager = remember { ThemeManager(applicationContext) }
             CompositionLocalProvider(LocalThemeManager provides themeManager) {
                 PersistenciaTheme(
-                    darkTheme = when (themeManager.themePreference) {
+                    darkTheme = when (themeManager.themePreference.value) { // <-- .value
                         ThemePreference.Light -> false
                         ThemePreference.Dark -> true
                         ThemePreference.System -> isSystemInDarkTheme()

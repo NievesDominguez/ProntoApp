@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.composables.icons.lucide.ListChecks
+import com.composables.icons.lucide.Lucide
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoLista
 import com.example.persistencia.Herramientas.ListaCompraViewModel
@@ -42,6 +45,7 @@ fun ListaCompra(navController: NavController) {
     val viewModel: ListaCompraViewModel = viewModel()
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
 
     val itemsLista by viewModel.itemsLista.collectAsState()
     val productosCatalogo by viewModel.productosCatalogo.collectAsState()
@@ -49,12 +53,17 @@ fun ListaCompra(navController: NavController) {
     val sugerencias by viewModel.sugerencias.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val ordenActual by viewModel.ordenActual.collectAsState()
+    val listaActivaId by viewModel.listaActivaId.collectAsState()
+    val nombreListaActiva by viewModel.nombreListaActiva.collectAsState()
 
     var textoBusqueda by remember { mutableStateOf("") }
     var mostrarTotalCarrito by remember { mutableStateOf(false) }
     var menuOrdenExpandido by remember { mutableStateOf(false) }
-    var menuMasivoExpandido by remember { mutableStateOf(false) }
     var mostrarSugerencias by remember { mutableStateOf(false) }
+
+    var showCrearListaDialog by remember { mutableStateOf(false) }
+    var showInvitarDialog by remember { mutableStateOf(false) }
+    var emailInvitado by remember { mutableStateOf("") }
 
     // Filtrado de sugerencias según búsqueda
     val sugerenciasBusqueda = remember(textoBusqueda, productosCatalogo) {
@@ -97,7 +106,6 @@ fun ListaCompra(navController: NavController) {
         }
     }
 
-    // Mostrar modal de sugerencias cuando se generan
     LaunchedEffect(sugerencias) {
         if (sugerencias.isNotEmpty()) {
             mostrarSugerencias = true
@@ -106,71 +114,209 @@ fun ListaCompra(navController: NavController) {
 
     val backgroundModifier = Modifier.fondoDegradado()
 
-    Box(modifier = backgroundModifier) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = { Text("Lista de la Compra", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBackIosNew, "Volver")
+    // Diálogos
+    if (showCrearListaDialog) {
+        var nombre by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showCrearListaDialog = false },
+            title = { Text("Nueva lista") },
+            text = {
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre de la lista") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (nombre.isNotBlank()) {
+                        scope.launch {
+                            viewModel.crearLista(nombre.trim())
                         }
-                    },
-                    actions = {
-                        // Botón de sugerencias
-                        IconButton(onClick = { viewModel.generarSugerencias() }) {
-                            Icon(Icons.Default.Lightbulb, "Sugerencias")
+                        showCrearListaDialog = false
+                    }
+                }) { Text("Crear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCrearListaDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showInvitarDialog) {
+        AlertDialog(
+            onDismissRequest = { showInvitarDialog = false },
+            title = { Text("Invitar a usuario") },
+            text = {
+                OutlinedTextField(
+                    value = emailInvitado,
+                    onValueChange = { emailInvitado = it },
+                    label = { Text("Correo electrónico") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (emailInvitado.isNotBlank()) {
+
+                        val email = emailInvitado.trim() // IMPORTANTE
+
+                        scope.launch {
+                            val success = viewModel.invitarUsuario(email)
+
+                            if (!success) {
+                                Toast.makeText(context, "Usuario no encontrado", Toast.LENGTH_SHORT)
+                                    .show()
+                            } else {
+                                Toast.makeText(context, "Invitación enviada", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
                         }
-                        // Menú ordenar
-                        IconButton(onClick = { menuOrdenExpandido = true }) {
-                            Icon(Icons.Default.Sort, "Ordenar")
+
+                        showInvitarDialog = false
+                        emailInvitado = ""
+                    }
+                }) { Text("Invitar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showInvitarDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = nombreListaActiva.ifBlank { "Lista de la Compra" },
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBackIosNew, "Volver")
+                    }
+                },
+                actions = {
+                    // Selector de listas
+                    var selectorListasExpandido by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { selectorListasExpandido = true }) {
+                            Icon(
+                                painter = rememberVectorPainter(Lucide.ListChecks),
+                                contentDescription = "Cambiar lista"
+                            )
                         }
                         DropdownMenu(
-                            expanded = menuOrdenExpandido,
-                            onDismissRequest = { menuOrdenExpandido = false }) {
-                            listOf(
-                                "fecha" to "Orden de añadido",
-                                "alfabetico" to "Nombre",
-                                "precio" to "Precio",
-                                "categoria" to "Categoría"
-                            ).forEach { (id, label) ->
+                            expanded = selectorListasExpandido,
+                            onDismissRequest = { selectorListasExpandido = false }
+                        ) {
+                            viewModel.listasUsuario.collectAsState().value.forEach { lista ->
                                 DropdownMenuItem(
-                                    text = { Text(label) },
+                                    text = {
+                                        Text(
+                                            if (lista.id == listaActivaId) "✓ ${lista.nombre}"
+                                            else lista.nombre,
+                                            fontWeight = if (lista.id == listaActivaId) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
                                     onClick = {
-                                        viewModel.actualizarOrden(id)
-                                        menuOrdenExpandido = false
+                                        viewModel.seleccionarLista(lista.id)
+                                        selectorListasExpandido = false
                                     }
                                 )
                             }
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("+ Nueva lista") },
+                                onClick = {
+                                    selectorListasExpandido = false
+                                    showCrearListaDialog = true
+                                }
+                            )
                         }
-                        // Menú más opciones
-                        IconButton(onClick = { menuMasivoExpandido = true }) {
-                            Icon(Icons.Default.MoreVert, "Acciones")
+                    }
+
+                    // Menú de opciones (tres puntos)
+                    var menuOpcionesExpandido by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { menuOpcionesExpandido = true }) {
+                            Icon(Icons.Default.MoreVert, "Opciones")
                         }
                         DropdownMenu(
-                            expanded = menuMasivoExpandido,
-                            onDismissRequest = { menuMasivoExpandido = false }) {
+                            expanded = menuOpcionesExpandido,
+                            onDismissRequest = { menuOpcionesExpandido = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Sugerencias") },
+                                onClick = {
+                                    viewModel.generarSugerencias()
+                                    menuOpcionesExpandido = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ordenar") },
+                                onClick = {
+                                    menuOpcionesExpandido = false
+                                    menuOrdenExpandido = true
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Desmarcar todo") },
                                 onClick = {
                                     scope.launch { viewModel.desmarcarTodo() }
-                                    menuMasivoExpandido = false
+                                    menuOpcionesExpandido = false
                                 }
                             )
                             DropdownMenuItem(
                                 text = { Text("Eliminar todo", color = colors.error) },
                                 onClick = {
                                     scope.launch { viewModel.eliminarTodo() }
-                                    menuMasivoExpandido = false
+                                    menuOpcionesExpandido = false
+                                }
+                            )
+                            if (viewModel.esOwner) {
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text("Invitar usuario") },
+                                    onClick = {
+                                        menuOpcionesExpandido = false
+                                        showInvitarDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Menú de ordenación (se activa desde el menú de opciones)
+                    DropdownMenu(
+                        expanded = menuOrdenExpandido,
+                        onDismissRequest = { menuOrdenExpandido = false }
+                    ) {
+                        listOf(
+                            "fecha" to "Orden de añadido",
+                            "alfabetico" to "Nombre",
+                            "precio" to "Precio",
+                            "categoria" to "Categoría"
+                        ).forEach { (id, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    viewModel.actualizarOrden(id)
+                                    menuOrdenExpandido = false
                                 }
                             )
                         }
                     }
-                )
-            },
-            bottomBar = {
+                }
+            )
+        },
+        bottomBar = {
+            if (listaActivaId != null) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     tonalElevation = 4.dp,
@@ -210,12 +356,35 @@ fun ListaCompra(navController: NavController) {
                     }
                 }
             }
-        ) { padding ->
-            Box(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-            ) {
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            if (listaActivaId == null) {
+                // No hay lista seleccionada
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "No tienes ninguna lista aún",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { showCrearListaDialog = true }) {
+                            Text("Crear mi primera lista")
+                        }
+                    }
+                }
+            } else {
+                // Hay lista activa: interfaz normal
                 Column(modifier = Modifier.fillMaxSize()) {
                     Spacer(modifier = Modifier.height(90.dp))
 
@@ -320,7 +489,7 @@ fun ListaCompra(navController: NavController) {
                     }
                 }
 
-                // Buscador flotante
+                // Buscador flotante (solo si hay lista)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -398,7 +567,6 @@ fun ListaCompra(navController: NavController) {
                                 headlineContent = { Text(producto.nombre) },
                                 supportingContent = { Text("${producto.precio} €") },
                                 trailingContent = {
-
                                     IconButton(
                                         onClick = {
                                             scope.launch {
@@ -425,6 +593,7 @@ fun ListaCompra(navController: NavController) {
     }
 }
 
+// TarjetaProductoLista permanece igual (sin cambios)
 @Composable
 fun TarjetaProductoLista(
     item: ProductoLista,
@@ -516,9 +685,7 @@ fun TarjetaProductoLista(
                 // Controles de cantidad
                 if (datosProducto?.al_peso == true) {
                     var pesoText by remember(item.id) {
-                        mutableStateOf(
-                            item.cantidad.toString().replace('.', ',')
-                        )
+                        mutableStateOf(item.cantidad.toString().replace('.', ','))
                     }
                     OutlinedTextField(
                         value = pesoText,

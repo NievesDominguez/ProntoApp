@@ -72,7 +72,11 @@ class ChatViewModel : ViewModel() {
         }
 
         // Lista de la compra
-        val listaItems = ListasRepository.getLista()
+        val listaItems = try {
+            ListasRepository.getItems()
+        } catch (e: Exception) {
+            emptyList()
+        }
         val listaTexto = if (listaItems.isNotEmpty()) {
             val productosLista = mutableListOf<String>()
             for (item in listaItems) {

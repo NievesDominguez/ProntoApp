@@ -3,10 +3,7 @@ package com.example.persistencia.Herramientas
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.DescuentosDao
-import com.example.persistencia.Firestore.ProductosDao
-import com.example.persistencia.Firestore.TicketsDao
 import com.example.persistencia.Modelos.Descuento
 import com.example.persistencia.Modelos.DescuentoTicket
 import com.example.persistencia.Modelos.ProductoCarrito
@@ -140,7 +137,8 @@ object CheckoutHelper {
                 if (ahorro > 0) {
                     totalConOfertas -= ahorro
                     // Determinar si es cupón u oferta
-                    val tipoDescuento = if (cupones.any { it.codigo == descuento.codigo }) "cupon" else "oferta"
+                    val tipoDescuento =
+                        if (cupones.any { it.codigo == descuento.codigo }) "cupon" else "oferta"
                     descuentosTicket.add(
                         DescuentoTicket(
                             codigo = descuento.codigo!!,
@@ -177,6 +175,7 @@ object CheckoutHelper {
                         )
                     }
                 }
+
                 "porcentaje" -> {
                     val minimo = (cupon.formula?.get("minimo") as? Number)?.toDouble() ?: 0.0
                     val porcentaje = (cupon.formula?.get("valor") as? Number)?.toDouble() ?: 0.0
@@ -193,6 +192,7 @@ object CheckoutHelper {
                         )
                     }
                 }
+
                 "maximo" -> {
                     val max = cupon.max_descuento ?: totalFinal
                     if (totalFinal > max) {
@@ -215,7 +215,4 @@ object CheckoutHelper {
         return Triple(productosTicket, descuentosTicket, totalFinal)
     }
 
-    private suspend fun limpiarCarrito(carritoDao: CarritoDao) {
-        carritoDao.vaciarCarrito()
-    }
 }

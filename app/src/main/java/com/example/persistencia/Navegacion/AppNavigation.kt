@@ -29,6 +29,7 @@ import com.example.persistencia.Pantallas.Catalogo
 import com.example.persistencia.Pantallas.Chatbot
 import com.example.persistencia.Pantallas.Cupones
 import com.example.persistencia.Pantallas.Inicio
+import com.example.persistencia.Pantallas.InvitacionesScreen
 import com.example.persistencia.Pantallas.ListaCompra
 import com.example.persistencia.Pantallas.PantallaPrincipal
 import com.example.persistencia.Pantallas.PantallaProducto
@@ -197,6 +198,11 @@ fun AppNavigation(
             ) { backStackEntry ->
                 val ticketId = backStackEntry.arguments?.getString("ticketId") ?: return@composable
                 TicketDetalleScreen(ticketId = ticketId, navController = navController)
+            }
+
+            composable(route = AppScreens.Invitaciones.route) {
+                BackHandler { navController.popBackStack() }
+                InvitacionesScreen(navController)
             }
         }
     }

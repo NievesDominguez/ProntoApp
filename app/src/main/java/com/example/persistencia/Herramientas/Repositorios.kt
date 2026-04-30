@@ -1,14 +1,18 @@
 package com.example.persistencia.Herramientas
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Firestore.DescuentosDao
 import com.example.persistencia.Modelos.Descuento
 import com.example.persistencia.Firestore.CarritoDao
+import com.example.persistencia.Firestore.ListasCompartidasDao
 import com.example.persistencia.Firestore.UsuariosDao
 import com.example.persistencia.Firestore.TicketsDao
 import com.example.persistencia.Modelos.Ticket
 import com.example.persistencia.Firestore.ListasDao
+import com.example.persistencia.Modelos.ListaCompartida
 import com.example.persistencia.Modelos.ProductoLista
 
 
@@ -26,10 +30,13 @@ object ProductosRepository {
 
     private val dao = ProductosDao() // Única instancia del DAO para no crearlo en cada pantalla
     private var cacheTodos: List<Producto>? = null // Caché de la lista completa de productos
-    private var cacheProductos: MutableMap<String, Producto> = mutableMapOf() // Caché individual por ID
-    private var lastFetchTodos: Long = 0 // Marca de tiempo de la última vez que se cargó la lista completa
+    private var cacheProductos: MutableMap<String, Producto> =
+        mutableMapOf() // Caché individual por ID
+    private var lastFetchTodos: Long =
+        0 // Marca de tiempo de la última vez que se cargó la lista completa
 
-    private const val TTL = 60_000L // Tiempo de vida, tras 60s en la siguiente llamada se llama a Firestore
+    private const val TTL =
+        60_000L // Tiempo de vida, tras 60s en la siguiente llamada se llama a Firestore
 
     // Obtiene todos los productos
     suspend fun getTodos(forceRefresh: Boolean = false): List<Producto> {
@@ -106,7 +113,6 @@ object ProductosRepository {
 }
 
 
-
 // Repositorio singleton para ofertas y cupones
 object DescuentosRepository {
 
@@ -123,6 +129,7 @@ object DescuentosRepository {
     private const val TTL = 60_000L // 60 segundos
 
     // Obtiene las ofertas activas
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getOfertas(forceRefresh: Boolean = false): List<Descuento> {
         val now = System.currentTimeMillis()
         if (!forceRefresh && cacheOfertas != null && (now - lastFetchOfertas) < TTL) {
@@ -135,6 +142,7 @@ object DescuentosRepository {
     }
 
     // Obtiene todos los cupones disponibles
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getCupones(forceRefresh: Boolean = false): List<Descuento> {
         val now = System.currentTimeMillis()
         if (!forceRefresh && cacheCupones != null && (now - lastFetchCupones) < TTL) {
@@ -154,7 +162,6 @@ object DescuentosRepository {
         lastFetchCupones = 0
     }
 }
-
 
 
 /**
@@ -224,7 +231,6 @@ object CarritoRepository {
 }
 
 
-
 /**
  * Repositorio singleton para datos del usuario (cupones, preferencias)
  * Se invalida tras escrituras
@@ -272,6 +278,8 @@ object UsuariosRepository {
         dao.addCupones(codigos)
         cacheCupones = null
     }
+
+    suspend fun buscarUsuarioPorEmail(email: String): String? = dao.buscarUsuarioPorEmail(email)
 
     // Limpia el caché
     fun invalidar() {
@@ -334,61 +342,143 @@ object TicketsRepository {
 }
 
 
-
 // Repositorio singleton para la lista de la compra, se invalida tras cada operación de escritura
 object ListasRepository {
+    private val dao = ListasCompartidasDao()
 
-    private val dao = ListasDao()
+    // Caché de las listas del usuario (metadatos)
+    private var cacheListasUsuario: List<ListaCompartida>? = null
 
-    // Caché de los items de la lista de la compra
-    private var cacheLista: List<ProductoLista>? = null
+    // Caché de los items de la lista actualmente seleccionada
+    private var cacheItemsActivos: List<ProductoLista>? = null
+    private var currentListId: String? = null
 
-    // Obtiene la lista de la compra
-    suspend fun getLista(forceRefresh: Boolean = false): List<ProductoLista> {
-        if (!forceRefresh && cacheLista != null) return cacheLista!!
-        val lista = dao.getLista()
-        cacheLista = lista
-        return lista
+    // ID de la lista activa guardado en SharedPreferences
+    private var prefs: android.content.SharedPreferences? = null
+
+    fun init(context: android.content.Context) {
+        prefs = context.getSharedPreferences("lista_prefs", android.content.Context.MODE_PRIVATE)
+        currentListId = prefs?.getString("lista_activa", null)
     }
 
-    // Añade un item a la lista
+    // Obtener todas las listas del usuario
+    suspend fun getListasDeUsuario(
+        userId: String,
+        forceRefresh: Boolean = false
+    ): List<ListaCompartida> {
+        if (!forceRefresh && cacheListasUsuario != null) return cacheListasUsuario!!
+        val listas = dao.getListasPorMiembro(userId)
+        cacheListasUsuario = listas
+        return listas
+    }
+
+    // Obtener listas donde estoy invitado (pendientes)
+    suspend fun getInvitacionesPendientes(userId: String): List<ListaCompartida> {
+        return dao.getListasInvitado(userId)
+    }
+
+    // Seleccionar una lista activa (cambia el currentListId y carga sus items)
+    suspend fun seleccionarLista(listId: String) {
+        currentListId = listId
+        prefs?.edit()?.putString("lista_activa", listId)?.apply()
+        cacheItemsActivos = null // forzar recarga
+    }
+
+    // Obtener el ID de la lista activa actual
+    fun getListaActivaId(): String? = currentListId
+
+    // Obtener los items de la lista activa
+    suspend fun getItems(forceRefresh: Boolean = false): List<ProductoLista> {
+        val listId = currentListId ?: return emptyList()
+        if (!forceRefresh && cacheItemsActivos != null) return cacheItemsActivos!!
+        val items = dao.getItems(listId)
+        cacheItemsActivos = items
+        return items
+    }
+
+    // Crear una nueva lista y seleccionarla
+    suspend fun crearLista(nombre: String, userId: String): String? {
+        val id = dao.crearLista(nombre, userId)
+        if (id != null) {
+            cacheListasUsuario = null // invalidar caché de listas
+            seleccionarLista(id)
+        }
+        return id
+    }
+
+    // Invitar a usuario por email (buscar UID y añadir a invitados)
+    suspend fun invitarUsuario(listId: String, email: String): Boolean {
+        val uid = UsuariosDao().buscarUsuarioPorEmail(email) ?: return false
+        dao.invitarUsuario(listId, uid)
+        return true
+    }
+
+    // Aceptar invitación
+    suspend fun aceptarInvitacion(listId: String, userId: String) {
+        dao.aceptarInvitacion(listId, userId)
+        cacheListasUsuario = null // invalidar caché
+        if (currentListId == null) {
+            seleccionarLista(listId)
+        }
+    }
+
+    // Rechazar invitación
+    suspend fun rechazarInvitacion(listId: String, userId: String) {
+        dao.rechazarInvitacion(listId, userId)
+    }
+
+    // Eliminar lista (solo owner)
+    suspend fun eliminarLista(listId: String) {
+        dao.eliminarLista(listId)
+        cacheListasUsuario = null
+        if (currentListId == listId) {
+            currentListId = null
+            prefs?.edit()?.remove("lista_activa")?.apply()
+            cacheItemsActivos = null
+        }
+    }
+
+    // Añadir item a la lista activa
     suspend fun addItem(idProducto: String, cantidad: Double = 1.0) {
-        dao.addItem(idProducto, cantidad)
-        cacheLista = null // Invalidar
+        val listId = currentListId ?: return
+        dao.addItem(listId, idProducto, cantidad)
+        cacheItemsActivos = null
     }
 
-    // Elimina un item de la lista
     suspend fun eliminarItem(id: String) {
-        dao.eliminarItem(id)
-        cacheLista = null
+        val listId = currentListId ?: return
+        dao.eliminarItem(listId, id)
+        cacheItemsActivos = null
     }
 
-    // Cambia el estado comprado/no comprado de un item
     suspend fun cambiarEstado(id: String, estado: Boolean) {
-        dao.cambiarEstado(id, estado)
-        cacheLista = null
+        val listId = currentListId ?: return
+        dao.cambiarEstado(listId, id, estado)
+        cacheItemsActivos = null
     }
 
-    // Actualiza la cantidad de un item.
     suspend fun actualizarCantidad(id: String, nuevaCantidad: Double) {
-        dao.actualizarCantidad(id, nuevaCantidad)
-        cacheLista = null
+        val listId = currentListId ?: return
+        dao.actualizarCantidad(listId, id, nuevaCantidad)
+        cacheItemsActivos = null
     }
 
-    // Desmarca todos los items como no comprados
     suspend fun desmarcarTodo() {
-        dao.desmarcarTodo()
-        cacheLista = null
+        val listId = currentListId ?: return
+        dao.desmarcarTodo(listId)
+        cacheItemsActivos = null
     }
 
-    // Elimina todos los items de la lista
     suspend fun eliminarTodo() {
-        dao.eliminarTodo()
-        cacheLista = null
+        val listId = currentListId ?: return
+        dao.eliminarTodoItems(listId)
+        cacheItemsActivos = null
     }
 
-    // Limpia el caché
+    // Limpiar caché
     fun invalidar() {
-        cacheLista = null
+        cacheListasUsuario = null
+        cacheItemsActivos = null
+        currentListId = null
     }
 }

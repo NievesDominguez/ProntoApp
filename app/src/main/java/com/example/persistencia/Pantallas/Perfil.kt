@@ -60,29 +60,31 @@ import com.example.persistencia.Herramientas.CarritoRepository
 import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ListasRepository
 import com.example.persistencia.Herramientas.ProductosRepository
+import com.example.persistencia.Herramientas.ThemeManager
 import com.example.persistencia.Herramientas.TicketsRepository
 import com.example.persistencia.Herramientas.UsuariosRepository
 import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Herramientas.toFormattedString
 import com.example.persistencia.Modelos.Ticket
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
-@OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Perfil(navController: NavController) {
-
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val usuario = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
     val themeManager = LocalThemeManager.current
+    val scope = rememberCoroutineScope()
 
-    // Estados principales
+    // Estados
     var modoEdicion by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
     var cargando by remember { mutableStateOf(true) }
 
-    // Datos del usuario
     var nombre by remember { mutableStateOf("") }
     var apellidos by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
@@ -91,16 +93,13 @@ fun Perfil(navController: NavController) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     var showConfirmDialog by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
 
-    var showDialog by remember { mutableStateOf(false) } // Variable que determina si se muestra el dialogo para cerrar sesión o no
-
-    // Cargar datos del usuario desde Firestore
+    // Cargar datos
     LaunchedEffect(usuario?.uid) {
         cargando = true
         usuario?.uid?.let { uid ->
-            firestore.collection("usuarios")
-                .document(uid)
-                .get()
+            firestore.collection("usuarios").document(uid).get()
                 .addOnSuccessListener { doc ->
                     nombre = doc.getString("nombre") ?: ""
                     apellidos = doc.getString("apellidos") ?: ""
@@ -108,29 +107,77 @@ fun Perfil(navController: NavController) {
                     fotoFirestore = doc.getString("foto")
                 }
         }
-        delay(300L) // Retardo para la carga
+        delay(300L)
         cargando = false
     }
 
     // Selector de imágenes
-    val launcher = rememberLauncherForActivityResult(
+    val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        imageUri = uri
+        uri?.let {
+            imageUri = it
+            scope.launch {
+                try {
+                    val url = subirImagen(it, context)
+                    withContext(Dispatchers.Main) {
+                        if (url != null) {
+                            fotoFirestore = url
+                            usuario?.uid?.let { uid ->
+                                firestore.collection("usuarios").document(uid)
+                                    .update("foto", url)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(context, "Foto actualizada", Toast.LENGTH_SHORT).show()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Error al guardar foto en Firestore: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                            }
+                        } else {
+                            Toast.makeText(context, "Error: No se pudo subir la imagen a Cloudinary", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("Perfil", "Excepción al subir imagen", e)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    imageUri = null
+                }
+            }
+        }
     }
 
-    val backgroundModifier = Modifier.fondoDegradado()
+    // Guardar cambios de texto (sin contraseña)
+    fun guardarCambiosTexto() {
+        val datos = mapOf(
+            "nombre" to nombre,
+            "apellidos" to apellidos,
+            "telefono" to telefono
+        )
+        usuario?.uid?.let { uid ->
+            firestore.collection("usuarios").document(uid)
+                .update(datos)
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT).show()
+                    modoEdicion = false
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Error al actualizar", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Perfil",
+                        "Perfil",
                         color = colors.onBackground,
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 10.dp)
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -140,18 +187,19 @@ fun Perfil(navController: NavController) {
                             modoEdicion = false
                             nuevaPassword = ""
                         }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Cancelar",
-                                tint = colors.onBackground
-                            )
+                            Icon(Icons.Default.Close, "Cancelar", tint = colors.onBackground)
                         }
                     }
                     if (selectedTab == 0 && !cargando) {
                         IconButton(
                             onClick = {
-                                if (modoEdicion) showConfirmDialog = true
-                                else modoEdicion = true
+                                if (modoEdicion) {
+                                    // Si hay nueva contraseña -> diálogo, si no -> guardar directamente
+                                    if (nuevaPassword.isBlank()) guardarCambiosTexto()
+                                    else showConfirmDialog = true
+                                } else {
+                                    modoEdicion = true
+                                }
                             }
                         ) {
                             Icon(
@@ -166,70 +214,65 @@ fun Perfil(navController: NavController) {
         },
         containerColor = Color.Transparent
     ) { padding ->
-
-        Box(modifier = backgroundModifier.padding(padding)) {
-
+        Box(modifier = Modifier
+            .fondoDegradado()
+            .padding(padding)) {
             if (cargando) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = colors.primary)
                 }
             } else {
-                // Columna principal sin scroll (cada pestaña gestiona su propio scroll si es necesario)
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    val imagenMostrar = when {
-                        imageUri != null -> imageUri
-                        !fotoFirestore.isNullOrBlank() -> fotoFirestore
-                        usuario?.photoUrl != null -> usuario.photoUrl
-                        else -> "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1906669723.jpg"
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
+                    // Foto con botón de cámara flotante (siempre visible)
+                    Box(modifier = Modifier.size(130.dp), contentAlignment = Alignment.Center) {
+                        AsyncImage(
+                            model = when {
+                                imageUri != null -> imageUri
+                                !fotoFirestore.isNullOrBlank() -> fotoFirestore
+                                usuario?.photoUrl != null -> usuario.photoUrl
+                                else -> "https://www.shutterstock.com/image-vector/default-avatar-profile-icon-social-600nw-1906669723.jpg"
+                            },
+                            contentDescription = "Foto perfil",
                             modifier = Modifier
-                                .size(130.dp)
-                                .clip(CircleShape)
-                                .background(colors.surfaceVariant.copy(alpha = 0.5f)),
-                            contentAlignment = Alignment.Center
+                                .size(120.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                        IconButton(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(36.dp)
+                                .background(colors.primary, CircleShape)
+                                .clip(CircleShape),
+                            colors = IconButtonDefaults.iconButtonColors(containerColor = colors.primary)
                         ) {
-                            AsyncImage(
-                                model = imagenMostrar,
-                                contentDescription = "Foto perfil",
-                                modifier = Modifier
-                                    .size(120.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                "Cambiar foto",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "$nombre $apellidos",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.onBackground,
-                            textAlign = TextAlign.Center
-                        )
-
-                        if (modoEdicion) {
-                            TextButton(onClick = { launcher.launch("image/*") }) {
-                                Text("Cambiar foto", color = colors.primary)
-                            }
-                        }
                     }
 
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "$nombre $apellidos",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground
+                    )
                     Spacer(modifier = Modifier.height(20.dp))
 
                     val tabs = listOf("Datos", "Compras", "Ajustes")
-
                     TabRow(
                         selectedTabIndex = selectedTab,
                         containerColor = Color.Transparent,
@@ -239,17 +282,13 @@ fun Perfil(navController: NavController) {
                             Tab(
                                 selected = selectedTab == index,
                                 onClick = { selectedTab = index },
-                                text = { Text(title, color = colors.onBackground) }
-                            )
+                                text = { Text(title, color = colors.onBackground) })
                         }
                     }
-
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Contenido de las pestañas (cada una con su propio manejo de scroll)
                     when (selectedTab) {
                         0 -> {
-                            // Pestaña "Datos" con scroll vertical
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -273,119 +312,94 @@ fun Perfil(navController: NavController) {
                         }
 
                         1 -> {
-                            // Pestaña Compras
-                            var tickets by remember { mutableStateOf<List<Ticket>?>(null) } // null = cargando
+                            // SECCIÓN COMPRAS (sin cambios, igual que en tu código original)
+                            var tickets by remember { mutableStateOf<List<Ticket>?>(null) }
                             var errorCarga by remember { mutableStateOf(false) }
-
                             LaunchedEffect(Unit) {
                                 try {
-                                    val lista = TicketsRepository.getTickets()
-                                    tickets = lista
-                                    Log.d("Perfil", "Tickets cargados: ${lista.size}")
+                                    tickets = TicketsRepository.getTickets()
                                 } catch (e: Exception) {
-                                    Log.e("Perfil", "Error al cargar tickets", e)
                                     errorCarga = true
                                     tickets = emptyList()
                                 }
                             }
-
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 when {
-                                    tickets == null -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(32.dp),
-                                            contentAlignment = Alignment.Center
+                                    tickets == null -> Box(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(32.dp),
+                                        Alignment.Center
+                                    ) { CircularProgressIndicator(color = colors.primary) }
+
+                                    errorCarga -> Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = CardDefaults.cardColors(containerColor = colors.errorContainer)
+                                    ) {
+                                        Column(
+                                            Modifier.padding(24.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            CircularProgressIndicator(color = colors.primary)
+                                            Icon(
+                                                Icons.Default.Error,
+                                                null,
+                                                tint = colors.error,
+                                                modifier = Modifier.size(48.dp)
+                                            )
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(
+                                                "Error al cargar las compras",
+                                                color = colors.error,
+                                                textAlign = TextAlign.Center
+                                            )
+                                            TextButton(onClick = {
+                                                errorCarga = false; tickets = null
+                                            }) { Text("Reintentar") }
                                         }
                                     }
 
-                                    errorCarga -> {
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(24.dp),
-                                            colors = CardDefaults.cardColors(containerColor = colors.errorContainer)
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.padding(24.dp),
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
+                                    tickets!!.isEmpty() -> Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
+                                        elevation = CardDefaults.cardElevation(4.dp)
+                                    ) {
+                                        Box(Modifier.padding(32.dp), Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                 Icon(
-                                                    Icons.Default.Error,
-                                                    contentDescription = null,
-                                                    tint = colors.error,
-                                                    modifier = Modifier.size(48.dp)
+                                                    Icons.Default.ShoppingCart,
+                                                    null,
+                                                    modifier = Modifier.size(48.dp),
+                                                    tint = colors.onSurfaceVariant.copy(alpha = 0.6f)
                                                 )
-                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Spacer(Modifier.height(16.dp))
                                                 Text(
-                                                    "Error al cargar las compras",
-                                                    color = colors.error,
+                                                    "Aún no has realizado ninguna compra",
+                                                    fontSize = 16.sp,
+                                                    color = colors.onSurfaceVariant,
                                                     textAlign = TextAlign.Center
                                                 )
-                                                TextButton(onClick = {
-                                                    errorCarga = false
-                                                    tickets = null
-                                                }) {
-                                                    Text("Reintentar")
-                                                }
                                             }
                                         }
                                     }
 
-                                    tickets!!.isEmpty() -> {
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(24.dp),
-                                            colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
-                                            elevation = CardDefaults.cardElevation(4.dp)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier.padding(32.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.ShoppingCart,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(48.dp),
-                                                        tint = colors.onSurfaceVariant.copy(alpha = 0.6f)
-                                                    )
-                                                    Spacer(modifier = Modifier.height(16.dp))
-                                                    Text(
-                                                        text = "Aún no has realizado ninguna compra",
-                                                        fontSize = 16.sp,
-                                                        color = colors.onSurfaceVariant,
-                                                        textAlign = TextAlign.Center
-                                                    )
-                                                }
-                                            }
+                                    else -> LazyColumn(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        items(tickets!!, key = { it.id }) { ticket ->
+                                            TicketResumenCard(
+                                                ticket = ticket,
+                                                onClick = { navController.navigate("${AppScreens.TicketDetalle.route}/${ticket.id}") })
                                         }
-                                    }
-
-                                    else -> {
-                                        val listaTickets = tickets ?: return@Box
-                                        LazyColumn(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            items(listaTickets, key = { it.id }) { ticket ->
-                                                TicketResumenCard(
-                                                    ticket = ticket,
-                                                    onClick = {
-                                                        navController.navigate("${AppScreens.TicketDetalle.route}/${ticket.id}")
-                                                    })
-                                            }
-                                            item { Spacer(modifier = Modifier.height(16.dp)) }
-                                        }
+                                        item { Spacer(Modifier.height(16.dp)) }
                                     }
                                 }
                             }
                         }
 
                         2 -> {
-                            // Pestaña "Ajustes" con scroll vertical
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -397,8 +411,6 @@ fun Perfil(navController: NavController) {
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    // Botón para cerrar sesión
                     Button(
                         onClick = { showDialog = true },
                         modifier = Modifier
@@ -408,31 +420,25 @@ fun Perfil(navController: NavController) {
                         shape = RoundedCornerShape(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                     ) {
-                        Text(
-                            text = "Cerrar sesión",
-                            fontSize = 18.sp,
-                            color = Color(0xFF6C3AEC)
-                        )
+                        Text("Cerrar sesión", fontSize = 18.sp, color = Color(0xFF6C3AEC))
                     }
-
-                    // Diálogo para cerrar sesión
                     if (showDialog) {
                         AlertDialog(
                             onDismissRequest = { showDialog = false },
-                            title = { Text(text = "Cerrar sesión") },
-                            text = { Text(text = "¿Estás seguro de que quieres cerrar sesión?") },
+                            title = { Text("Cerrar sesión") },
+                            text = { Text("¿Estás seguro de que quieres cerrar sesión?") },
                             confirmButton = {
                                 TextButton(onClick = {
-                                    showDialog = false
-                                    signOut(context, navController)
-                                }) {
-                                    Text("Cerrar sesión")
-                                }
+                                    showDialog = false; signOut(
+                                    context,
+                                    navController
+                                )
+                                }) { Text("Cerrar sesión") }
                             },
                             dismissButton = {
-                                TextButton(onClick = { showDialog = false }) {
-                                    Text("Cancelar")
-                                }
+                                TextButton(onClick = {
+                                    showDialog = false
+                                }) { Text("Cancelar") }
                             }
                         )
                     }
@@ -440,46 +446,47 @@ fun Perfil(navController: NavController) {
                 }
             }
 
-            // Diálogo de confirmación de edición
+            // Diálogo de confirmación SOLO para cambio de contraseña
             if (showConfirmDialog) {
                 ConfirmacionDialog(
                     nuevaPassword = nuevaPassword,
-                    onDismiss = { showConfirmDialog = false },
+                    onDismiss = { showConfirmDialog = false; nuevaPassword = "" },
                     onConfirm = { passActual, _ ->
                         val credential =
                             EmailAuthProvider.getCredential(usuario?.email!!, passActual)
                         usuario.reauthenticate(credential).addOnSuccessListener {
-                            val datos = mutableMapOf<String, Any>(
+                            if (nuevaPassword.isNotEmpty()) usuario.updatePassword(nuevaPassword)
+                            val datos = mapOf(
                                 "nombre" to nombre,
                                 "apellidos" to apellidos,
                                 "telefono" to telefono
                             )
-
-                            val uid = usuario.uid
-
-                            imageUri?.let { uri ->
-                                kotlinx.coroutines.GlobalScope.launch {
-                                    val url = subirImagen(uri, context)
-                                    if (url != null) {
-                                        datos["foto"] = url
-                                        fotoFirestore = url
+                            usuario.uid?.let { uid ->
+                                firestore.collection("usuarios").document(uid).update(datos)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(
+                                            context,
+                                            "Datos y contraseña actualizados",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
-                                    firestore.collection("usuarios")
-                                        .document(uid)
-                                        .update(datos)
-                                }
+                                    .addOnFailureListener {
+                                        Toast.makeText(
+                                            context,
+                                            "Error al actualizar datos",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                             }
-
-                            firestore.collection("usuarios").document(usuario.uid)
-                                .update(datos as Map<String, Any>)
-                            if (nuevaPassword.isNotEmpty()) usuario.updatePassword(nuevaPassword)
                             nuevaPassword = ""
                             modoEdicion = false
                             showConfirmDialog = false
-                            Toast.makeText(context, "Datos actualizados", Toast.LENGTH_SHORT).show()
                         }.addOnFailureListener {
-                            Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(
+                                context,
+                                "Contraseña actual incorrecta",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 )
@@ -634,12 +641,11 @@ fun PerfilEdit(
 }
 
 
-
-// SELECTOR DE TEMA
+// Ajustes
 @Composable
 fun AjustesScreenCompact(
-    themeManager: com.example.persistencia.Herramientas.ThemeManager,
-    colors: androidx.compose.material3.ColorScheme
+    themeManager: ThemeManager,
+    colors: ColorScheme
 ) {
     val themeOptions = listOf(
         ThemePreference.System to "Sistema",
@@ -660,23 +666,22 @@ fun AjustesScreenCompact(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Tema",
+                "Tema",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = colors.onSurfaceVariant
             )
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 themeOptions.forEach { (pref, label) ->
-                    val isSelected = themeManager.themePreference == pref
+                    val isSelected = themeManager.themePreference.value == pref  // <-- .value
                     Surface(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(24.dp),
                         color = if (isSelected) colors.primary else colors.surface,
-                        onClick = { themeManager.themePreference = pref }
+                        onClick = { themeManager.setThemePreference(pref) }
                     ) {
                         Text(
                             text = label,
@@ -771,37 +776,61 @@ fun ConfirmacionDialog(
 }
 
 suspend fun subirImagen(uri: Uri, context: Context): String? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val bytes = inputStream.readBytes()
-        inputStream.close()
+    return withContext(Dispatchers.IO) {
+        try {
+            Log.d("SubirImagen", "Iniciando subida. URI: $uri")
 
-        val requestBody = okhttp3.MultipartBody.Builder()
-            .setType(okhttp3.MultipartBody.FORM)
-            .addFormDataPart(
-                "file",
-                "perfil.jpg",
-                okhttp3.RequestBody.create(
-                    "image/*".toMediaTypeOrNull(),
-                    bytes
+            // Verificar que las constantes de Cloudinary no estén vacías
+            val cloudName = BuildConfig.CLOUDINARY_CLOUD_NAME
+            val uploadPreset = BuildConfig.CLOUDINARY_UPLOAD_PRESET
+            if (cloudName.isBlank() || uploadPreset.isBlank()) {
+                Log.e("SubirImagen", "Cloudinary config vacía: cloudName='$cloudName', uploadPreset='$uploadPreset'")
+                return@withContext null
+            }
+
+            val inputStream = context.contentResolver.openInputStream(uri)
+            if (inputStream == null) {
+                Log.e("SubirImagen", "No se pudo abrir InputStream para URI: $uri")
+                return@withContext null
+            }
+            val bytes = inputStream.readBytes()
+            inputStream.close()
+            Log.d("SubirImagen", "Imagen leída, tamaño: ${bytes.size} bytes")
+
+            val requestBody = okhttp3.MultipartBody.Builder()
+                .setType(okhttp3.MultipartBody.FORM)
+                .addFormDataPart(
+                    "file",
+                    "perfil.jpg",
+                    okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), bytes)
                 )
-            )
-            .addFormDataPart("upload_preset", BuildConfig.CLOUDINARY_UPLOAD_PRESET)
-            .build()
+                .addFormDataPart("upload_preset", uploadPreset)
+                .build()
 
-        val request = okhttp3.Request.Builder()
-            .url("https://api.cloudinary.com/v1_1/${BuildConfig.CLOUDINARY_CLOUD_NAME}/image/upload")
-            .post(requestBody)
-            .build()
+            val request = okhttp3.Request.Builder()
+                .url("https://api.cloudinary.com/v1_1/$cloudName/image/upload")
+                .post(requestBody)
+                .build()
 
-        val client = okhttp3.OkHttpClient()
-        val response = client.newCall(request).execute()
+            Log.d("SubirImagen", "Enviando petición a Cloudinary...")
+            val client = okhttp3.OkHttpClient()
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string()
+            Log.d("SubirImagen", "Respuesta código: ${response.code}, body: $responseBody")
 
-        val json = org.json.JSONObject(response.body?.string() ?: return null)
-        json.getString("secure_url")
+            if (!response.isSuccessful) {
+                Log.e("SubirImagen", "Error en Cloudinary: ${response.code} - $responseBody")
+                return@withContext null
+            }
 
-    } catch (e: Exception) {
-        null
+            val json = org.json.JSONObject(responseBody ?: return@withContext null)
+            val url = json.getString("secure_url")
+            Log.d("SubirImagen", "Imagen subida correctamente: $url")
+            url
+        } catch (e: Exception) {
+            Log.e("SubirImagen", "Excepción en subida", e)
+            null
+        }
     }
 }
 

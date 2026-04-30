@@ -6,12 +6,20 @@ import android.app.NotificationManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 
-class NotificationApplication: Application() {
-    @RequiresApi(Build.VERSION_CODES.O)
+class NotificationApplication : Application() {
+    companion object {
+        lateinit var instance: NotificationApplication
+            private set
+    }
+
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        instance = this
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel()
+        }
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
