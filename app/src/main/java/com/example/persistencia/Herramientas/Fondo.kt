@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.dp
 fun Modifier.fondoDegradado(): Modifier {
     val colors = MaterialTheme.colorScheme // Colores del tema actual
     val density = LocalDensity.current // Densidad para conversion de dp a px
-    val scope = rememberCoroutineScope() // Para acciones asíncronas
-    val context = LocalContext.current // Para toasts
     return this
         .fillMaxSize()
         .background(colors.background)

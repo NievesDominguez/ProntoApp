@@ -1,48 +1,52 @@
 package com.example.persistencia.Herramientas
 
 import android.content.Context
-import androidx.compose.runtime.mutableStateOf
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.persistencia.Firestore.*
 import com.example.persistencia.Modelos.Mensaje
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Gestiona el estado de la conversación, la comunicación con Groq  y la obtención del contexto del usuario
+// Gestiona el estado de la conversacion, la comunicacion con Groq y la obtencion del contexto del usuario
 class ChatViewModel : ViewModel() {
 
-    // Lista de mensajes del chat
-    var messages = mutableStateOf<List<Mensaje>>(emptyList())
-        private set
+    // Lista de mensajes del chat expuesta como StateFlow para consistencia con otros ViewModels
+    private val _messages = MutableStateFlow<List<Mensaje>>(emptyList())
+    val messages: StateFlow<List<Mensaje>> = _messages
 
-    // Indica si se está esperando una respuesta del asistente
-    var isLoading = mutableStateOf(false)
-        private set
+    // Indica si se esta esperando una respuesta del asistente
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    // Servicio que se comunicará con la API de Groq
+    // Servicio que se comunicara con la API de Groq
     private lateinit var groqApiService: GroqApiService
 
     // Mensaje de bienvenida
     init {
-        messages.value = listOf(
+        _messages.value = listOf(
             Mensaje(
-                "¡Hola! Bienvenido a Pronto. Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?",
+                "Hola! Bienvenido a Pronto. Soy tu asistente virtual. En que puedo ayudarte hoy?",
                 Mensaje.Sender.BOT
             )
         )
     }
 
-    // Inicializa el servicio de Groq si aún no se ha hecho
+    // Inicializa el servicio de Groq si aun no se ha hecho
     fun initService(context: Context) {
         if (!::groqApiService.isInitialized) {
             groqApiService = GroqApiService(context)
         }
     }
 
-    // Obtiene toda la información relevante del usuario para inyectar en el prompt
+    // Obtiene toda la informacion relevante del usuario para inyectar en el prompt
+    @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun getUserContext(): String {
         val user = FirebaseAuth.getInstance().currentUser ?: return ""
         val uid = user.uid
@@ -52,7 +56,6 @@ class ChatViewModel : ViewModel() {
         val carritoTexto = if (carritoItems.isNotEmpty()) {
             val productosCarrito = mutableListOf<String>()
             for ((id, cantidad) in carritoItems) {
-                // Obtiene el producto de ProductosRepository
                 val prod = ProductosRepository.getProducto(id)
                 prod?.let {
                     val esAlPeso = prod.al_peso == true
@@ -68,7 +71,7 @@ class ChatViewModel : ViewModel() {
             }
             "Carrito: ${productosCarrito.joinToString(", ")}"
         } else {
-            "Carrito vacío"
+            "Carrito vacio"
         }
 
         // Lista de la compra
@@ -95,7 +98,7 @@ class ChatViewModel : ViewModel() {
             }
             "Lista de la compra: ${productosLista.joinToString(", ")}"
         } else {
-            "Lista de la compra vacía"
+            "Lista de la compra vacia"
         }
 
         // Cupones del usuario
@@ -121,36 +124,36 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-
-    // Envía un mensaje del usuario al asistente
+    // Envia un mensaje del usuario al asistente
+    @RequiresApi(Build.VERSION_CODES.O)
     fun sendMessage(text: String, context: Context) {
         val userMessage = Mensaje(text, Mensaje.Sender.USER)
-        messages.value += userMessage
-        isLoading.value = true
+        _messages.value += userMessage
+        _isLoading.value = true
 
         viewModelScope.launch {
             try {
-                // Asegurar que el servicio de Groq esté inicializado
+                // Asegurar que el servicio de Groq este inicializado
                 initService(context)
-                // Obtener toda la información personalizada del usuario
+                // Obtener toda la informacion personalizada del usuario
                 val userContext = getUserContext()
                 // Llamar a Groq en un hilo de IO para no bloquear la UI
                 val reply = withContext(Dispatchers.IO) {
-                    groqApiService.sendMessage(messages.value, userContext)
+                    groqApiService.sendMessage(_messages.value, userContext)
                 }
-                // Añadir la respuesta del bot o un mensaje de error
+                // Agregar la respuesta del bot o un mensaje de error
                 if (reply != null) {
-                    messages.value += Mensaje(reply, Mensaje.Sender.BOT)
+                    _messages.value += Mensaje(reply, Mensaje.Sender.BOT)
                 } else {
-                    messages.value += Mensaje(
+                    _messages.value += Mensaje(
                         "Lo siento, no pude obtener respuesta.",
                         Mensaje.Sender.BOT
                     )
                 }
             } catch (e: Exception) {
-                messages.value += Mensaje("Error: ${e.message}", Mensaje.Sender.BOT)
+                _messages.value += Mensaje("Error: ${e.message}", Mensaje.Sender.BOT)
             } finally {
-                isLoading.value = false
+                _isLoading.value = false
             }
         }
     }

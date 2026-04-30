@@ -49,7 +49,7 @@ class ListaCompraViewModel(
     private val _listaActivaId = MutableStateFlow<String?>(null)
     val listaActivaId: StateFlow<String?> = _listaActivaId.asStateFlow()
 
-    private val _nombreListaActiva = MutableStateFlow("")
+    private val _nombreListaActiva = MutableStateFlow("Listas de la Compra")
     val nombreListaActiva: StateFlow<String> = _nombreListaActiva.asStateFlow()
 
     // Propiedad calculada: indica si el usuario actual es el dueño de la lista activa
@@ -82,7 +82,7 @@ class ListaCompraViewModel(
             } else {
                 // No hay listas: mostrar interfaz vacía
                 _listaActivaId.value = null
-                _nombreListaActiva.value = ""
+                _nombreListaActiva.value = "Listas de la compra"
                 _itemsLista.value = emptyList()
                 _productosCatalogo.value = ProductosRepository.getTodos()
                 _carritoCantidades.value = CarritoRepository.getCarrito().associate { it.first to it.second }

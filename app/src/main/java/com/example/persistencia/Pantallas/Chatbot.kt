@@ -48,8 +48,8 @@ fun Chatbot(
     val backgroundModifier = Modifier.fondoDegradado()
 
     // Estados del ViewModel
-    val messages by viewModel.messages // Lista de mensajes
-    val isLoading by viewModel.isLoading // Indicador de carga
+    val messages by viewModel.messages.collectAsState() //Lista de mensajes
+    val isLoading by viewModel.isLoading.collectAsState() // Indicador de carga
 
     var inputText by remember { mutableStateOf("") } // Texto que el usuario está escribiendo
 

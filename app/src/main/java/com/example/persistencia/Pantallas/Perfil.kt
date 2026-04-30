@@ -14,9 +14,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,9 +33,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,23 +46,14 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.style.TextOverflow
-import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.TicketPercent
 import com.example.persistencia.Navegacion.AppScreens
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import com.example.persistencia.BuildConfig
-import com.example.persistencia.Firestore.TicketsDao
 import com.example.persistencia.Herramientas.CarritoRepository
 import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ListasRepository
@@ -66,6 +64,7 @@ import com.example.persistencia.Herramientas.UsuariosRepository
 import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Herramientas.toFormattedString
 import com.example.persistencia.Modelos.Ticket
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -88,7 +87,7 @@ fun Perfil(navController: NavController) {
     var nombre by remember { mutableStateOf("") }
     var apellidos by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
-    var nuevaPassword by remember { mutableStateOf("") }
+    val nuevaPasswordState = rememberTextFieldState()
     var fotoFirestore by remember { mutableStateOf<String?>(null) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -111,7 +110,7 @@ fun Perfil(navController: NavController) {
         cargando = false
     }
 
-    // Selector de imágenes
+    // Selector de imagenes
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -138,7 +137,7 @@ fun Perfil(navController: NavController) {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("Perfil", "Excepción al subir imagen", e)
+                    Log.e("Perfil", "Excepcion al subir imagen", e)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
@@ -149,7 +148,7 @@ fun Perfil(navController: NavController) {
         }
     }
 
-    // Guardar cambios de texto (sin contraseña)
+    // Guardar cambios de texto (sin contrasena)
     fun guardarCambiosTexto() {
         val datos = mapOf(
             "nombre" to nombre,
@@ -174,10 +173,11 @@ fun Perfil(navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        "Perfil",
+                        text = "Perfil",
                         color = colors.onBackground,
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 10.dp)
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -185,7 +185,7 @@ fun Perfil(navController: NavController) {
                     if (modoEdicion) {
                         IconButton(onClick = {
                             modoEdicion = false
-                            nuevaPassword = ""
+                            nuevaPasswordState.edit { replace(0, length, "") }
                         }) {
                             Icon(Icons.Default.Close, "Cancelar", tint = colors.onBackground)
                         }
@@ -194,8 +194,7 @@ fun Perfil(navController: NavController) {
                         IconButton(
                             onClick = {
                                 if (modoEdicion) {
-                                    // Si hay nueva contraseña -> diálogo, si no -> guardar directamente
-                                    if (nuevaPassword.isBlank()) guardarCambiosTexto()
+                                    if (nuevaPasswordState.text.isBlank()) guardarCambiosTexto()
                                     else showConfirmDialog = true
                                 } else {
                                     modoEdicion = true
@@ -230,7 +229,7 @@ fun Perfil(navController: NavController) {
                 ) {
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Foto con botón de cámara flotante (siempre visible)
+                    // Foto con boton de camara flotante
                     Box(modifier = Modifier.size(130.dp), contentAlignment = Alignment.Center) {
                         AsyncImage(
                             model = when {
@@ -298,21 +297,19 @@ fun Perfil(navController: NavController) {
                                     PerfilView(nombre, apellidos, telefono, usuario?.email)
                                 } else {
                                     PerfilEdit(
-                                        nombre,
-                                        apellidos,
-                                        telefono,
-                                        nuevaPassword,
-                                        { nombre = it },
-                                        { apellidos = it },
-                                        { telefono = it },
-                                        { nuevaPassword = it }
+                                        nombre = nombre,
+                                        apellidos = apellidos,
+                                        telefono = telefono,
+                                        nuevaPasswordState = nuevaPasswordState,
+                                        onNombre = { nombre = it },
+                                        onApellidos = { apellidos = it },
+                                        onTelefono = { telefono = it }
                                     )
                                 }
                             }
                         }
 
                         1 -> {
-                            // SECCIÓN COMPRAS (sin cambios, igual que en tu código original)
                             var tickets by remember { mutableStateOf<List<Ticket>?>(null) }
                             var errorCarga by remember { mutableStateOf(false) }
                             LaunchedEffect(Unit) {
@@ -375,7 +372,7 @@ fun Perfil(navController: NavController) {
                                                 )
                                                 Spacer(Modifier.height(16.dp))
                                                 Text(
-                                                    "Aún no has realizado ninguna compra",
+                                                    "Aun no has realizado ninguna compra",
                                                     fontSize = 16.sp,
                                                     color = colors.onSurfaceVariant,
                                                     textAlign = TextAlign.Center
@@ -420,20 +417,17 @@ fun Perfil(navController: NavController) {
                         shape = RoundedCornerShape(50.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                     ) {
-                        Text("Cerrar sesión", fontSize = 18.sp, color = Color(0xFF6C3AEC))
+                        Text("Cerrar sesion", fontSize = 18.sp, color = Color(0xFF6C3AEC))
                     }
                     if (showDialog) {
                         AlertDialog(
                             onDismissRequest = { showDialog = false },
-                            title = { Text("Cerrar sesión") },
-                            text = { Text("¿Estás seguro de que quieres cerrar sesión?") },
+                            title = { Text("Cerrar sesion") },
+                            text = { Text("Estas seguro de que quieres cerrar sesion?") },
                             confirmButton = {
                                 TextButton(onClick = {
-                                    showDialog = false; signOut(
-                                    context,
-                                    navController
-                                )
-                                }) { Text("Cerrar sesión") }
+                                    showDialog = false; signOut(context, navController)
+                                }) { Text("Cerrar sesion") }
                             },
                             dismissButton = {
                                 TextButton(onClick = {
@@ -446,16 +440,20 @@ fun Perfil(navController: NavController) {
                 }
             }
 
-            // Diálogo de confirmación SOLO para cambio de contraseña
+            // Dialogo de confirmacion para cambio de contrasena
             if (showConfirmDialog) {
                 ConfirmacionDialog(
-                    nuevaPassword = nuevaPassword,
-                    onDismiss = { showConfirmDialog = false; nuevaPassword = "" },
+                    nuevaPassword = nuevaPasswordState.text.toString(),
+                    onDismiss = {
+                        showConfirmDialog = false
+                        nuevaPasswordState.edit { replace(0, length, "") }
+                    },
                     onConfirm = { passActual, _ ->
                         val credential =
                             EmailAuthProvider.getCredential(usuario?.email!!, passActual)
                         usuario.reauthenticate(credential).addOnSuccessListener {
-                            if (nuevaPassword.isNotEmpty()) usuario.updatePassword(nuevaPassword)
+                            val passText = nuevaPasswordState.text.toString()
+                            if (passText.isNotEmpty()) usuario.updatePassword(passText)
                             val datos = mapOf(
                                 "nombre" to nombre,
                                 "apellidos" to apellidos,
@@ -478,7 +476,7 @@ fun Perfil(navController: NavController) {
                                         ).show()
                                     }
                             }
-                            nuevaPassword = ""
+                            nuevaPasswordState.edit { replace(0, length, "") }
                             modoEdicion = false
                             showConfirmDialog = false
                         }.addOnFailureListener {
@@ -496,7 +494,7 @@ fun Perfil(navController: NavController) {
 }
 
 
-// VISTA DE PERFIL (MODO VISUALIZACIÓN)
+// VISTA DE PERFIL (MODO VISUALIZACION)
 @Composable
 fun PerfilView(nombre: String, apellidos: String, telefono: String, email: String?) {
     val colors = MaterialTheme.colorScheme
@@ -529,7 +527,7 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            "Teléfono:",
+            "Telefono:",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = colors.onBackground.copy(alpha = 0.7f)
@@ -543,7 +541,7 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            "Correo electrónico:",
+            "Correo electronico:",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = colors.onBackground.copy(alpha = 0.7f)
@@ -553,26 +551,29 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
 }
 
 
-// Función para cerrar sesión
+// Funcion para cerrar sesion
+// Funcion para cerrar sesion
 fun signOut(context: Context, navController: NavController) {
-    // Sesión de google
+    // Sesion de google
     val googleSignInClient = GoogleSignIn.getClient(
         context,
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
     )
-    // Cerrar sesión de Google
+    // Cerrar sesion de Google
     googleSignInClient.signOut()
 
-    // Cerrar sesión de Firebase
+    // Cerrar sesion de Firebase
     Firebase.auth.signOut()
 
-    // Limpiar todos los cachés en memoria
-    CarritoRepository.invalidar()
-    ListasRepository.invalidar()
-    TicketsRepository.invalidar()
-    UsuariosRepository.invalidar()
-    ProductosRepository.invalidar()
-    DescuentosRepository.invalidar()
+    // Limpiar todos los caches en memoria
+    CoroutineScope(Dispatchers.Main).launch {
+        CarritoRepository.invalidar()
+        ListasRepository.invalidar()
+        TicketsRepository.invalidar()
+        UsuariosRepository.invalidar()
+        ProductosRepository.invalidar()
+        DescuentosRepository.invalidar()
+    }
 
     // Navegar a Inicio limpiando la pila
     navController.navigate(AppScreens.Inicio.route) {
@@ -581,19 +582,20 @@ fun signOut(context: Context, navController: NavController) {
 }
 
 
-// Modo edición
+// Modo edicion con campos estilizados
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilEdit(
     nombre: String,
     apellidos: String,
     telefono: String,
-    nuevaPassword: String,
+    nuevaPasswordState: TextFieldState,
     onNombre: (String) -> Unit,
     onApellidos: (String) -> Unit,
-    onTelefono: (String) -> Unit,
-    onPassword: (String) -> Unit
+    onTelefono: (String) -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+    var passVisible by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -610,29 +612,63 @@ fun PerfilEdit(
                 value = nombre,
                 onValueChange = onNombre,
                 label = { Text("Nombre") },
-                modifier = Modifier.fillMaxWidth()
+                leadingIcon = { Icon(Icons.Outlined.Person, null, tint = colors.primary) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.outline
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
 
             OutlinedTextField(
                 value = apellidos,
                 onValueChange = onApellidos,
                 label = { Text("Apellidos") },
-                modifier = Modifier.fillMaxWidth()
+                leadingIcon = { Icon(Icons.Outlined.Badge, null, tint = colors.primary) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.outline
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
 
             OutlinedTextField(
                 value = telefono,
                 onValueChange = onTelefono,
-                label = { Text("Teléfono") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Telefono") },
+                leadingIcon = { Icon(Icons.Outlined.Phone, null, tint = colors.primary) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.outline
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
 
-            OutlinedTextField(
-                value = nuevaPassword,
-                onValueChange = onPassword,
-                label = { Text("Nueva contraseña (opcional)") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+            OutlinedSecureTextField(
+                state = nuevaPasswordState,
+                label = { Text("Nueva contraseña") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = colors.primary) },
+                trailingIcon = {
+                    IconButton(onClick = { passVisible = !passVisible }) {
+                        Icon(
+                            imageVector = if (passVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            contentDescription = null,
+                            tint = colors.primary
+                        )
+                    }
+                },
+                textObfuscationMode = if (passVisible) TextObfuscationMode.Visible else TextObfuscationMode.RevealLastTyped,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.outline
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
 
             Spacer(modifier = Modifier.height(60.dp))
@@ -676,7 +712,7 @@ fun AjustesScreenCompact(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 themeOptions.forEach { (pref, label) ->
-                    val isSelected = themeManager.themePreference.value == pref  // <-- .value
+                    val isSelected = themeManager.themePreference.value == pref
                     Surface(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(24.dp),
@@ -701,20 +737,26 @@ fun AjustesScreenCompact(
 }
 
 
-// DIÁLOGO DE CONFIRMACIÓN
+// DIALOGO DE CONFIRMACION
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfirmacionDialog(
     nuevaPassword: String,
     onDismiss: () -> Unit,
     onConfirm: (String, String?) -> Unit
 ) {
-    var passActual by remember { mutableStateOf("") }
-    var repetirNueva by remember { mutableStateOf("") }
+    val colors = MaterialTheme.colorScheme
 
-    val errorPassActual = passActual.isBlank()
+    val passActualState = rememberTextFieldState()
+    val repetirNuevaState = rememberTextFieldState()
+
+    var passActualVisible by remember { mutableStateOf(false) }
+    var repetirVisible by remember { mutableStateOf(false) }
+
+    val errorPassActual = passActualState.text.isBlank()
     val errorRepetir = nuevaPassword.isNotEmpty() &&
-            repetirNueva.isNotEmpty() &&
-            repetirNueva != nuevaPassword
+            repetirNuevaState.text.isNotEmpty() &&
+            repetirNuevaState.text.toString() != nuevaPassword
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -727,23 +769,53 @@ fun ConfirmacionDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = passActual,
-                    onValueChange = { passActual = it },
+                OutlinedSecureTextField(
+                    state = passActualState,
                     label = { Text("Contraseña actual") },
                     isError = errorPassActual,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = colors.primary) },
+                    trailingIcon = {
+                        IconButton(onClick = { passActualVisible = !passActualVisible }) {
+                            Icon(
+                                imageVector = if (passActualVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = null,
+                                tint = colors.primary
+                            )
+                        }
+                    },
+                    textObfuscationMode = if (passActualVisible) TextObfuscationMode.Visible else TextObfuscationMode.RevealLastTyped,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.primary,
+                        unfocusedBorderColor = colors.outline
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 )
 
                 if (nuevaPassword.isNotEmpty()) {
-                    OutlinedTextField(
-                        value = repetirNueva,
-                        onValueChange = { repetirNueva = it },
+                    OutlinedSecureTextField(
+                        state = repetirNuevaState,
                         label = { Text("Repetir nueva contraseña") },
                         isError = errorRepetir,
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = colors.primary) },
+                        trailingIcon = {
+                            IconButton(onClick = { repetirVisible = !repetirVisible }) {
+                                Icon(
+                                    imageVector = if (repetirVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = colors.primary
+                                )
+                            }
+                        },
+                        textObfuscationMode = if (repetirVisible) TextObfuscationMode.Visible else TextObfuscationMode.RevealLastTyped,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primary,
+                            unfocusedBorderColor = colors.outline
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     if (errorRepetir) {
@@ -761,7 +833,10 @@ fun ConfirmacionDialog(
                 onClick = {
                     if (errorPassActual) return@Button
                     if (errorRepetir) return@Button
-                    onConfirm(passActual, repetirNueva)
+                    onConfirm(
+                        passActualState.text.toString(),
+                        repetirNuevaState.text.toString()
+                    )
                 }
             ) {
                 Text("Confirmar")
@@ -780,11 +855,10 @@ suspend fun subirImagen(uri: Uri, context: Context): String? {
         try {
             Log.d("SubirImagen", "Iniciando subida. URI: $uri")
 
-            // Verificar que las constantes de Cloudinary no estén vacías
             val cloudName = BuildConfig.CLOUDINARY_CLOUD_NAME
             val uploadPreset = BuildConfig.CLOUDINARY_UPLOAD_PRESET
             if (cloudName.isBlank() || uploadPreset.isBlank()) {
-                Log.e("SubirImagen", "Cloudinary config vacía: cloudName='$cloudName', uploadPreset='$uploadPreset'")
+                Log.e("SubirImagen", "Cloudinary config vacia: cloudName='$cloudName', uploadPreset='$uploadPreset'")
                 return@withContext null
             }
 
@@ -795,7 +869,7 @@ suspend fun subirImagen(uri: Uri, context: Context): String? {
             }
             val bytes = inputStream.readBytes()
             inputStream.close()
-            Log.d("SubirImagen", "Imagen leída, tamaño: ${bytes.size} bytes")
+            Log.d("SubirImagen", "Imagen leida, tamano: ${bytes.size} bytes")
 
             val requestBody = okhttp3.MultipartBody.Builder()
                 .setType(okhttp3.MultipartBody.FORM)
@@ -812,11 +886,11 @@ suspend fun subirImagen(uri: Uri, context: Context): String? {
                 .post(requestBody)
                 .build()
 
-            Log.d("SubirImagen", "Enviando petición a Cloudinary...")
+            Log.d("SubirImagen", "Enviando peticion a Cloudinary...")
             val client = okhttp3.OkHttpClient()
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string()
-            Log.d("SubirImagen", "Respuesta código: ${response.code}, body: $responseBody")
+            Log.d("SubirImagen", "Respuesta codigo: ${response.code}, body: $responseBody")
 
             if (!response.isSuccessful) {
                 Log.e("SubirImagen", "Error en Cloudinary: ${response.code} - $responseBody")
@@ -828,7 +902,7 @@ suspend fun subirImagen(uri: Uri, context: Context): String? {
             Log.d("SubirImagen", "Imagen subida correctamente: $url")
             url
         } catch (e: Exception) {
-            Log.e("SubirImagen", "Excepción en subida", e)
+            Log.e("SubirImagen", "Excepcion en subida", e)
             null
         }
     }

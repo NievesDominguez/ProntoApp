@@ -189,39 +189,42 @@ fun ListaCompra(navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        text = nombreListaActiva.ifBlank { "Lista de la Compra" },
+                        text = nombreListaActiva ?: "Lista de la compra",
+                        color = colors.onBackground,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.padding(start = 10.dp)
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBackIosNew, "Volver")
-                    }
-                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
                 actions = {
-                    // Selector de listas
+
+                    // Cambiar lista
                     var selectorListasExpandido by remember { mutableStateOf(false) }
+
                     Box {
                         IconButton(onClick = { selectorListasExpandido = true }) {
-                            Icon(
-                                painter = rememberVectorPainter(Lucide.ListChecks),
-                                contentDescription = "Cambiar lista"
-                            )
+                            Icon(Icons.Default.List, "Cambiar lista")
                         }
+
                         DropdownMenu(
                             expanded = selectorListasExpandido,
                             onDismissRequest = { selectorListasExpandido = false }
                         ) {
                             viewModel.listasUsuario.collectAsState().value.forEach { lista ->
+
+                                val isSelected = lista.id == listaActivaId
+
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            if (lista.id == listaActivaId) "✓ ${lista.nombre}"
-                                            else lista.nombre,
-                                            fontWeight = if (lista.id == listaActivaId) FontWeight.Bold else FontWeight.Normal
+                                            lista.nombre,
+                                            color = if (isSelected)
+                                                colors.primary
+                                            else
+                                                colors.onSurface
                                         )
                                     },
                                     onClick = {
@@ -230,7 +233,9 @@ fun ListaCompra(navController: NavController) {
                                     }
                                 )
                             }
+
                             HorizontalDivider()
+
                             DropdownMenuItem(
                                 text = { Text("+ Nueva lista") },
                                 onClick = {
@@ -241,16 +246,59 @@ fun ListaCompra(navController: NavController) {
                         }
                     }
 
-                    // Menú de opciones (tres puntos)
+                    // Ordenar productos
+                    var menuOrdenExpandido by remember { mutableStateOf(false) }
+
+                    Box {
+                        IconButton(onClick = { menuOrdenExpandido = true }) {
+                            Icon(Icons.Default.SwapVert, "Ordenar")
+                        }
+
+                        DropdownMenu(
+                            expanded = menuOrdenExpandido,
+                            onDismissRequest = { menuOrdenExpandido = false }
+                        ) {
+                            listOf(
+                                "fecha" to "Orden de añadido",
+                                "alfabetico" to "Nombre",
+                                "precio" to "Precio",
+                                "categoria" to "Categoría"
+                            ).forEach { (id, label) ->
+
+                                val isSelected = id == ordenActual
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            label,
+                                            color = if (isSelected)
+                                                colors.primary
+                                            else
+                                                colors.onSurface
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.actualizarOrden(id)
+                                        menuOrdenExpandido = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // ================== 3. MÁS ==================
                     var menuOpcionesExpandido by remember { mutableStateOf(false) }
+
                     Box {
                         IconButton(onClick = { menuOpcionesExpandido = true }) {
                             Icon(Icons.Default.MoreVert, "Opciones")
                         }
+
                         DropdownMenu(
                             expanded = menuOpcionesExpandido,
                             onDismissRequest = { menuOpcionesExpandido = false }
                         ) {
+
                             DropdownMenuItem(
                                 text = { Text("Sugerencias") },
                                 onClick = {
@@ -258,13 +306,7 @@ fun ListaCompra(navController: NavController) {
                                     menuOpcionesExpandido = false
                                 }
                             )
-                            DropdownMenuItem(
-                                text = { Text("Ordenar") },
-                                onClick = {
-                                    menuOpcionesExpandido = false
-                                    menuOrdenExpandido = true
-                                }
-                            )
+
                             DropdownMenuItem(
                                 text = { Text("Desmarcar todo") },
                                 onClick = {
@@ -272,6 +314,7 @@ fun ListaCompra(navController: NavController) {
                                     menuOpcionesExpandido = false
                                 }
                             )
+
                             DropdownMenuItem(
                                 text = { Text("Eliminar todo", color = colors.error) },
                                 onClick = {
@@ -279,6 +322,7 @@ fun ListaCompra(navController: NavController) {
                                     menuOpcionesExpandido = false
                                 }
                             )
+
                             if (viewModel.esOwner) {
                                 HorizontalDivider()
                                 DropdownMenuItem(
@@ -289,27 +333,6 @@ fun ListaCompra(navController: NavController) {
                                     }
                                 )
                             }
-                        }
-                    }
-
-                    // Menú de ordenación (se activa desde el menú de opciones)
-                    DropdownMenu(
-                        expanded = menuOrdenExpandido,
-                        onDismissRequest = { menuOrdenExpandido = false }
-                    ) {
-                        listOf(
-                            "fecha" to "Orden de añadido",
-                            "alfabetico" to "Nombre",
-                            "precio" to "Precio",
-                            "categoria" to "Categoría"
-                        ).forEach { (id, label) ->
-                            DropdownMenuItem(
-                                text = { Text(label) },
-                                onClick = {
-                                    viewModel.actualizarOrden(id)
-                                    menuOrdenExpandido = false
-                                }
-                            )
                         }
                     }
                 }

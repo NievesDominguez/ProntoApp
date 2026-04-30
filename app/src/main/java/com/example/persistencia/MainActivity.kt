@@ -35,11 +35,6 @@ class MainActivity : ComponentActivity() {
 
         var navController: NavController? = null
 
-        // Inicializa Stripe con la clave pública de prueba
-        PaymentConfiguration.init(
-            applicationContext, BuildConfig.STRIPE_PUBLISHABLE_KEY
-        )
-
         // Crea la instancia de PaymentSheet que maneja la interfaz de pago
         lateinit var paymentSheet: PaymentSheet
         paymentSheet = PaymentSheet(this) { result ->
@@ -62,9 +57,9 @@ class MainActivity : ComponentActivity() {
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                    }
-                    navController?.navigate(AppScreens.PantallaPrincipal.route) {
-                        popUpTo(0) { inclusive = true }
+                        navController?.navigate(AppScreens.PantallaPrincipal.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 }
                 // Pago cancelado

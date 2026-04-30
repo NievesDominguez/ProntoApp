@@ -19,7 +19,7 @@ class ThemeManager(context: Context) {
 
     private fun loadTheme(): ThemePreference {
         val ordinal = prefs.getInt("theme_preference", ThemePreference.System.ordinal)
-        return ThemePreference.values().getOrElse(ordinal) { ThemePreference.System }
+        return ThemePreference.entries.getOrElse(ordinal) { ThemePreference.System }
     }
 
     private fun saveTheme(pref: ThemePreference) {

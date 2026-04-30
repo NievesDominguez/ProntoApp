@@ -81,6 +81,7 @@ fun CameraScannerView(
                                 imageProxy.close()
                             }
                     }
+                    else { imageProxy.close() }
                 }
 
                 // Seleccionamos la cámara trasera

@@ -17,6 +17,10 @@ class GroqApiService(private val context: Context) {
     private val apiKey = BuildConfig.GROQ_API_KEY // Clave API almacenada en BuildConfig
     private val url = "https://api.groq.com/openai/v1/chat/completions" // Endpoint de la API de Groq para completar chats
 
+    // Cola de peticiones reutilizable
+    private val queue = Volley.newRequestQueue(context.applicationContext)
+
+
     // Prompt del sistema que define el comportamiento del asistente
     private val systemPrompt = """
         Eres un asistente virtual del supermercado Pronto. Ayudas a los clientes con sus compras, recomendaciones, precios, etc. Responde de forma amigable y concisa. Siempre en español.
@@ -57,7 +61,6 @@ class GroqApiService(private val context: Context) {
      */
     suspend fun sendMessage(messages: List<Mensaje>, userContext: String = ""): String? =
         suspendCancellableCoroutine { continuation ->
-            val queue = Volley.newRequestQueue(context) // Cola de peticiones de Volley
             val jsonMessages = JSONArray() // Array JSON que contiene todos los mensajes
 
             // Construir el prompt final del sistema añadiendo el contexto si existe

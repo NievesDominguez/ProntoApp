@@ -40,6 +40,7 @@ import com.composables.icons.lucide.Lucide
 import com.example.persistencia.Herramientas.ListasRepository
 import com.example.persistencia.Navegacion.AppScreens
 import com.example.persistencia.Herramientas.NotificationHandler
+import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -55,7 +56,8 @@ fun PantallaPrincipal(navController: NavController) {
     val density = LocalDensity.current
 
     // Permiso de notificaciones
-    val postNotificationPermission = rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
+    val postNotificationPermission =
+        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
     val notificationHandler = NotificationHandler(context)
 
     var numInvitaciones by remember { mutableStateOf(0) }
@@ -72,57 +74,40 @@ fun PantallaPrincipal(navController: NavController) {
 
     // Datos del carrusel
     data class CarouselItem(val id: Int, val imgLink: String, val contentDescription: String)
+
     val carouselItems = remember {
         listOf(
-            CarouselItem(0, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg", "Oferta 1"),
-            CarouselItem(1, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg", "Oferta 2"),
-            CarouselItem(2, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg", "Oferta 3"),
-            CarouselItem(3, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg", "Oferta 4"),
-            CarouselItem(4, "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg", "Oferta 5")
+            CarouselItem(
+                0,
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg",
+                "Oferta 1"
+            ),
+            CarouselItem(
+                1,
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg",
+                "Oferta 2"
+            ),
+            CarouselItem(
+                2,
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg",
+                "Oferta 3"
+            ),
+            CarouselItem(
+                3,
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg",
+                "Oferta 4"
+            ),
+            CarouselItem(
+                4,
+                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg",
+                "Oferta 5"
+            )
         )
     }
 
     // Fondo con bordes degradados
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .drawBehind {
-                val edgeWidth = with(density) { 25.dp.toPx() }
-                val primaryColor = colors.primary.copy(alpha = 0.1f)
-                val secondaryColor = colors.secondary.copy(alpha = 0.05f)
-                val width = size.width
-                val height = size.height
-
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(primaryColor, Color.Transparent),
-                        startY = 0f, endY = edgeWidth
-                    ),
-                    topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
-                )
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, primaryColor),
-                        startY = height - edgeWidth, endY = height
-                    ),
-                    topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
-                )
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(secondaryColor, Color.Transparent),
-                        startX = 0f, endX = edgeWidth
-                    ),
-                    topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
-                )
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(Color.Transparent, secondaryColor),
-                        startX = width - edgeWidth, endX = width
-                    ),
-                    topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
-                )
-            }
+        modifier = Modifier.fondoDegradado()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()

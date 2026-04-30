@@ -2,9 +2,9 @@
 
 package com.example.persistencia.Pantallas
 
+import android.os.Build
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,14 +22,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,9 +33,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.TicketPercent
-import com.example.persistencia.Firestore.CarritoDao
-import com.example.persistencia.Firestore.DescuentosDao
-import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Herramientas.CarritoRepository
 import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ProductosRepository
@@ -50,9 +42,7 @@ import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Descuento
 import com.example.persistencia.Modelos.ProductoCarrito
 import com.example.persistencia.Navegacion.AppScreens
-import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.annotation.Contract
 import com.stripe.android.paymentsheet.PaymentSheet
-import com.stripe.android.paymentsheet.PaymentSheetResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,6 +52,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Carrito(
     navController: NavController,
