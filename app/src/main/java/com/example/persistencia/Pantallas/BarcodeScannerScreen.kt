@@ -288,17 +288,14 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                     }
 
                     // Código no reconocido en base de datos
-                    snackbarState = BarcodeSnackbarState.Error("Código no reconocido")
+                    //snackbarState = BarcodeSnackbarState.Error("Código no reconocido")
                 }
             }
         }
     }
 }
 
-/**
- * Snackbar que muestra información del producto escaneado.
- * Permite añadir al carrito o ver detalle del producto.
- */
+// Snackbar que muestra información del producto escaneado. Permite añadir al carrito o ver detalle del producto
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductoEncontradoSnackbar(
