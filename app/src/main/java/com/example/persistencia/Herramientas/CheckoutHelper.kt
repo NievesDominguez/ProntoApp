@@ -114,7 +114,8 @@ object CheckoutHelper {
                     nombre = item.producto.nombre,
                     cantidad = item.cantidad,
                     unidad = item.producto.unidad ?: "ud",
-                    subtotal = subtotal
+                    subtotal = subtotal,
+                    iva = item.producto.iva
                 )
             )
             subtotalOriginal += subtotal

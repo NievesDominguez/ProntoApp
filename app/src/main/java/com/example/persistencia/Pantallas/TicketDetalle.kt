@@ -71,10 +71,34 @@ fun TicketDetalleScreen(ticketId: String, navController: NavController) {
             val secondaryColor = colors.secondary.copy(alpha = 0.05f)
             val width = size.width
             val height = size.height
-            drawRect(brush = Brush.verticalGradient(listOf(primaryColor, Color.Transparent), 0f, edgeWidth), topLeft = Offset(0f, 0f), size = Size(width, edgeWidth))
-            drawRect(brush = Brush.verticalGradient(listOf(Color.Transparent, primaryColor), height - edgeWidth, height), topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth))
-            drawRect(brush = Brush.horizontalGradient(listOf(secondaryColor, Color.Transparent), 0f, edgeWidth), topLeft = Offset(0f, 0f), size = Size(edgeWidth, height))
-            drawRect(brush = Brush.horizontalGradient(listOf(Color.Transparent, secondaryColor), width - edgeWidth, width), topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height))
+            drawRect(
+                brush = Brush.verticalGradient(
+                    listOf(primaryColor, Color.Transparent),
+                    0f,
+                    edgeWidth
+                ), topLeft = Offset(0f, 0f), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.verticalGradient(
+                    listOf(Color.Transparent, primaryColor),
+                    height - edgeWidth,
+                    height
+                ), topLeft = Offset(0f, height - edgeWidth), size = Size(width, edgeWidth)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    listOf(secondaryColor, Color.Transparent),
+                    0f,
+                    edgeWidth
+                ), topLeft = Offset(0f, 0f), size = Size(edgeWidth, height)
+            )
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    listOf(Color.Transparent, secondaryColor),
+                    width - edgeWidth,
+                    width
+                ), topLeft = Offset(width - edgeWidth, 0f), size = Size(edgeWidth, height)
+            )
         }
 
     Scaffold(
@@ -93,9 +117,14 @@ fun TicketDetalleScreen(ticketId: String, navController: NavController) {
                                 try {
                                     generarPDF(context, t)
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Error: ${e.message}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
-                            } ?: Toast.makeText(context, "Ticket no cargado", Toast.LENGTH_SHORT).show()
+                            } ?: Toast.makeText(context, "Ticket no cargado", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }) {
                         Icon(Icons.Default.FileDownload, "Descargar PDF", tint = ticketText)
@@ -159,7 +188,7 @@ fun TicketContent(ticket: Ticket, textColor: Color, dividerColor: Color) {
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-        Divider(color = dividerColor, thickness = 0.5.dp)
+        Divider(color = dividerColor, thickness = 1.dp)
         Spacer(modifier = Modifier.height(25.dp))
 
         ticket.productos.forEach { producto ->
@@ -177,16 +206,28 @@ fun TicketContent(ticket: Ticket, textColor: Color, dividerColor: Color) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("$totalCantidad ART. TOTAL", fontSize = 14.sp, color = textColor, fontFamily = FontFamily.Monospace)
-            Text("%.2f €".format(subtotal), fontSize = 14.sp, color = textColor, fontFamily = FontFamily.Monospace)
+            Text(
+                "$totalCantidad ART. TOTAL",
+                fontSize = 14.sp,
+                color = textColor,
+                fontFamily = FontFamily.Monospace
+            )
+            Text(
+                "%.2f €".format(subtotal),
+                fontSize = 14.sp,
+                color = textColor,
+                fontFamily = FontFamily.Monospace
+            )
         }
 
+        // Desglose IVA
+        val gruposIva = ticket.productos.groupBy { it.iva ?: 21 }
         Spacer(modifier = Modifier.height(12.dp))
         Divider(color = dividerColor, thickness = 0.5.dp)
-        Spacer(modifier = Modifier.height(25.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "DESCUENTOS Y CUPONES",
+            text = "DESGLOSE DE IVA",
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
@@ -194,18 +235,86 @@ fun TicketContent(ticket: Ticket, textColor: Color, dividerColor: Color) {
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
+        // Cabecera de columnas
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                "TIPO",
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                color = textColor,
+                modifier = Modifier.width(50.dp)
+            )
+            Text(
+                "BASE",
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                modifier = Modifier.weight(1f),
+                color = textColor,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                "CUOTA",
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                modifier = Modifier.width(60.dp),
+                color = textColor,
+                textAlign = TextAlign.End
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+
+        for ((iva, productos) in gruposIva) {
+            val subtotalIva = productos.sumOf { it.subtotal }
+            val base = subtotalIva / (1 + iva / 100.0)
+            val cuota = subtotalIva - base
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "$iva%",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    color = textColor,
+                    modifier = Modifier.width(50.dp)
+                )
+                Text(
+                    "%.2f".format(base),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.weight(1f),
+                    color = textColor,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "%.2f".format(cuota),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.width(60.dp),
+                    color = textColor,
+                    textAlign = TextAlign.End
+                )
+            }
+        }
+
+
         if (ticket.descuentos.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            //Divider(color = dividerColor, thickness = 0.5.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "DESCUENTOS Y CUPONES",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
             ticket.descuentos.forEach { descuento ->
                 DescuentoRow(descuento = descuento, textColor = textColor)
                 Spacer(modifier = Modifier.height(6.dp))
             }
-        } else {
-            Text(
-                text = "Ninguno",
-                fontSize = 12.sp,
-                color = textColor.copy(alpha = 0.7f),
-                fontFamily = FontFamily.Monospace
-            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -216,8 +325,20 @@ fun TicketContent(ticket: Ticket, textColor: Color, dividerColor: Color) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("TOTAL", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = textColor, fontFamily = FontFamily.Monospace)
-            Text("%.2f €".format(ticket.total), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = textColor, fontFamily = FontFamily.Monospace)
+            Text(
+                "TOTAL",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontFamily = FontFamily.Monospace
+            )
+            Text(
+                "%.2f €".format(ticket.total),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontFamily = FontFamily.Monospace
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -237,7 +358,9 @@ fun TicketContent(ticket: Ticket, textColor: Color, dividerColor: Color) {
             fontSize = 12.sp,
             color = textColor,
             fontFamily = FontFamily.Monospace,
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 24.dp)
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = 24.dp)
         )
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -258,7 +381,9 @@ fun ProductoRow(producto: ProductoTicket, textColor: Color) {
                 fontFamily = FontFamily.Monospace,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).padding(end = 10.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 10.dp)
             )
             Text(
                 text = "%.2f".format(producto.subtotal),
@@ -271,7 +396,9 @@ fun ProductoRow(producto: ProductoTicket, textColor: Color) {
         }
         if (producto.cantidad > 1) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -300,7 +427,9 @@ fun DescuentoRow(descuento: DescuentoTicket, textColor: Color) {
             fontFamily = FontFamily.Monospace,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(end = 8.dp)
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
         )
         Text(
             text = "-%.2f".format(descuento.descuentoAplicado),
@@ -420,8 +549,33 @@ suspend fun generarPDF(context: Context, ticket: Ticket) {
         canvas.drawText("%.2f €".format(subtotal), contentRight - 70f, y, paint)
         y += 35
 
+        //canvas.drawLine(marginLeft, y, contentRight, y, paint)
+        //y += 35
+
+        // Desglose IVA
         canvas.drawLine(marginLeft, y, contentRight, y, paint)
         y += 35
+
+        // Título
+        canvas.drawText("DESGLOSE DE IVA", marginLeft, y, boldPaint)
+        y += 25
+
+        // Cabeceras
+        canvas.drawText("TIPO", marginLeft, y, paint)
+        canvas.drawText("BASE", marginLeft + 70f, y, paint)
+        canvas.drawText("CUOTA", contentRight - 70f, y, paint)
+        y += 22
+
+        val gruposIva = ticket.productos.groupBy { it.iva ?: 21 }
+        for ((iva, productos) in gruposIva) {
+            val subtotalIva = productos.sumOf { it.subtotal }
+            val base = subtotalIva / (1 + iva / 100.0)
+            val cuota = subtotalIva - base
+            canvas.drawText("$iva%", marginLeft, y, paint)
+            canvas.drawText("%.2f".format(base), marginLeft + 70f, y, paint)
+            canvas.drawText("%.2f".format(cuota), contentRight - 70f, y, paint)
+            y += 22
+        }
 
         // Descuentos
         if (ticket.descuentos.isNotEmpty()) {
@@ -461,7 +615,12 @@ suspend fun generarPDF(context: Context, ticket: Ticket) {
         y += 40
 
         // Método de pago
-        canvas.drawText("Pagado con ${ticket.metodoPago.uppercase()}", centerX("Pagado con ${ticket.metodoPago.uppercase()}", paint), y, paint)
+        canvas.drawText(
+            "Pagado con ${ticket.metodoPago.uppercase()}",
+            centerX("Pagado con ${ticket.metodoPago.uppercase()}", paint),
+            y,
+            paint
+        )
         y += 25
 
         canvas.drawText("Gracias por su compra", centerX("Gracias por su compra", paint), y, paint)
@@ -471,9 +630,15 @@ suspend fun generarPDF(context: Context, ticket: Ticket) {
         // Guardar en Descargas
         val resolver = context.contentResolver
         val values = android.content.ContentValues().apply {
-            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "ticket_${System.currentTimeMillis()}.pdf")
+            put(
+                android.provider.MediaStore.MediaColumns.DISPLAY_NAME,
+                "ticket_${System.currentTimeMillis()}.pdf"
+            )
             put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            put(
+                android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
+                Environment.DIRECTORY_DOWNLOADS
+            )
         }
 
         val uri = resolver.insert(

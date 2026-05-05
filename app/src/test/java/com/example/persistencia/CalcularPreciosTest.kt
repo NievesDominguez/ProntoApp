@@ -101,7 +101,7 @@ class CalcularPreciosTest {
 
 
     // NM: aplicarNxMCombinable
-// NM-01 3x2 con exactamente 3 unidades iguales
+    // NM-01 3x2 con exactamente 3 unidades iguales
     @Test
     fun NM01() {
         val items = listOf(item(precio = 6.0, cantidad = 3.0))

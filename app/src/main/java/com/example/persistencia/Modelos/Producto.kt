@@ -21,5 +21,6 @@ data class Producto(
     val unidad: String? = "ud",                             // Unidad de medida para la cantidad de producto
     val alergenos_contiene: List<String>? = emptyList(),    // Lista de alérgenos que contiene el producto
     val alergenos_trazas: List<String>? = emptyList(),      // Lista de trazas de alérgenos que puede contener
-    val al_peso: Boolean? = false                           // Indica si es un producto cuyo precio depende del peso
+    val al_peso: Boolean? = false,                          // Indica si es un producto cuyo precio depende del peso
+    val iva: Int? = 21                                      // Porcentaje de IVA aplicado al precio
 )

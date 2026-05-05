@@ -208,6 +208,13 @@ fun Perfil(navController: NavController) {
                             )
                         }
                     }
+                    IconButton(onClick = { showDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Cerrar sesión",
+                            tint = colors.onBackground
+                        )
+                    }
                 }
             )
         },
@@ -408,17 +415,7 @@ fun Perfil(navController: NavController) {
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { showDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(0.dp, 15.dp)
-                            .height(50.dp),
-                        shape = RoundedCornerShape(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-                    ) {
-                        Text("Cerrar sesion", fontSize = 18.sp, color = Color(0xFF6C3AEC))
-                    }
+//
                     if (showDialog) {
                         AlertDialog(
                             onDismissRequest = { showDialog = false },

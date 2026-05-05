@@ -16,7 +16,8 @@ data class ProductoTicket(
     val nombre: String = "",
     val cantidad: Double = 0.0,
     val unidad: String = "ud",
-    val subtotal: Double = 0.0
+    val subtotal: Double = 0.0,
+    val iva: Int? = null
 )
 
 data class DescuentoTicket(
