@@ -140,7 +140,7 @@ fun InvitacionesScreen(navController: NavController) {
                                         color = colors.onBackground.copy(alpha = 0.7f)
                                     )
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -153,7 +153,11 @@ fun InvitacionesScreen(navController: NavController) {
                                                     ListasRepository.rechazarInvitacion(lista.id, userId)
                                                     recargarInvitaciones()
                                                 }
-                                            }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = colors.secondary,
+                                                contentColor = Color.White
+                                            )
                                         ) {
                                             Text("Rechazar")
                                         }
@@ -172,7 +176,11 @@ fun InvitacionesScreen(navController: NavController) {
                                                         }
                                                     }
                                                 }
-                                            }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = colors.primary,
+                                                contentColor = Color.White
+                                            )
                                         ) {
                                             Text("Aceptar")
                                         }

@@ -51,6 +51,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import androidx.compose.foundation.clickable
+import com.example.persistencia.Herramientas.CheckoutHelper
+import com.example.persistencia.Modelos.DescuentoTicket
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -92,6 +95,17 @@ fun Carrito(
 
     // Cálculo del total del carrito
     val total = calcularTotalCarrito(carrito, ofertas, cuponesActivos)
+    var mostrarDescuentos by remember { mutableStateOf(false) }
+
+    // Calcula los descuentos que han sido aplicados
+    val descuentosAplicados = remember(carrito, ofertas, cuponesActivos) {
+        if (carrito.isNotEmpty()) {
+            val (_, descuentos, _) = CheckoutHelper.calcularTicket(carrito, ofertas, cuponesActivos)
+            descuentos
+        } else {
+            emptyList()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -343,7 +357,10 @@ fun Carrito(
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
-                            overflow = TextOverflow.Clip
+                            overflow = TextOverflow.Clip,
+                            modifier = Modifier.clickable(enabled = descuentosAplicados.isNotEmpty()) {
+                                mostrarDescuentos = true
+                            }
                         )
                         Spacer(modifier = Modifier.width(50.dp))
 
@@ -377,6 +394,80 @@ fun Carrito(
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(text = "Finalizar")
                         }
+                    }
+                }
+            }
+
+            // Muestra los descuentos que han sido aplicados y el ahorro
+            if (mostrarDescuentos) {
+                val sheetState = rememberModalBottomSheetState()
+                ModalBottomSheet(
+                    onDismissRequest = { mostrarDescuentos = false },
+                    sheetState = sheetState
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Descuentos aplicados",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (descuentosAplicados.isEmpty()) {
+                            Text(
+                                "No hay descuentos aplicados",
+                                color = colors.onBackground.copy(alpha = 0.6f)
+                            )
+                        } else {
+                            descuentosAplicados.forEach { descuento ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = descuento.nombre ?: descuento.codigo,
+                                        fontSize = 16.sp,
+                                        color = colors.onBackground,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 8.dp),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "-%.2f €".format(descuento.descuentoAplicado),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                HorizontalDivider(color = colors.onBackground.copy(alpha = 0.1f))
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val totalAhorro = descuentosAplicados.sumOf { it.descuentoAplicado }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "Total ahorrado",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.onBackground
+                                )
+                                Text(
+                                    "-%.2f €".format(totalAhorro),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }

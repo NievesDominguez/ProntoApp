@@ -31,7 +31,8 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Color.Black,
     onSurface = Color.Black,
     outline = Color.Gray.copy(alpha = 0.5f),
-    onError = Color(0xFFFF0000)
+    onError = Color(0xFFFF0000),
+    error = Color(0xFFFF0000),
 )
 
 // Esquema de colores oscuro
@@ -46,7 +47,8 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = Color.White,
     onSurface = Color.White,
     outline = Color.Gray.copy(alpha = 0.7f),
-    onError = Color(0xFFFF2727)
+    onError = Color(0xFFFF2727),
+    error = Color(0xFFFF2727)
 )
 
 @Composable

@@ -134,7 +134,7 @@ fun PantallaPrincipal(navController: NavController) {
                         badge = {
                             if (numInvitaciones > 0) {
                                 Badge {
-                                    Text(numInvitaciones.toString())
+                                    Text(numInvitaciones.toString(), color = Color.White)
                                 }
                             }
                         }
