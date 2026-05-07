@@ -61,6 +61,7 @@ import com.example.persistencia.Herramientas.CarritoRepository
 import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ProductosRepository
 import com.example.persistencia.Herramientas.UsuariosRepository
+import com.example.persistencia.Herramientas.ListasRepository
 import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.Descuento
@@ -409,11 +410,23 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         // Añadir a la lista de la compra
                         Button(
                             onClick = {
-                                Toast.makeText(
-                                    context,
-                                    "Guardado en la lista de la compra",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                scope.launch {
+                                    val listaActivaId = ListasRepository.getListaActivaId()
+                                    if (listaActivaId != null) {
+                                        ListasRepository.addItem(p.id, 1.0)
+                                        Toast.makeText(
+                                            context,
+                                            "Añadido a la lista de la compra",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "No hay ninguna lista activa",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
                             },
                             modifier = Modifier
                                 .height(56.dp)

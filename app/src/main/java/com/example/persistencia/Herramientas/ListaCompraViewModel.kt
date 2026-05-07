@@ -1,18 +1,11 @@
 package com.example.persistencia.Herramientas
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.persistencia.Firestore.CarritoDao
-import com.example.persistencia.Firestore.ListasDao
-import com.example.persistencia.Firestore.ProductosDao
-import com.example.persistencia.Firestore.TicketsDao
-import com.example.persistencia.Firestore.UsuariosDao
 import com.example.persistencia.Modelos.ListaCompartida
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoLista
 import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,11 +54,11 @@ class ListaCompraViewModel(
         }
 
     init {
-        cargarListasYSeleccionar()
+        cargarListas()
     }
 
     // Carga las listas del usuario (metadatos) y selecciona la activa según preferencia
-    fun cargarListasYSeleccionar() {
+    fun cargarListas() {
         viewModelScope.launch {
             val userId = authProvider() ?: return@launch
             _isLoading.value = true
@@ -80,7 +73,7 @@ class ListaCompraViewModel(
             } else if (_listasUsuario.value.isNotEmpty()) {
                 seleccionarLista(_listasUsuario.value.first().id)
             } else {
-                // No hay listas: mostrar interfaz vacía
+                // Si no hay listas, mostrar interfaz vacía
                 _listaActivaId.value = null
                 _nombreListaActiva.value = "Listas de la compra"
                 _itemsLista.value = emptyList()
@@ -112,7 +105,7 @@ class ListaCompraViewModel(
             _isLoading.value = true
             ListasRepository.crearLista(nombre, userId)
             // Recargar metadatos y seleccionar la nueva
-            cargarListasYSeleccionar()
+            cargarListas()
             _isLoading.value = false
         }
     }

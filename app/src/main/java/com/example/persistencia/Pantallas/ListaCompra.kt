@@ -14,14 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
@@ -31,8 +25,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.composables.icons.lucide.ListChecks
-import com.composables.icons.lucide.Lucide
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoLista
 import com.example.persistencia.Herramientas.ListaCompraViewModel
@@ -55,6 +47,11 @@ fun ListaCompra(navController: NavController) {
     val ordenActual by viewModel.ordenActual.collectAsState()
     val listaActivaId by viewModel.listaActivaId.collectAsState()
     val nombreListaActiva by viewModel.nombreListaActiva.collectAsState()
+
+    // Recargar datos cada vez que se entra en la pantalla
+    LaunchedEffect(Unit) {
+        viewModel.cargarListas()
+    }
 
     var textoBusqueda by remember { mutableStateOf("") }
     var mostrarTotalCarrito by remember { mutableStateOf(false) }

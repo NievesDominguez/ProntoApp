@@ -11,7 +11,6 @@ import com.example.persistencia.Firestore.ListasCompartidasDao
 import com.example.persistencia.Firestore.UsuariosDao
 import com.example.persistencia.Firestore.TicketsDao
 import com.example.persistencia.Modelos.Ticket
-import com.example.persistencia.Firestore.ListasDao
 import com.example.persistencia.Modelos.ListaCompartida
 import com.example.persistencia.Modelos.ProductoLista
 import kotlinx.coroutines.sync.Mutex
@@ -329,8 +328,6 @@ object UsuariosRepository {
         }
     }
 
-    suspend fun buscarUsuarioPorEmail(email: String): String? = dao.buscarUsuarioPorEmail(email)
-
     // Limpia el cache de forma segura
     suspend fun invalidar() {
         mutex.withLock {
@@ -368,7 +365,7 @@ object TicketsRepository {
     }
 
     // Obtiene un ticket por su ID de forma segura
-    suspend fun getTicketById(ticketId: String): Ticket? {
+    suspend fun getTicket(ticketId: String): Ticket? {
         mutex.withLock {
             cacheTicketById[ticketId]?.let { return it }
             val ticket = dao.getTicketById(ticketId)

@@ -32,7 +32,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.persistencia.Firestore.TicketsDao
 import com.example.persistencia.Herramientas.TicketsRepository
 import com.example.persistencia.Herramientas.toFormattedString
 import com.example.persistencia.Modelos.DescuentoTicket
@@ -49,7 +48,7 @@ fun TicketDetalleScreen(ticketId: String, navController: NavController) {
     var cargando by remember { mutableStateOf(true) }
 
     LaunchedEffect(ticketId) {
-        ticket = TicketsRepository.getTicketById(ticketId)
+        ticket = TicketsRepository.getTicket(ticketId)
         cargando = false
     }
 
