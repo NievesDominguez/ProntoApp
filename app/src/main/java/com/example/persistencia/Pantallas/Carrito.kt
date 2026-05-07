@@ -54,8 +54,11 @@ import org.json.JSONObject
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Warning
 import com.example.persistencia.Herramientas.CheckoutHelper
-import com.example.persistencia.Modelos.DescuentoTicket
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -100,6 +103,7 @@ fun Carrito(
 
     var mostrarDescuentos by remember { mutableStateOf(false) }
     var mostrarOpcionesEntrega by remember { mutableStateOf(false) }
+    var mostrarAdvertencia by remember { mutableStateOf(false) }
 
     // Calcula los descuentos que han sido aplicados
     val descuentosAplicados = remember(carrito, ofertas, cuponesActivos) {
@@ -108,6 +112,21 @@ fun Carrito(
             descuentos
         } else {
             emptyList()
+        }
+    }
+
+    // Lanza el pago
+    val lanzarPago: () -> Unit = {
+        scope.launch {
+            val clientSecret = crearPaymentIntent(total)
+            if (clientSecret != null) {
+                paymentSheet.presentWithPaymentIntent(
+                    clientSecret,
+                    PaymentSheet.Configuration(merchantDisplayName = "Pronto")
+                )
+            } else {
+                Toast.makeText(context, "Error al iniciar pago", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -424,21 +443,7 @@ fun Carrito(
                         Button(
                             onClick = {
                                 mostrarOpcionesEntrega = false
-                                scope.launch {
-                                    val clientSecret = crearPaymentIntent(total)
-                                    if (clientSecret != null) {
-                                        paymentSheet.presentWithPaymentIntent(
-                                            clientSecret,
-                                            PaymentSheet.Configuration(merchantDisplayName = "Pronto")
-                                        )
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Error al iniciar pago",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
+                                lanzarPago()
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -456,35 +461,37 @@ fun Carrito(
                         // Opción 2: Envío a domicilio
                         Button(
                             onClick = {
-                                mostrarOpcionesEntrega = false
-                                scope.launch {
-                                    val clientSecret = crearPaymentIntent(total)
-                                    if (clientSecret != null) {
-                                        paymentSheet.presentWithPaymentIntent(
-                                            clientSecret,
-                                            PaymentSheet.Configuration(merchantDisplayName = "Pronto")
-                                        )
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Error al iniciar pago",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                                // Consultar si el usuario tiene dirección
+                                val uid = Firebase.auth.currentUser?.uid
+                                if (uid != null) {
+                                    FirebaseFirestore.getInstance()
+                                        .collection("usuarios")
+                                        .document(uid)
+                                        .get()
+                                        .addOnSuccessListener { doc ->
+                                            val direccion = doc.getString("direccion") ?: ""
+                                            if (direccion.isBlank()) {
+                                                // No tiene dirección: mostrar advertencia
+                                                mostrarOpcionesEntrega = false
+                                                mostrarAdvertencia = true
+                                            } else {
+                                                // Tiene dirección: proceder al pago
+                                                mostrarOpcionesEntrega = false
+                                                lanzarPago()
+                                            }
+                                        }
+                                        .addOnFailureListener {
+                                            Toast.makeText(context, "Error al verificar dirección", Toast.LENGTH_SHORT).show()
+                                        }
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary,
                                 contentColor = Color.White
                             )
                         ) {
-                            Icon(
-                                Icons.Default.Home,
-                                contentDescription = null
-                            )
+                            Icon(Icons.Default.Home, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Envío a domicilio")
                         }
@@ -493,21 +500,7 @@ fun Carrito(
                         Button(
                             onClick = {
                                 mostrarOpcionesEntrega = false
-                                scope.launch {
-                                    val clientSecret = crearPaymentIntent(total)
-                                    if (clientSecret != null) {
-                                        paymentSheet.presentWithPaymentIntent(
-                                            clientSecret,
-                                            PaymentSheet.Configuration(merchantDisplayName = "Pronto")
-                                        )
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Error al iniciar pago",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
+                                lanzarPago()
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -525,6 +518,29 @@ fun Carrito(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
+            }
+
+            if (mostrarAdvertencia) {
+                AlertDialog(
+                    onDismissRequest = { mostrarAdvertencia = false },
+                    icon = {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = colors.error,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    },
+                    title = { Text("Dirección no configurada") },
+                    text = {
+                        Text("Para solicitar envío a domicilio necesitas tener una dirección en tu perfil. Ve a tu perfil y añade tu dirección.")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { mostrarAdvertencia = false }) {
+                            Text("Entendido")
+                        }
+                    }
+                )
             }
 
             // Muestra los descuentos que han sido aplicados y el ahorro

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -62,7 +63,7 @@ fun InvitacionesScreen(navController: NavController) {
                         navController.popBackStack()
                     }) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.Default.ArrowBackIosNew,
                             contentDescription = "Volver",
                             tint = colors.onBackground
                         )

@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
@@ -84,12 +85,14 @@ fun Perfil(navController: NavController) {
     var selectedTab by remember { mutableStateOf(0) }
     var cargando by remember { mutableStateOf(true) }
 
+    // Datos del usuario
     var nombre by remember { mutableStateOf("") }
     var apellidos by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     val nuevaPasswordState = rememberTextFieldState()
     var fotoFirestore by remember { mutableStateOf<String?>(null) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var direccion by remember { mutableStateOf("") }
 
     var showConfirmDialog by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
@@ -104,6 +107,7 @@ fun Perfil(navController: NavController) {
                     apellidos = doc.getString("apellidos") ?: ""
                     telefono = doc.getString("telefono") ?: ""
                     fotoFirestore = doc.getString("foto")
+                    direccion = doc.getString("direccion") ?: ""
                 }
         }
         delay(300L)
@@ -153,7 +157,8 @@ fun Perfil(navController: NavController) {
         val datos = mapOf(
             "nombre" to nombre,
             "apellidos" to apellidos,
-            "telefono" to telefono
+            "telefono" to telefono,
+            "direccion" to direccion
         )
         usuario?.uid?.let { uid ->
             firestore.collection("usuarios").document(uid)
@@ -301,16 +306,18 @@ fun Perfil(navController: NavController) {
                                     .verticalScroll(rememberScrollState())
                             ) {
                                 if (!modoEdicion) {
-                                    PerfilView(nombre, apellidos, telefono, usuario?.email)
+                                    PerfilView(nombre, apellidos, telefono, direccion, usuario?.email)
                                 } else {
                                     PerfilEdit(
                                         nombre = nombre,
                                         apellidos = apellidos,
                                         telefono = telefono,
+                                        direccion = direccion,
                                         nuevaPasswordState = nuevaPasswordState,
                                         onNombre = { nombre = it },
                                         onApellidos = { apellidos = it },
-                                        onTelefono = { telefono = it }
+                                        onTelefono = { telefono = it },
+                                        onDireccion = { direccion = it }
                                     )
                                 }
                             }
@@ -454,7 +461,8 @@ fun Perfil(navController: NavController) {
                             val datos = mapOf(
                                 "nombre" to nombre,
                                 "apellidos" to apellidos,
-                                "telefono" to telefono
+                                "telefono" to telefono,
+                                "direccion" to direccion
                             )
                             usuario.uid?.let { uid ->
                                 firestore.collection("usuarios").document(uid).update(datos)
@@ -493,7 +501,7 @@ fun Perfil(navController: NavController) {
 
 // VISTA DE PERFIL (MODO VISUALIZACION)
 @Composable
-fun PerfilView(nombre: String, apellidos: String, telefono: String, email: String?) {
+fun PerfilView(nombre: String, apellidos: String, telefono: String, direccion: String, email: String?) {
     val colors = MaterialTheme.colorScheme
 
     Column(
@@ -531,6 +539,18 @@ fun PerfilView(nombre: String, apellidos: String, telefono: String, email: Strin
         )
         Text(
             telefono.ifBlank { "No especificado" },
+            fontSize = 18.sp,
+            color = colors.onBackground
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            "Dirección:",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onBackground.copy(alpha = 0.7f)
+        )
+        Text(
+            direccion.ifBlank { "No especificada" },
             fontSize = 18.sp,
             color = colors.onBackground
         )
@@ -586,10 +606,12 @@ fun PerfilEdit(
     nombre: String,
     apellidos: String,
     telefono: String,
+    direccion: String,
     nuevaPasswordState: TextFieldState,
     onNombre: (String) -> Unit,
     onApellidos: (String) -> Unit,
-    onTelefono: (String) -> Unit
+    onTelefono: (String) -> Unit,
+    onDireccion: (String) -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     var passVisible by remember { mutableStateOf(false) }
@@ -637,6 +659,19 @@ fun PerfilEdit(
                 label = { Text("Telefono") },
                 leadingIcon = { Icon(Icons.Outlined.Phone, null, tint = colors.primary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.outline
+                ),
+                shape = RoundedCornerShape(16.dp)
+            )
+
+            OutlinedTextField(
+                value = direccion,
+                onValueChange = onDireccion,
+                label = { Text("Dirección") },
+                leadingIcon = { Icon(Icons.Outlined.Home, null, tint = colors.primary) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.primary,
