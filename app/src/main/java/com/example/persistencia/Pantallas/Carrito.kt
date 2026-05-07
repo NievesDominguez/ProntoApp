@@ -455,7 +455,7 @@ fun Carrito(
                         ) {
                             Icon(Icons.Default.ShoppingCart, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Comprar en supermercado")
+                            Text("Comprar en tienda")
                         }
 
                         // Opción 2: Envío a domicilio
