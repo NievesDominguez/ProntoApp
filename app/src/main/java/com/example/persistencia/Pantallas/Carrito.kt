@@ -52,6 +52,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Place
 import com.example.persistencia.Herramientas.CheckoutHelper
 import com.example.persistencia.Modelos.DescuentoTicket
 
@@ -95,7 +97,9 @@ fun Carrito(
 
     // Cálculo del total del carrito
     val total = calcularTotalCarrito(carrito, ofertas, cuponesActivos)
+
     var mostrarDescuentos by remember { mutableStateOf(false) }
+    var mostrarOpcionesEntrega by remember { mutableStateOf(false) }
 
     // Calcula los descuentos que han sido aplicados
     val descuentosAplicados = remember(carrito, ofertas, cuponesActivos) {
@@ -215,8 +219,7 @@ fun Carrito(
                                         color = colors.onBackground.copy(alpha = 0.8f),
                                         fontSize = 15.sp
                                     )
-                                }
-                                else{
+                                } else {
                                     Text(
                                         text = "%.2f €/ud".format(item.producto.precio),
                                         color = colors.onBackground.copy(alpha = 0.8f),
@@ -367,20 +370,21 @@ fun Carrito(
                         // Botón para pagar
                         Button(
                             onClick = {
-                                scope.launch {
-                                    val clientSecret = crearPaymentIntent(total)
-
-                                    if (clientSecret != null) {
-                                        paymentSheet.presentWithPaymentIntent(
-                                            clientSecret,
-                                            PaymentSheet.Configuration(
-                                                merchantDisplayName = "Pronto"
-                                            )
-                                        )
-                                    } else {
-                                        Toast.makeText(context, "Error al iniciar pago", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
+//                                scope.launch {
+//                                    val clientSecret = crearPaymentIntent(total)
+//
+//                                    if (clientSecret != null) {
+//                                        paymentSheet.presentWithPaymentIntent(
+//                                            clientSecret,
+//                                            PaymentSheet.Configuration(
+//                                                merchantDisplayName = "Pronto"
+//                                            )
+//                                        )
+//                                    } else {
+//                                        Toast.makeText(context, "Error al iniciar pago", Toast.LENGTH_SHORT).show()
+//                                    }
+//                                }
+                                mostrarOpcionesEntrega = true
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary,
@@ -394,6 +398,131 @@ fun Carrito(
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(text = "Finalizar")
                         }
+                    }
+                }
+            }
+
+            if (mostrarOpcionesEntrega) {
+                val sheetState = rememberModalBottomSheetState()
+                ModalBottomSheet(
+                    onDismissRequest = { mostrarOpcionesEntrega = false },
+                    sheetState = sheetState
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            "¿Cómo quieres recibir tu pedido?",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Opción 1: Comprar en supermercado
+                        Button(
+                            onClick = {
+                                mostrarOpcionesEntrega = false
+                                scope.launch {
+                                    val clientSecret = crearPaymentIntent(total)
+                                    if (clientSecret != null) {
+                                        paymentSheet.presentWithPaymentIntent(
+                                            clientSecret,
+                                            PaymentSheet.Configuration(merchantDisplayName = "Pronto")
+                                        )
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Error al iniciar pago",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Comprar en supermercado")
+                        }
+
+                        // Opción 2: Envío a domicilio
+                        Button(
+                            onClick = {
+                                mostrarOpcionesEntrega = false
+                                scope.launch {
+                                    val clientSecret = crearPaymentIntent(total)
+                                    if (clientSecret != null) {
+                                        paymentSheet.presentWithPaymentIntent(
+                                            clientSecret,
+                                            PaymentSheet.Configuration(merchantDisplayName = "Pronto")
+                                        )
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Error al iniciar pago",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Home,
+                                contentDescription = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Envío a domicilio")
+                        }
+
+                        // Opción 3: Recoger en tienda
+                        Button(
+                            onClick = {
+                                mostrarOpcionesEntrega = false
+                                scope.launch {
+                                    val clientSecret = crearPaymentIntent(total)
+                                    if (clientSecret != null) {
+                                        paymentSheet.presentWithPaymentIntent(
+                                            clientSecret,
+                                            PaymentSheet.Configuration(merchantDisplayName = "Pronto")
+                                        )
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Error al iniciar pago",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Default.Place, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Recoger en tienda")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
