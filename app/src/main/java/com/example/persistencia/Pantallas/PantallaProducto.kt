@@ -14,8 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -134,6 +136,8 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     var cuponesDisponibles by remember { mutableStateOf<List<Descuento>>(emptyList()) }
     var cargando by remember { mutableStateOf(true) }
     var mostrarDialogo by remember { mutableStateOf(false) }
+    var cantidad by remember { mutableStateOf(1.0) }
+    var pesoText by remember { mutableStateOf("1,000") }
 
 
     // Carga de datos sincronizada al iniciar la pantalla
@@ -245,20 +249,10 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     }
 
                     cuponAplicable?.let { cupon ->
-                        val activo = cupon.codigo in cuponesUsuario
                         PromoCard(
                             desc = cupon.nombre ?: cupon.codigo!!,
                             color = Color(0xFF2196F3),
                             icono = Lucide.Ticket,
-                            switch = true,
-                            estadoSwitch = activo,
-                            onSwitch = { isChecked ->
-                                scope.launch {
-                                    if (isChecked) CarritoRepository.activarCupon(cupon.codigo!!)
-                                    else CarritoRepository.desactivarCupon(cupon.codigo!!)
-                                    cuponesUsuario = CarritoRepository.getCupones()
-                                }
-                            }
                         )
                     }
                 }
@@ -315,74 +309,167 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
             }
 
             // Barra inferior fija con acciones principales
+            // Barra inferior fija con acciones principales
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 color = colors.background,
                 tonalElevation = 8.dp
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp, 16.dp, 24.dp, 25.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                 ) {
-                    // Añadir a la lista de la compra
-                    Button(
-                        onClick = {
-                            Toast.makeText(
-                                context,
-                                "Guardado en la lista de la compra",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        modifier = Modifier
-                            .height(56.dp)
-                            .weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.secondary)
+                    // Selector de cantidad
+                    val esAlPeso = p.al_peso == true
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.PlaylistAdd,
-                            null,
-                            modifier = Modifier.size(22.dp),
-                            tint = colors.onSurface
-                        )
-                        Spacer(Modifier.width(8.dp))
                         Text(
-                            "Añadir a la lista",
-                            fontWeight = FontWeight.Black,
-                            color = colors.onSurface
+                            text = "Cantidad:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            color = colors.onBackground,
+                            modifier = Modifier.padding(end = 12.dp)
                         )
+
+                        if (esAlPeso) {
+                            // Producto al peso: campo de texto decimal + unidad
+                            OutlinedTextField(
+                                value = pesoText,
+                                onValueChange = { newValue ->
+                                    val filtered = newValue.filter { it.isDigit() || it == '.' || it == ',' }
+                                    pesoText = filtered
+                                    val normalized = filtered.replace(',', '.')
+                                    val nuevaCantidad = normalized.toDoubleOrNull()
+                                    if (nuevaCantidad != null && nuevaCantidad > 0.0) {
+                                        cantidad = nuevaCantidad
+                                    }
+                                },
+                                modifier = Modifier.width(100.dp),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    color = colors.onBackground,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = colors.primary,
+                                    unfocusedBorderColor = colors.outline
+                                )
+                            )
+                            Text(
+                                text = p.unidad ?: "kg",
+                                modifier = Modifier.padding(start = 6.dp),
+                                fontSize = 16.sp,
+                                color = colors.onBackground
+                            )
+                        } else {
+                            // Producto normal: botones +/- con cantidad entera
+                            IconButton(
+                                onClick = {
+                                    if (cantidad > 1) cantidad -= 1.0
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Remove,
+                                    contentDescription = "Restar",
+                                    tint = colors.onBackground
+                                )
+                            }
+                            Text(
+                                text = cantidad.toInt().toString(),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.onBackground,
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+                            IconButton(
+                                onClick = { cantidad += 1.0 }
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Añadir",
+                                    tint = colors.onBackground
+                                )
+                            }
+                        }
                     }
 
-                    // Añadir al carrito
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                CarritoRepository.addCarrito(p, 1.toDouble())
-                                Toast.makeText(context, "Añadido al carrito", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                        },
-                        modifier = Modifier
-                            .height(56.dp)
-                            .weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                    Spacer(Modifier.height(8.dp))
+
+                    // Botones de acción
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(
-                            Icons.Default.ShoppingCart,
-                            null,
-                            modifier = Modifier.size(22.dp),
-                            tint = colors.onSurface
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            "Añadir al carrito",
-                            fontWeight = FontWeight.Black,
-                            color = colors.onSurface
-                        )
+                        // Añadir a la lista de la compra
+                        Button(
+                            onClick = {
+                                Toast.makeText(
+                                    context,
+                                    "Guardado en la lista de la compra",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier
+                                .height(56.dp)
+                                .weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.secondary)
+                        ) {
+                            Icon(
+                                Icons.Default.PlaylistAdd,
+                                null,
+                                modifier = Modifier.size(22.dp),
+                                tint = colors.onSurface
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Añadir a la lista",
+                                fontWeight = FontWeight.Black,
+                                color = colors.onSurface
+                            )
+                        }
+
+                        // Añadir al carrito (usa cantidadAñadir en vez de 1.0)
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    CarritoRepository.addCarrito(p, cantidad)
+                                    val textoToast = if (esAlPeso) {
+                                        "Añadido ${"%.2f".format(cantidad)} ${p.unidad ?: "kg"} al carrito"
+                                    } else {
+                                        "Añadido x${cantidad.toInt()} al carrito"
+                                    }
+                                    Toast.makeText(context, textoToast, Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .height(56.dp)
+                                .weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                        ) {
+                            Icon(
+                                Icons.Default.ShoppingCart,
+                                null,
+                                modifier = Modifier.size(22.dp),
+                                tint = colors.onSurface
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "Añadir al carrito",
+                                fontWeight = FontWeight.Black,
+                                color = colors.onSurface
+                            )
+                        }
                     }
+
+                    Spacer(Modifier.height(9.dp))
                 }
             }
         }
@@ -429,9 +516,6 @@ fun PromoCard(
     desc: String,
     color: Color,
     icono: ImageVector,
-    switch: Boolean = false,
-    estadoSwitch: Boolean = false,
-    onSwitch: (Boolean) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -460,16 +544,6 @@ fun PromoCard(
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(desc, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            }
-            if (switch) {
-                Switch(
-                    checked = estadoSwitch,
-                    onCheckedChange = onSwitch,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = color,
-                        checkedTrackColor = color.copy(alpha = 0.3f)
-                    )
-                )
             }
         }
     }

@@ -1,7 +1,9 @@
 package com.example.persistencia.Pantallas
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -38,14 +40,18 @@ import com.composables.icons.lucide.*
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ListasDao
 import com.example.persistencia.Firestore.ProductosDao
+import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ProductosRepository
+import com.example.persistencia.Herramientas.UsuariosRepository
 import com.example.persistencia.Herramientas.fondoDegradado
+import com.example.persistencia.Modelos.Descuento
 import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.internal.wait
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,9 +75,16 @@ fun Catalogo(navController: NavController) {
         } else emptyList()
     }
 
+    var ofertas by remember { mutableStateOf<List<Descuento>>(emptyList()) }
+    var cuponesDisponibles by remember { mutableStateOf<List<Descuento>>(emptyList()) }
+    var cuponesUsuario by remember { mutableStateOf<List<String>>(emptyList()) }
+
     LaunchedEffect(Unit) {
         cargando = true
         productos = ProductosRepository.getTodos()
+        ofertas = DescuentosRepository.getOfertas()
+        cuponesDisponibles = DescuentosRepository.getCupones()
+        cuponesUsuario = UsuariosRepository.getCupones()
         delay(200L)
         cargando = false // Finaliza la carga
     }
@@ -158,7 +171,7 @@ fun Catalogo(navController: NavController) {
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(productosFiltrados, key = { it.id }) { producto ->
-                                TarjetaProducto(producto, navController)
+                                TarjetaProducto(producto, navController, ofertas, cuponesDisponibles, cuponesUsuario)
                             }
                             item { Spacer(modifier = Modifier.height(250.dp)) }
                         }
@@ -244,13 +257,26 @@ fun Catalogo(navController: NavController) {
 }
 
 @Composable
-fun TarjetaProducto(producto: Producto, navController: NavController) {
+fun TarjetaProducto(
+    producto: Producto,
+    navController: NavController,
+    ofertas: List<Descuento>,
+    cuponesDisponibles: List<Descuento>,
+    cuponesUsuario: List<String>
+) {
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val daoCarrito = remember { CarritoDao() }
     val daoLista = remember { ListasDao() }
     var expanded by remember { mutableStateOf(false) }
+
+    // Determinar si el producto tiene oferta o cupón del usuario
+    val esOferta = producto.oferta != null && ofertas.any { it.codigo == producto.oferta }
+    val esCuponUsuario = producto.oferta != null
+            && !esOferta
+            && cuponesDisponibles.any { it.codigo == producto.oferta }
+            && producto.oferta in cuponesUsuario
 
     Card(
         modifier = Modifier
@@ -265,7 +291,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
             .fillMaxSize()
             .padding(12.dp)) {
             Column(horizontalAlignment = Alignment.Start) {
-                // Contenedor de imagen: Aumentado de 70dp a 90dp
+                // Contenedor de imagen
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -275,15 +301,25 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
                     AsyncImage(
                         model = producto.imagenUrl,
                         contentDescription = producto.nombre,
-                        modifier = Modifier.size(90.dp), // Imagen un poco más grande
+                        modifier = Modifier.size(90.dp),
                         contentScale = ContentScale.Fit
                     )
 
-                    if (producto.oferta != null) {
+                    // Icono de descuento: secundario para ofertas, primario para cupones del usuario
+                    if (esOferta) {
                         Icon(
                             imageVector = Icons.Default.LocalOffer,
                             contentDescription = "Oferta",
                             tint = colors.secondary,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .align(Alignment.TopStart)
+                        )
+                    } else if (esCuponUsuario) {
+                        Icon(
+                            imageVector = Icons.Default.LocalOffer,
+                            contentDescription = "Cupón",
+                            tint = colors.primary,
                             modifier = Modifier
                                 .size(16.dp)
                                 .align(Alignment.TopStart)
@@ -293,7 +329,6 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Contenedor para el nombre: Centra el texto verticalmente en el espacio asignado
                 Box(
                     modifier = Modifier.height(40.dp).fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart
@@ -304,7 +339,7 @@ fun TarjetaProducto(producto: Producto, navController: NavController) {
                         fontWeight = FontWeight.Bold,
                         color = colors.onSurface,
                         maxLines = 2,
-                        minLines = 1, // Cambiado a 1 para facilitar el centrado dinámico
+                        minLines = 1,
                         lineHeight = 16.sp,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Start
