@@ -71,7 +71,7 @@ La idea surge de la necesidad de optimizar el proceso de compra, reducir tiempos
 | **Escáner** | CameraX + Google ML Kit (Barcode Scanning) |  
 | **Imágenes** | Cloudinary (subida), Coil (carga) |  
 | **Red** | Retrofit, OkHttp, Volley |  
-| **Persistencia local** | Room, SharedPreferences |  
+| **Persistencia local** | SharedPreferences |  
 | **Concurrencia** | Kotlin Coroutines + Flow |  
 | **Testing** | JUnit, MockK, Coroutines Test |  
   
@@ -80,6 +80,16 @@ La idea surge de la necesidad de optimizar el proceso de compra, reducir tiempos
 ## Arquitectura  
   
 Pronto sigue una **arquitectura Single Activity** con navegación declarativa mediante `NavHost`. La estructura del código se organiza en las siguientes capas:
+
+app/src/main/java/com/example/persistencia/
+├── Firestore/ # DAOs de acceso a Firebase Firestore
+├── Herramientas/ # ViewModels, repositorios, utilidades y servicios
+├── Modelos/ # Data classes (Producto, Descuento, Ticket, etc.)
+├── Navegacion/ # Rutas, NavHost y barra de navegación inferior
+├── Pantallas/ # Composables de cada pantalla
+├── ui/ # Tema y estilos
+├── Aplicacion.kt # Clase Application
+└── MainActivity.kt # Entry point
 
 ```mermaid  
 graph TD  
@@ -108,3 +118,48 @@ graph TD
     G --> F  
     H --> I  
     H --> J
+```
+### Patrón Repository con caché  
+  
+Los repositorios (`ProductosRepository`, `CarritoRepository`, `ListasRepository`, `TicketsRepository`, etc.) implementan un patrón singleton con caché en memoria protegida por `Mutex`, invalidándose tras cada operación de escritura.  
+  
+---  
+  
+## Pantallas  
+  
+| Pantalla | Descripción |  
+|---|---|  
+| `Inicio` | Login con Firebase Auth |  
+| `Registro` | Registro de nuevo usuario |  
+| `PantallaPrincipal` | Dashboard con accesos directos a escáner, lista, catálogo y chatbot |  
+| `Catalogo` | Grid de productos con búsqueda y filtros por categoría |  
+| `PantallaProducto` | Detalle de producto (precio, descripción, alérgenos, selector de cantidad) |  
+| `Carrito` | Carrito de compra con descuentos aplicados y pago con Stripe |  
+| `ListaCompra` | Listas compartidas con búsqueda, sugerencias e invitaciones |  
+| `BarcodeScannerScreen` | Escáner de códigos de barras con modo automático |  
+| `Perfil` | Perfil de usuario, tema y configuración |  
+| `Cupones` | Cupones disponibles y canjeados |  
+| `Chatbot` | Asistente IA (Groq) |  
+| `TicketDetalle` | Detalle de un ticket de compra anterior |  
+| `InvitacionesScreen` | Invitaciones pendientes a listas compartidas |  
+  
+---  
+  
+## Configuración del proyecto  
+  
+### Requisitos previos  
+  
+- Android Studio (Ladybug o superior recomendado)  
+- JDK 11+  
+- SDK mínimo: API 24 (Android 7.0)  
+- SDK objetivo: API 36  
+  
+### Variables de entorno  
+  
+Crear o editar el archivo `local.properties` en la raíz del proyecto con las siguientes claves:  
+  
+```properties  
+GROQ_API_KEY=tu_api_key_de_groq  
+STRIPE_PUBLISHABLE_KEY=tu_publishable_key_de_stripe  
+CLOUDINARY_CLOUD_NAME=tu_cloud_name  
+CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
