@@ -61,6 +61,7 @@ fun ListaCompra(navController: NavController) {
     var showCrearListaDialog by remember { mutableStateOf(false) }
     var showInvitarDialog by remember { mutableStateOf(false) }
     var emailInvitado by remember { mutableStateOf("") }
+    var showEliminarListaDialog by remember { mutableStateOf(false) }
 
     // Filtrado de sugerencias según búsqueda
     val sugerenciasBusqueda = remember(textoBusqueda, productosCatalogo) {
@@ -176,6 +177,29 @@ fun ListaCompra(navController: NavController) {
             },
             dismissButton = {
                 TextButton(onClick = { showInvitarDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showEliminarListaDialog) {
+        AlertDialog(
+            onDismissRequest = { showEliminarListaDialog = false },
+            title = { Text("Eliminar lista") },
+            text = {
+                Text("¿Estás seguro de que quieres eliminar \"${nombreListaActiva}\"? Esta acción no se puede deshacer y se eliminará para todos los miembros.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.eliminarLista()
+                    showEliminarListaDialog = false
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEliminarListaDialog = false }) {
+                    Text("Cancelar")
+                }
             }
         )
     }
@@ -320,6 +344,7 @@ fun ListaCompra(navController: NavController) {
                                 }
                             )
 
+                            // Opciones solo para el creador de la lista
                             if (viewModel.esOwner) {
                                 HorizontalDivider()
                                 DropdownMenuItem(
@@ -329,54 +354,20 @@ fun ListaCompra(navController: NavController) {
                                         showInvitarDialog = true
                                     }
                                 )
+                                DropdownMenuItem(
+                                    text = { Text("Eliminar lista", color = colors.error) },
+                                    onClick = {
+                                        menuOpcionesExpandido = false
+                                        showEliminarListaDialog = true
+                                    }
+                                )
                             }
                         }
                     }
                 }
             )
         },
-        bottomBar = {
-            if (listaActivaId != null) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    tonalElevation = 4.dp,
-                    color = colors.surface
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .navigationBarsPadding(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                if (mostrarTotalCarrito) "En el carro" else "Total estimado",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = colors.secondary
-                            )
-                            Text(
-                                "${"%.2f".format(if (mostrarTotalCarrito) presupuestoCarrito else presupuestoTotal)} €",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                        }
-                        Button(
-                            onClick = { mostrarTotalCarrito = !mostrarTotalCarrito },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                if (mostrarTotalCarrito) Icons.Default.List else Icons.Default.ShoppingCart,
-                                null
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(if (mostrarTotalCarrito) "Total" else "Carrito")
-                        }
-                    }
-                }
-            }
-        }
+
     ) { padding ->
         Box(
             modifier = Modifier

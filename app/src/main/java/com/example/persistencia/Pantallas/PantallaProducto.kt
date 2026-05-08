@@ -24,10 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -47,16 +44,11 @@ import com.composables.icons.lucide.Info
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Milk
 import com.composables.icons.lucide.Nut
-import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Shell
 import com.composables.icons.lucide.Sprout
 import com.composables.icons.lucide.Tag
 import com.composables.icons.lucide.Ticket
 import com.composables.icons.lucide.Wheat
-import com.example.persistencia.Firestore.CarritoDao
-import com.example.persistencia.Firestore.DescuentosDao
-import com.example.persistencia.Firestore.ProductosDao
-import com.example.persistencia.Firestore.UsuariosDao
 import com.example.persistencia.Herramientas.CarritoRepository
 import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ProductosRepository
@@ -67,6 +59,10 @@ import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.Descuento
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import com.example.persistencia.Herramientas.FlyTarget
+import com.example.persistencia.Herramientas.LocalFlyToTargetState
 
 // Componentes de carga y efectos visuales
 @SuppressLint("ModifierFactoryExtensionFunction")
@@ -129,6 +125,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val flyState = LocalFlyToTargetState.current
 
     // Estados para almacenar la información recuperada de la base de datos
     var producto by remember { mutableStateOf<Producto?>(null) }
@@ -140,6 +137,8 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
     var cantidad by remember { mutableStateOf(1.0) }
     var pesoText by remember { mutableStateOf("1,000") }
 
+    var listaButtonPos by remember { mutableStateOf(Offset.Zero) }
+    var carritoButtonPos by remember { mutableStateOf(Offset.Zero) }
 
     // Carga de datos sincronizada al iniciar la pantalla
     LaunchedEffect(idProducto) {
@@ -310,7 +309,6 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
             }
 
             // Barra inferior fija con acciones principales
-            // Barra inferior fija con acciones principales
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 color = colors.background,
@@ -409,16 +407,23 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     ) {
                         // Añadir a la lista de la compra
                         Button(
+                            modifier = Modifier
+                                .height(56.dp)
+                                .weight(1f)
+                                .onGloballyPositioned { coords ->
+                                    listaButtonPos = coords.positionInRoot()
+                                },
                             onClick = {
                                 scope.launch {
                                     val listaActivaId = ListasRepository.getListaActivaId()
                                     if (listaActivaId != null) {
                                         ListasRepository.addItem(p.id, 1.0)
-                                        Toast.makeText(
-                                            context,
-                                            "Añadido a la lista de la compra",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        flyState?.trigger(listaButtonPos, FlyTarget.LISTA)
+//                                        Toast.makeText(
+//                                            context,
+//                                            "Añadido a la lista de la compra",
+//                                            Toast.LENGTH_SHORT
+//                                        ).show()
                                     } else {
                                         Toast.makeText(
                                             context,
@@ -428,9 +433,6 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .height(56.dp)
-                                .weight(1f),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.secondary)
                         ) {
@@ -448,22 +450,26 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                             )
                         }
 
-                        // Añadir al carrito (usa cantidadAñadir en vez de 1.0)
+                        // Añadir al carrito
                         Button(
+                            modifier = Modifier
+                                .height(56.dp)
+                                .weight(1f)
+                                .onGloballyPositioned { coords ->
+                                    carritoButtonPos = coords.positionInRoot()
+                                },
                             onClick = {
                                 scope.launch {
                                     CarritoRepository.addCarrito(p, cantidad)
+                                    flyState?.trigger(carritoButtonPos, FlyTarget.CARRITO)
                                     val textoToast = if (esAlPeso) {
                                         "Añadido ${"%.2f".format(cantidad)} ${p.unidad ?: "kg"} al carrito"
                                     } else {
                                         "Añadido x${cantidad.toInt()} al carrito"
                                     }
-                                    Toast.makeText(context, textoToast, Toast.LENGTH_SHORT).show()
+                                    //Toast.makeText(context, textoToast, Toast.LENGTH_SHORT).show()
                                 }
                             },
-                            modifier = Modifier
-                                .height(56.dp)
-                                .weight(1f),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                         ) {

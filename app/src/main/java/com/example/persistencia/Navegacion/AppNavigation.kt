@@ -39,6 +39,13 @@ import com.example.persistencia.Pantallas.TicketDetalleScreen
 import com.stripe.android.paymentsheet.PaymentSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import com.example.persistencia.Herramientas.FlyToTargetState
+import com.example.persistencia.Herramientas.LocalFlyToTargetState
+import com.example.persistencia.Herramientas.FlyToTargetOverlay
 
 
 /**  
@@ -109,101 +116,111 @@ fun AppNavigation(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val flyState = remember { FlyToTargetState() }
 
-    Scaffold(
-        bottomBar = {
-            if (currentRoute in bottomBarScreens) {
-                BottomBar(navController)
-            }
-        }
-    ) { innerPadding ->
-
-        NavHost(
-            navController = navController,
-            startDestination = destinoFinal,
-        ) {
-            // Pantallas raíz: doble click atrás para salir
-
-            composable(route = AppScreens.Inicio.route) {
-                DoubleBackToExit()
-                Inicio(navController)
-            }
-
-            composable(route = AppScreens.PantallaPrincipal.route) {
-                DoubleBackToExit()
-                PantallaPrincipal(navController)
-            }
-
-            // Pantallas con back normal
-
-            composable(route = AppScreens.Registro.route) {
-                Registro(navController)
-            }
-
-            composable(route = AppScreens.Perfil.route) {
-                Perfil(navController)
-            }
-
-            composable(route = AppScreens.Catalogo.route) {
-                Catalogo(navController)
-            }
-
-            composable(route = AppScreens.Carrito.route) {
-                Carrito(navController, paymentSheet)
-            }
-
-            composable(route = AppScreens.ListaCompra.route) {
-                ListaCompra(navController)
-            }
-
-            // Pantallas secundarias: back = popBackStack
-
-            composable(route = AppScreens.Escaner.route) {
-                BackHandler {
-                    navController.popBackStack()
+    CompositionLocalProvider(LocalFlyToTargetState provides flyState) {
+        Box(Modifier.fillMaxSize()) {
+            Scaffold(
+                bottomBar = {
+                    if (currentRoute in bottomBarScreens) {
+                        BottomBar(navController)
+                    }
                 }
-                BarcodeScannerScreen(navController)
-            }
+            ) { innerPadding ->
 
-            composable(
-                route = AppScreens.PantallaProducto.route + "/{idProducto}",
-                arguments = listOf(
-                    navArgument("idProducto") { type = NavType.StringType }
-                )
-            ) { backStackEntry ->
-                BackHandler {
-                    navController.popBackStack()
+                NavHost(
+                    navController = navController,
+                    startDestination = destinoFinal,
+                ) {
+                    // Pantallas raíz: doble click atrás para salir
+
+                    composable(route = AppScreens.Inicio.route) {
+                        DoubleBackToExit()
+                        Inicio(navController)
+                    }
+
+                    composable(route = AppScreens.PantallaPrincipal.route) {
+                        DoubleBackToExit()
+                        PantallaPrincipal(navController)
+                    }
+
+                    // Pantallas con back normal
+
+                    composable(route = AppScreens.Registro.route) {
+                        Registro(navController)
+                    }
+
+                    composable(route = AppScreens.Perfil.route) {
+                        Perfil(navController)
+                    }
+
+                    composable(route = AppScreens.Catalogo.route) {
+                        Catalogo(navController)
+                    }
+
+                    composable(route = AppScreens.Carrito.route) {
+                        Carrito(navController, paymentSheet)
+                    }
+
+                    composable(route = AppScreens.ListaCompra.route) {
+                        ListaCompra(navController)
+                    }
+
+                    // Pantallas secundarias: back = popBackStack
+
+                    composable(route = AppScreens.Escaner.route) {
+                        BackHandler {
+                            navController.popBackStack()
+                        }
+                        BarcodeScannerScreen(navController)
+                    }
+
+                    composable(
+                        route = AppScreens.PantallaProducto.route + "/{idProducto}",
+                        arguments = listOf(
+                            navArgument("idProducto") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        BackHandler {
+                            navController.popBackStack()
+                        }
+                        val id =
+                            backStackEntry.arguments?.getString("idProducto") ?: return@composable
+                        PantallaProducto(idProducto = id, navController)
+                    }
+
+                    composable(route = AppScreens.Cupones.route) {
+                        BackHandler {
+                            navController.popBackStack()
+                        }
+                        Cupones(navController)
+                    }
+
+                    composable(route = AppScreens.Chatbot.route) {
+                        BackHandler {
+                            navController.popBackStack()
+                        }
+                        Chatbot(onBack = { navController.popBackStack() })
+                    }
+
+                    composable(
+                        route = AppScreens.TicketDetalle.route + "/{ticketId}",
+                        arguments = listOf(navArgument("ticketId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val ticketId =
+                            backStackEntry.arguments?.getString("ticketId") ?: return@composable
+                        TicketDetalleScreen(ticketId = ticketId, navController = navController)
+                    }
+
+                    composable(route = AppScreens.Invitaciones.route) {
+                        BackHandler { navController.popBackStack() }
+                        InvitacionesScreen(navController)
+                    }
                 }
-                val id = backStackEntry.arguments?.getString("idProducto") ?: return@composable
-                PantallaProducto(idProducto = id, navController)
             }
 
-            composable(route = AppScreens.Cupones.route) {
-                BackHandler {
-                    navController.popBackStack()
-                }
-                Cupones(navController)
-            }
-
-            composable(route = AppScreens.Chatbot.route) {
-                BackHandler {
-                    navController.popBackStack()
-                }
-                Chatbot(onBack = { navController.popBackStack() })
-            }
-
-            composable(
-                route = AppScreens.TicketDetalle.route + "/{ticketId}",
-                arguments = listOf(navArgument("ticketId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val ticketId = backStackEntry.arguments?.getString("ticketId") ?: return@composable
-                TicketDetalleScreen(ticketId = ticketId, navController = navController)
-            }
-
-            composable(route = AppScreens.Invitaciones.route) {
-                BackHandler { navController.popBackStack() }
-                InvitacionesScreen(navController)
-            }
+            // Overlay de animación por encima del Scaffold
+            FlyToTargetOverlay(flyState)
         }
     }
 }

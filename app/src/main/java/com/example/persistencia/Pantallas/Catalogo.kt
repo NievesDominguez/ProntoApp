@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -20,14 +19,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +34,6 @@ import coil.compose.AsyncImage
 import com.composables.icons.lucide.*
 import com.example.persistencia.Firestore.CarritoDao
 import com.example.persistencia.Firestore.ListasDao
-import com.example.persistencia.Firestore.ProductosDao
 import com.example.persistencia.Herramientas.DescuentosRepository
 import com.example.persistencia.Herramientas.ProductosRepository
 import com.example.persistencia.Herramientas.UsuariosRepository
@@ -49,7 +43,11 @@ import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Navegacion.AppScreens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.internal.wait
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import com.example.persistencia.Herramientas.FlyTarget
+import com.example.persistencia.Herramientas.LocalFlyToTargetState
+import androidx.compose.ui.geometry.Offset
 
 @RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -270,6 +268,8 @@ fun TarjetaProducto(
     val daoCarrito = remember { CarritoDao() }
     val daoLista = remember { ListasDao() }
     var expanded by remember { mutableStateOf(false) }
+    val flyState = LocalFlyToTargetState.current
+    var menuPosition by remember { mutableStateOf(Offset.Zero) }
 
     // Determinar si el producto tiene oferta o cupón del usuario
     val esOferta = producto.oferta != null && ofertas.any { it.codigo == producto.oferta }
@@ -355,7 +355,11 @@ fun TarjetaProducto(
             }
 
             // Menú de opciones (Tres puntos)
-            Box(modifier = Modifier.align(Alignment.TopEnd)) {
+            Box(modifier = Modifier
+                .align(Alignment.TopEnd)
+                .onGloballyPositioned { coords ->
+                    menuPosition = coords.positionInRoot()
+                }  ) {
                 IconButton(onClick = { expanded = true }, modifier = Modifier.size(24.dp)) {
                     Icon(
                         Icons.Default.MoreVert,
@@ -374,7 +378,8 @@ fun TarjetaProducto(
                         onClick = {
                             scope.launch {
                                 daoCarrito.addCarrito(producto, 1.toDouble())
-                                Toast.makeText(context, "Añadido", Toast.LENGTH_SHORT).show()
+                                flyState?.trigger(menuPosition, FlyTarget.CARRITO)
+                                //Toast.makeText(context, "Añadido", Toast.LENGTH_SHORT).show()
                                 expanded = false
                             }
                         }
@@ -385,7 +390,8 @@ fun TarjetaProducto(
                         onClick = {
                             scope.launch {
                                 daoLista.addItem(producto.id)
-                                Toast.makeText(context, "A la lista", Toast.LENGTH_SHORT).show()
+                                flyState?.trigger(menuPosition, FlyTarget.LISTA)
+                                //Toast.makeText(context, "A la lista", Toast.LENGTH_SHORT).show()
                                 expanded = false
                             }
                         }

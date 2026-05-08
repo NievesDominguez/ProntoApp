@@ -85,6 +85,16 @@ class ListaCompraViewModel(
         }
     }
 
+    // Elimina la lista
+    fun eliminarLista() {
+        viewModelScope.launch {
+            val listId = _listaActivaId.value ?: return@launch
+            _isLoading.value = true
+            ListasRepository.eliminarLista(listId)
+            cargarListas()
+        }
+    }
+
     // Cambia la lista activa y carga sus items y datos adicionales
     fun seleccionarLista(listId: String) {
         viewModelScope.launch {
