@@ -48,6 +48,8 @@ import androidx.compose.ui.layout.positionInRoot
 import com.example.persistencia.Herramientas.FlyTarget
 import com.example.persistencia.Herramientas.LocalFlyToTargetState
 import androidx.compose.ui.geometry.Offset
+import com.example.persistencia.Herramientas.CarritoRepository
+import com.example.persistencia.Herramientas.ListasRepository
 
 @RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -377,7 +379,8 @@ fun TarjetaProducto(
                         },
                         onClick = {
                             scope.launch {
-                                daoCarrito.addCarrito(producto, 1.toDouble())
+                                //daoCarrito.addCarrito(producto, 1.toDouble())
+                                CarritoRepository.addCarrito(producto, 1.0)
                                 flyState?.trigger(menuPosition, FlyTarget.CARRITO)
                                 //Toast.makeText(context, "Añadido", Toast.LENGTH_SHORT).show()
                                 expanded = false
@@ -389,7 +392,8 @@ fun TarjetaProducto(
                         leadingIcon = { Icon(Icons.Outlined.ListAlt, null, Modifier.size(18.dp)) },
                         onClick = {
                             scope.launch {
-                                daoLista.addItem(producto.id)
+                                //daoLista.addItem(producto.id)
+                                ListasRepository.addItem(producto.id)
                                 flyState?.trigger(menuPosition, FlyTarget.LISTA)
                                 //Toast.makeText(context, "A la lista", Toast.LENGTH_SHORT).show()
                                 expanded = false

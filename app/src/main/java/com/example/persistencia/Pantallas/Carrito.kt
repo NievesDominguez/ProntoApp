@@ -209,8 +209,13 @@ fun Carrito(
                                     colors.onPrimary.copy(alpha = 0.8f),
                                     RoundedCornerShape(16.dp)
                                 )
+                                .clickable {
+                                    navController.navigate(
+                                        AppScreens.PantallaProducto.route + "/${item.producto.id}"
+                                    )
+                                }
                                 .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             // Imagen del producto
                             AsyncImage(

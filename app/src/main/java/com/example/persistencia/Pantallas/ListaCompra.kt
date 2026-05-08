@@ -29,6 +29,7 @@ import com.example.persistencia.Modelos.Producto
 import com.example.persistencia.Modelos.ProductoLista
 import com.example.persistencia.Herramientas.ListaCompraViewModel
 import com.example.persistencia.Herramientas.fondoDegradado
+import com.example.persistencia.Navegacion.AppScreens
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -368,7 +369,7 @@ fun ListaCompra(navController: NavController) {
             )
         },
 
-    ) { padding ->
+        ) { padding ->
         Box(
             modifier = Modifier
                 .padding(padding)
@@ -490,6 +491,11 @@ fun ListaCompra(navController: NavController) {
                                                     viewModel.generarSugerencias()
                                                     mostrarSugerencias = true
                                                 }
+                                            },
+                                            onProductoClick = {
+                                                navController.navigate(
+                                                    "${AppScreens.PantallaProducto.route}/${item.id}"
+                                                )
                                             }
                                         )
                                     }
@@ -604,7 +610,7 @@ fun ListaCompra(navController: NavController) {
     }
 }
 
-// TarjetaProductoLista permanece igual (sin cambios)
+// Tarjeta que representa cada producto de la lista
 @Composable
 fun TarjetaProductoLista(
     item: ProductoLista,
@@ -613,7 +619,8 @@ fun TarjetaProductoLista(
     estaMarcado: Boolean,
     onCheckChanged: (Boolean) -> Unit,
     onCantidadChanged: (Double) -> Unit,
-    onVerAlternativas: (Producto) -> Unit
+    onVerAlternativas: (Producto) -> Unit,
+    onProductoClick: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
@@ -622,7 +629,8 @@ fun TarjetaProductoLista(
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface)
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        onClick = onProductoClick
     ) {
         Box {
             Row(

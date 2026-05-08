@@ -61,7 +61,7 @@ fun FlyToTargetOverlay(state: FlyToTargetState) {
         FlyTarget.LISTA -> 3
     }
     val targetX = screenWidthPx * (targetIndex + 0.5f) / 5f
-    val targetY = screenHeightPx // parte inferior de la pantalla (donde está la navbar)
+    val targetY = screenHeightPx // Parte inferior de la pantalla (donde está el navbar)
 
     val icon: ImageVector = when (state.target) {
         FlyTarget.CARRITO -> Icons.Default.ShoppingCart
@@ -97,7 +97,7 @@ fun FlyToTargetOverlay(state: FlyToTargetState) {
             modifier = Modifier
                 .size(32.dp)
                 .graphicsLayer {
-                    translationX = currentX - 48f // centrar el icono
+                    translationX = currentX - 48f // Centrar el icono
                     translationY = currentY + arcOffset - 48f
                     scaleX = currentScale
                     scaleY = currentScale
