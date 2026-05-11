@@ -163,3 +163,39 @@ GROQ_API_KEY=tu_api_key_de_groq
 STRIPE_PUBLISHABLE_KEY=tu_publishable_key_de_stripe  
 CLOUDINARY_CLOUD_NAME=tu_cloud_name  
 CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
+```
+
+### Firebase  
+  
+Añadir el archivo `google-services.json` en `app/` con la configuración de tu proyecto Firebase (Firestore, Auth y Analytics habilitados).  
+  
+### Build  
+  
+```bash  
+./gradlew assembleDebug
+```
+
+---  
+  
+## Tests  
+  
+El proyecto incluye tests unitarios para la lógica de negocio:  
+  
+```bash  
+./gradlew test
+```
+
+| Test | Cobertura |  
+|---|---|  
+| `CalcularPreciosTest` | Cálculo de segunda unidad, NxM, precios unitarios y totales de grupo |  
+| `TotalCarritoTest` | Total del carrito con ofertas y cupones combinados |  
+| `CalcularTicketTest` | Generación de ticket con desglose de descuentos |  
+| `DescuentosTest` | Vigencia y validación de descuentos |  
+| `ModelosTest` | Validación de data classes |  
+| `ChatViewModelTest` | Lógica del ViewModel del chatbot |  
+  
+---  
+  
+## Licencia  
+  
+Este proyecto no incluye una licencia explícita. Todos los derechos reservados.
