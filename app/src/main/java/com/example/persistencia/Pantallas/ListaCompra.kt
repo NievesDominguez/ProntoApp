@@ -678,7 +678,7 @@ fun TarjetaProductoLista(
                                 Icon(
                                     Icons.Default.Warning,
                                     contentDescription = "Sin stock",
-                                    tint = colors.error
+                                    tint = colors.secondary
                                 )
                             }
                         }

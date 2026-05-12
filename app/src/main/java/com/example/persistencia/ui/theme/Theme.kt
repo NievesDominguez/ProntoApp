@@ -16,8 +16,8 @@ val BrandPurple = Color(0xFF7700FF)
 val BrandPink = Color(0xFFFF008A)
 
 // Versiones más claras para modo oscuro
-val BrandPurpleLight = Color(0xFF841AFF)
-val BrandPinkLight = Color(0xFFFF008A)
+val BrandPurpleLight = Color(0xFF9B44FF)
+val BrandPinkLight = Color(0xFFFF2296)
 
 // Esquema de colores claro
 private val LightColorScheme = lightColorScheme(
@@ -47,8 +47,8 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = Color.White,
     onSurface = Color.White,
     outline = Color.Gray.copy(alpha = 0.7f),
-    onError = Color(0xFFFF2727),
-    error = Color(0xFFFF2727)
+    onError = Color(0xFFFF3C3C),
+    error = Color(0xFFFF3C3C)
 )
 
 @Composable

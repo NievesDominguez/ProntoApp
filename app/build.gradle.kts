@@ -81,9 +81,6 @@ android {
 }
 
 dependencies {
-    // Reproducir vídeos de youtube
-    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
-
     // Dependencias necesarias para el SDK de Redsys
     implementation("com.google.code.gson:gson:2.8.2")
     implementation("androidx.webkit:webkit:1.14.0")
@@ -130,6 +127,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.compose.material3:material3:1.5.0-alpha08")
     implementation("androidx.compose.material:material-icons-extended:1.5.0-alpha08")
+    implementation(libs.androidx.benchmark.junit4)
+    implementation(libs.androidx.junit.ktx)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
@@ -170,4 +169,8 @@ dependencies {
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("com.google.firebase:firebase-common:21.0.0")
     testImplementation("org.json:json:20231013")
+
+    // Tests de rendimiento
+    androidTestImplementation("androidx.benchmark:benchmark-junit4:1.2.0")
+    androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.2.0")
 }

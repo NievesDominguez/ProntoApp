@@ -126,24 +126,51 @@ fun PantallaPrincipal(navController: NavController) {
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Bold
                 )
-                // Botón de notificaciones con badge
-                IconButton(onClick = {
-                    navController.navigate(AppScreens.Invitaciones.route)
-                }) {
-                    BadgedBox(
-                        badge = {
-                            if (numInvitaciones > 0) {
-                                Badge {
-                                    Text(numInvitaciones.toString(), color = Color.White)
-                                }
-                            }
-                        }
+                Row() {
+                    // Botón de escanear
+                    IconButton(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        onClick = { navController.navigate(AppScreens.Escaner.route) },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                            contentColor = colors.onSurface
+                        )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Invitaciones",
-                            tint = colors.onBackground
+                            Icons.Filled.CameraAlt,
+                            contentDescription = "Escanear",
+                            //tint = colors.onBackground
                         )
+                    }
+                    Spacer(Modifier.width(6.dp))
+
+                    // Botón de notificaciones con badge
+                    IconButton(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+                            contentColor = colors.onSurface
+                        ),
+                        onClick = {
+                            navController.navigate(AppScreens.Invitaciones.route)
+                        }) {
+                        BadgedBox(
+                            badge = {
+                                if (numInvitaciones > 0) {
+                                    Badge {
+                                        Text(numInvitaciones.toString(), color = Color.White)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notificaciones",
+                                tint = colors.onBackground
+                            )
+                        }
                     }
                 }
             }
@@ -212,92 +239,92 @@ fun PantallaPrincipal(navController: NavController) {
                 )
             }
 
-            // Botones de acción
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 0.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.Top
-            ) {
-                // Botón Escanear
-                Column(
-                    modifier = Modifier.height(120.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    IconButton(
-                        modifier = Modifier.size(45.dp),
-                        shape = CircleShape,
-                        onClick = { navController.navigate(AppScreens.Escaner.route) },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
-                            contentColor = colors.onSurface
-                        )
-                    ) {
-                        Icon(Icons.Filled.CameraAlt, contentDescription = "Escanear")
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "Escanear",
-                        color = colors.onBackground,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                // Botón Lista de la compra
-                Column(
-                    modifier = Modifier.height(120.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    IconButton(
-                        modifier = Modifier.size(45.dp),
-                        shape = CircleShape,
-                        onClick = { navController.navigate(AppScreens.ListaCompra.route) },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
-                            contentColor = colors.onSurface
-                        )
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Lucide.ListCheck),
-                            contentDescription = "Lista de la compra"
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "Lista de la\ncompra",
-                        color = colors.onBackground,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                // Botón Favoritos
-                Column(
-                    modifier = Modifier.height(120.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    IconButton(
-                        modifier = Modifier.size(45.dp),
-                        shape = CircleShape,
-                        onClick = { },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
-                            contentColor = colors.onSurface
-                        )
-                    ) {
-                        Icon(Icons.Filled.Favorite, contentDescription = "Favoritos")
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "Favoritos",
-                        color = colors.onBackground,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+//            // Botones de acción
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(horizontal = 24.dp, vertical = 0.dp),
+//                horizontalArrangement = Arrangement.SpaceEvenly,
+//                verticalAlignment = Alignment.Top
+//            ) {
+//                // Botón Escanear
+//                Column(
+//                    modifier = Modifier.height(120.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//                    IconButton(
+//                        modifier = Modifier.size(45.dp),
+//                        shape = CircleShape,
+//                        onClick = { navController.navigate(AppScreens.Escaner.route) },
+//                        colors = IconButtonDefaults.iconButtonColors(
+//                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+//                            contentColor = colors.onSurface
+//                        )
+//                    ) {
+//                        Icon(Icons.Filled.CameraAlt, contentDescription = "Escanear")
+//                    }
+//                    Spacer(Modifier.height(6.dp))
+//                    Text(
+//                        text = "Escanear",
+//                        color = colors.onBackground,
+//                        fontSize = 14.sp,
+//                        textAlign = TextAlign.Center
+//                    )
+//                }
+//
+//                // Botón Lista de la compra
+//                Column(
+//                    modifier = Modifier.height(120.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//                    IconButton(
+//                        modifier = Modifier.size(45.dp),
+//                        shape = CircleShape,
+//                        onClick = { navController.navigate(AppScreens.ListaCompra.route) },
+//                        colors = IconButtonDefaults.iconButtonColors(
+//                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+//                            contentColor = colors.onSurface
+//                        )
+//                    ) {
+//                        Icon(
+//                            painter = rememberVectorPainter(Lucide.ListCheck),
+//                            contentDescription = "Lista de la compra"
+//                        )
+//                    }
+//                    Spacer(Modifier.height(6.dp))
+//                    Text(
+//                        text = "Lista de la\ncompra",
+//                        color = colors.onBackground,
+//                        fontSize = 14.sp,
+//                        textAlign = TextAlign.Center
+//                    )
+//                }
+//
+//                // Botón Favoritos
+//                Column(
+//                    modifier = Modifier.height(120.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//                    IconButton(
+//                        modifier = Modifier.size(45.dp),
+//                        shape = CircleShape,
+//                        onClick = { },
+//                        colors = IconButtonDefaults.iconButtonColors(
+//                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
+//                            contentColor = colors.onSurface
+//                        )
+//                    ) {
+//                        Icon(Icons.Filled.Favorite, contentDescription = "Favoritos")
+//                    }
+//                    Spacer(Modifier.height(6.dp))
+//                    Text(
+//                        text = "Favoritos",
+//                        color = colors.onBackground,
+//                        fontSize = 14.sp,
+//                        textAlign = TextAlign.Center
+//                    )
+//                }
+//            }
         }
 
         // Botón flotante del chatbot
