@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +47,14 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.persistencia.Herramientas.ProductosRepository
+import com.example.persistencia.Modelos.Producto
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
@@ -61,9 +70,20 @@ fun PantallaPrincipal(navController: NavController) {
     val notificationHandler = NotificationHandler(context)
 
     var numInvitaciones by remember { mutableStateOf(0) }
+    var productosNuevos by remember { mutableStateOf<List<Producto>>(emptyList()) }
+    val scope = rememberCoroutineScope()
     val usuario = FirebaseAuth.getInstance().currentUser
+
+    // Comprueba si hay invitaciones pendientes
     LaunchedEffect(usuario!!.uid) {
         numInvitaciones = ListasRepository.getInvitacionesPendientes(usuario.uid).size
+    }
+
+    // Obtine los productos nuevos
+    LaunchedEffect(Unit) {
+        scope.launch {
+            productosNuevos = ProductosRepository.getProductosRecientes(8)
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -184,148 +204,143 @@ fun PantallaPrincipal(navController: NavController) {
                 fontWeight = FontWeight.Medium
             )
 
-            // Tarjeta con logo
-            Card(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = colors.surfaceVariant
-                )
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Tarjeta con logo
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colors.surfaceVariant
+                    )
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.pronto_logo),
-                        contentDescription = "Logo supermercado",
-                        modifier = Modifier.size(140.dp),
-                        contentScale = ContentScale.Fit
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.pronto_logo),
+                            contentDescription = "Logo supermercado",
+                            modifier = Modifier.size(140.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+
+                // Ofertas destacadas
+                Text(
+                    modifier = Modifier.padding(24.dp, 30.dp, 24.dp, 10.dp),
+                    text = "Ofertas destacadas",
+                    color = colors.onBackground,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Carrusel
+                HorizontalUncontainedCarousel(
+                    state = rememberCarouselState { carouselItems.count() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(top = 16.dp, bottom = 16.dp),
+                    itemWidth = 186.dp,
+                    itemSpacing = 12.dp,
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) { i ->
+                    val item = carouselItems[i]
+                    AsyncImage(
+                        model = item.imgLink,
+                        contentDescription = item.contentDescription,
+                        modifier = Modifier
+                            .height(205.dp)
+                            .maskClip(MaterialTheme.shapes.extraLarge),
+                        contentScale = ContentScale.Crop
                     )
                 }
-            }
 
-            // Ofertas destacadas
-            Text(
-                modifier = Modifier.padding(24.dp, 30.dp, 24.dp, 10.dp),
-                text = "Ofertas destacadas",
-                color = colors.onBackground,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            // Carrusel
-            HorizontalUncontainedCarousel(
-                state = rememberCarouselState { carouselItems.count() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(top = 16.dp, bottom = 16.dp),
-                itemWidth = 186.dp,
-                itemSpacing = 12.dp,
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) { i ->
-                val item = carouselItems[i]
-                AsyncImage(
-                    model = item.imgLink,
-                    contentDescription = item.contentDescription,
-                    modifier = Modifier
-                        .height(205.dp)
-                        .maskClip(MaterialTheme.shapes.extraLarge),
-                    contentScale = ContentScale.Crop
+                // Novedades
+                Text(
+                    modifier = Modifier.padding(24.dp, 20.dp, 24.dp, 10.dp),
+                    text = "Novedades",
+                    color = colors.onBackground,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
-            }
 
-//            // Botones de acción
-//            Row(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(horizontal = 24.dp, vertical = 0.dp),
-//                horizontalArrangement = Arrangement.SpaceEvenly,
-//                verticalAlignment = Alignment.Top
-//            ) {
-//                // Botón Escanear
-//                Column(
-//                    modifier = Modifier.height(120.dp),
-//                    horizontalAlignment = Alignment.CenterHorizontally
-//                ) {
-//                    IconButton(
-//                        modifier = Modifier.size(45.dp),
-//                        shape = CircleShape,
-//                        onClick = { navController.navigate(AppScreens.Escaner.route) },
-//                        colors = IconButtonDefaults.iconButtonColors(
-//                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
-//                            contentColor = colors.onSurface
-//                        )
-//                    ) {
-//                        Icon(Icons.Filled.CameraAlt, contentDescription = "Escanear")
-//                    }
-//                    Spacer(Modifier.height(6.dp))
-//                    Text(
-//                        text = "Escanear",
-//                        color = colors.onBackground,
-//                        fontSize = 14.sp,
-//                        textAlign = TextAlign.Center
-//                    )
-//                }
-//
-//                // Botón Lista de la compra
-//                Column(
-//                    modifier = Modifier.height(120.dp),
-//                    horizontalAlignment = Alignment.CenterHorizontally
-//                ) {
-//                    IconButton(
-//                        modifier = Modifier.size(45.dp),
-//                        shape = CircleShape,
-//                        onClick = { navController.navigate(AppScreens.ListaCompra.route) },
-//                        colors = IconButtonDefaults.iconButtonColors(
-//                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
-//                            contentColor = colors.onSurface
-//                        )
-//                    ) {
-//                        Icon(
-//                            painter = rememberVectorPainter(Lucide.ListCheck),
-//                            contentDescription = "Lista de la compra"
-//                        )
-//                    }
-//                    Spacer(Modifier.height(6.dp))
-//                    Text(
-//                        text = "Lista de la\ncompra",
-//                        color = colors.onBackground,
-//                        fontSize = 14.sp,
-//                        textAlign = TextAlign.Center
-//                    )
-//                }
-//
-//                // Botón Favoritos
-//                Column(
-//                    modifier = Modifier.height(120.dp),
-//                    horizontalAlignment = Alignment.CenterHorizontally
-//                ) {
-//                    IconButton(
-//                        modifier = Modifier.size(45.dp),
-//                        shape = CircleShape,
-//                        onClick = { },
-//                        colors = IconButtonDefaults.iconButtonColors(
-//                            containerColor = colors.onPrimary.copy(alpha = 0.8f),
-//                            contentColor = colors.onSurface
-//                        )
-//                    ) {
-//                        Icon(Icons.Filled.Favorite, contentDescription = "Favoritos")
-//                    }
-//                    Spacer(Modifier.height(6.dp))
-//                    Text(
-//                        text = "Favoritos",
-//                        color = colors.onBackground,
-//                        fontSize = 14.sp,
-//                        textAlign = TextAlign.Center
-//                    )
-//                }
-//            }
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    items(productosNuevos, key = { it.id }) { producto ->
+                        Card(
+                            modifier = Modifier
+                                .width(140.dp)
+                                .aspectRatio(1f)
+                                .clickable {
+                                    navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
+                                },
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(1.dp),
+                            colors = CardDefaults.cardColors(containerColor = colors.surface)
+                        ) {
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp)) {
+                                Column(horizontalAlignment = Alignment.Start) {
+                                    // Contenedor de imagen
+                                    Box(
+                                        modifier = Modifier
+                                            //.weight(1f)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AsyncImage(
+                                            model = producto.imagenUrl,
+                                            contentDescription = producto.nombre,
+                                            modifier = Modifier.size(80.dp),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    // Texto que ocupa 1 o 2 líneas según su longitud
+                                    Text(
+                                        text = producto.nombre,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.onSurface,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Start
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Text(
+                                        text = "%.2f €".format(producto.precio),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = colors.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(160.dp))
+            }
         }
+
 
         // Botón flotante del chatbot
         Box(

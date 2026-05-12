@@ -116,6 +116,18 @@ object ProductosRepository {
         return dao.getProductosSimilares(productoReferencia, limite, excluirIds)
     }
 
+    // Obtiene los productos más recientes
+    suspend fun getProductosRecientes(limit: Int = 8): List<Producto> {
+        mutex.withLock {
+            // Si ya tenemos todos los productos en cache, ordenar por fecha y tomar los primeros N
+            cacheTodos?.let { todos ->
+                return todos.sortedByDescending { it.fecha }.take(limit)
+            }
+            // Si no hay cache, ir a Firestore
+            return dao.getProductosRecientes(limit)
+        }
+    }
+
     // Limpia el cache. Se llama al cerrar sesion o cuando se necesita forzar una recarga completa
     suspend fun invalidar() {
         mutex.withLock {

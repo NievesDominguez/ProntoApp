@@ -176,5 +176,22 @@ class ProductosDao {
             .distinct()
     }
 
+    // Obtiene los productos más recientes ordenados por fecha
+    suspend fun getProductosRecientes(limit: Int = 8): List<Producto> {
+        return try {
+            val snapshot = coleccion
+                .orderBy("fecha", Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Producto::class.java)?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 }
 
