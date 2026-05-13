@@ -257,7 +257,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                     }
                 }
 
-                //Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(10.dp))
 
                 // Bloque de información principal
                 Column(modifier = Modifier.padding(horizontal = 28.dp)) {
@@ -539,7 +539,7 @@ fun PromoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp, horizontal = 28.dp),
+            .padding(top = 12.dp, bottom = 0.dp, start = 28.dp, end = 28.dp),
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
@@ -569,7 +569,7 @@ fun PromoCard(
 }
 
 
-// Diálogo para editar producto
+// Diálogo para editar producto (depecado)
 @Composable
 fun EditarProductoDialog(
     producto: Producto,
@@ -654,7 +654,7 @@ fun AlergenosOverlay(
     ) {
         // Alérgenos que contiene (color fuerte)
         contiene.forEach { alergeno ->
-            val icono = iconosAlergenos[alergeno] ?: Lucide.Info
+            val icono = iconosAlergenos[alergeno.trim().lowercase()] ?: Lucide.Info
             Box(
                 modifier = Modifier
                     .size(34.dp)
@@ -685,7 +685,7 @@ fun AlergenosOverlay(
 
         // Trazas (color suave)
         trazas.forEach { alergeno ->
-            val icono = iconosAlergenos[alergeno] ?: Lucide.Info
+            val icono = iconosAlergenos[alergeno.trim().lowercase()] ?: Lucide.Info
             Box(
                 modifier = Modifier
                     .size(34.dp)

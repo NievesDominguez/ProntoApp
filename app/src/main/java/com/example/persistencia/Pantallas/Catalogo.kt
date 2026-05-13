@@ -173,7 +173,7 @@ fun Catalogo(navController: NavController) {
                             items(productosFiltrados, key = { it.id }) { producto ->
                                 TarjetaProducto(producto, navController, ofertas, cuponesDisponibles, cuponesUsuario)
                             }
-                            item { Spacer(modifier = Modifier.height(250.dp)) }
+                            item { Spacer(modifier = Modifier.height(80.dp)) }
                         }
                     }
                 }
