@@ -6,9 +6,11 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -65,6 +67,9 @@ fun Catalogo(navController: NavController) {
     var textoBusqueda by rememberSaveable { mutableStateOf("") }
     var categoriaSeleccionada by rememberSaveable { mutableStateOf("Todos") }
     var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
+    val gridState = rememberLazyGridState()
+    var ordenSeleccionado by rememberSaveable { mutableStateOf("nombre") }
+    var menuOrdenExpandido by remember { mutableStateOf(false) }
 
     // Estado para controlar la carga
     var cargando by remember { mutableStateOf(true) }
@@ -89,11 +94,23 @@ fun Catalogo(navController: NavController) {
         cargando = false // Finaliza la carga
     }
 
-    LaunchedEffect(textoBusqueda, productos, categoriaSeleccionada) {
+    LaunchedEffect(textoBusqueda, productos, categoriaSeleccionada, ordenSeleccionado) {
         productosFiltrados = productos.filter {
             (categoriaSeleccionada == "Todos" || it.categoria == categoriaSeleccionada) &&
                     it.nombre.contains(textoBusqueda, ignoreCase = true)
+        }.let { filtrados ->
+            when (ordenSeleccionado) {
+                "nombre" -> filtrados.sortedBy { it.nombre.lowercase() }
+                "precio_asc" -> filtrados.sortedBy { it.precio }
+                "precio_desc" -> filtrados.sortedByDescending { it.precio }
+                "categoria" -> filtrados.sortedBy { it.categoria }
+                else -> filtrados
+            }
         }
+    }
+
+    LaunchedEffect(ordenSeleccionado) {
+        gridState.scrollToItem(0)
     }
 
     val backgroundModifier = Modifier.fondoDegradado()
@@ -102,11 +119,22 @@ fun Catalogo(navController: NavController) {
         NavigationItems("Todos", Lucide.Store, Lucide.Store),
         NavigationItems("Bebidas", Lucide.Wine, Lucide.Wine),
         NavigationItems("Textil", Lucide.Shirt, Lucide.Shirt),
-        NavigationItems("Aperitivos", Lucide.Popcorn, Lucide.Popcorn)
+        NavigationItems("Aperitivos", Lucide.Popcorn, Lucide.Popcorn),
+
+        NavigationItems("Frutas y Verduras", Lucide.Apple, Lucide.Apple),
+        NavigationItems("Panadería y Pastelería", Lucide.CakeSlice, Lucide.CakeSlice),
+        NavigationItems("Despensa", Lucide.Bean, Lucide.Bean),
+        NavigationItems("Conservas", Lucide.Cuboid, Lucide.Cuboid),
+        NavigationItems("Carnicería", Lucide.Beef, Lucide.Beef),
+        NavigationItems("Pescadería", Lucide.Fish, Lucide.Fish),
+        NavigationItems("Lácteos", Lucide.Milk, Lucide.Milk),
+        NavigationItems("Congelados", Lucide.Snowflake, Lucide.Snowflake),
+        NavigationItems("Dulces", Lucide.Candy, Lucide.Candy)
+
     )
 
     ModalNavigationDrawer(
-        drawerState = drawerState,
+                drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(240.dp),
@@ -119,18 +147,26 @@ fun Catalogo(navController: NavController) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                categoriasNav.forEachIndexed { index, item ->
-                    NavigationDrawerItem(
-                        label = { Text(item.title) },
-                        selected = index == selectedItemIndex,
-                        onClick = {
-                            selectedItemIndex = index
-                            categoriaSeleccionada = item.title
-                            scope.launch { drawerState.close() }
-                        },
-                        icon = { Icon(item.selectedIcon, null, Modifier.size(20.dp)) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(categoriasNav.size) { index ->
+                        val item = categoriasNav[index]
+                        NavigationDrawerItem(
+                            label = { Text(item.title) },
+                            selected = index == selectedItemIndex,
+                            onClick = {
+                                selectedItemIndex = index
+                                categoriaSeleccionada = item.title
+                                scope.launch { drawerState.close() }
+                            },
+                            icon = { Icon(item.selectedIcon, item.selectedIcon.name, Modifier.size(20.dp)) },
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).height(55.dp)
+                        )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
                 }
             }
         }
@@ -142,6 +178,40 @@ fun Catalogo(navController: NavController) {
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, "Menú")
+                        }
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { menuOrdenExpandido = true }) {
+                                Icon(Icons.Default.SwapVert, "Ordenar")
+                            }
+
+                            DropdownMenu(
+                                expanded = menuOrdenExpandido,
+                                onDismissRequest = { menuOrdenExpandido = false }
+                            ) {
+                                listOf(
+                                    "nombre" to "Nombre",
+                                    "precio_asc" to "Precio ascendente",
+                                    "precio_desc" to "Precio descendente",
+                                    "categoria" to "Categoría"
+                                ).forEach { (id, label) ->
+                                    val isSelected = id == ordenSeleccionado
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                label,
+                                                color = if (isSelected) colors.primary else colors.onSurface
+                                            )
+                                        },
+                                        onClick = {
+                                            ordenSeleccionado = id
+                                            menuOrdenExpandido = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -164,6 +234,7 @@ fun Catalogo(navController: NavController) {
                         }
                     } else {
                         LazyVerticalGrid(
+                            state = gridState,
                             columns = GridCells.Fixed(2),
                             contentPadding = PaddingValues(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -171,7 +242,13 @@ fun Catalogo(navController: NavController) {
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(productosFiltrados, key = { it.id }) { producto ->
-                                TarjetaProducto(producto, navController, ofertas, cuponesDisponibles, cuponesUsuario)
+                                TarjetaProducto(
+                                    producto,
+                                    navController,
+                                    ofertas,
+                                    cuponesDisponibles,
+                                    cuponesUsuario
+                                )
                             }
                             item { Spacer(modifier = Modifier.height(80.dp)) }
                         }
@@ -289,9 +366,11 @@ fun TarjetaProducto(
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         onClick = { navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}") }
     ) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp)
+        ) {
             Column(horizontalAlignment = Alignment.Start) {
                 // Contenedor de imagen
                 Box(
@@ -332,7 +411,9 @@ fun TarjetaProducto(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Box(
-                    modifier = Modifier.height(40.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .height(40.dp)
+                        .fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
@@ -357,11 +438,12 @@ fun TarjetaProducto(
             }
 
             // Menú de opciones (Tres puntos)
-            Box(modifier = Modifier
-                .align(Alignment.TopEnd)
-                .onGloballyPositioned { coords ->
-                    menuPosition = coords.positionInRoot()
-                }  ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .onGloballyPositioned { coords ->
+                        menuPosition = coords.positionInRoot()
+                    }) {
                 IconButton(onClick = { expanded = true }, modifier = Modifier.size(24.dp)) {
                     Icon(
                         Icons.Default.MoreVert,

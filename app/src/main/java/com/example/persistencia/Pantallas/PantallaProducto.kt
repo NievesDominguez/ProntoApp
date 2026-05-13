@@ -304,7 +304,7 @@ fun PantallaProducto(idProducto: String, navController: NavController) {
                         lineHeight = 22.sp
                     )
 
-                    Spacer(Modifier.height(120.dp))
+                    Spacer(Modifier.height(140.dp))
                 }
             }
 
