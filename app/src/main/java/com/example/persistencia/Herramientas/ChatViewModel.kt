@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Gestiona el estado de la conversacion, la comunicacion con Groq y la obtencion del contexto del usuario
+// Gestiona el estado de la conversación, la comunicación con Groq y la obtención del contexto del usuario
 class ChatViewModel : ViewModel() {
 
     // Lista de mensajes del chat expuesta como StateFlow para consistencia con otros ViewModels
@@ -25,14 +25,14 @@ class ChatViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // Servicio que se comunicara con la API de Groq
+    // Servicio que se comunicará con la API de Groq
     private lateinit var groqApiService: GroqApiService
 
     // Mensaje de bienvenida
     init {
         _messages.value = listOf(
             Mensaje(
-                "Hola! Bienvenido a Pronto. Soy tu asistente virtual. En que puedo ayudarte hoy?",
+                "¡Hola! Bienvenido a Pronto. Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?",
                 Mensaje.Sender.BOT
             )
         )
@@ -45,7 +45,7 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    // Obtiene toda la informacion relevante del usuario para inyectar en el prompt
+    // Obtiene toda la información relevante del usuario para inyectar en el prompt
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun getUserContext(): String {
         val user = FirebaseAuth.getInstance().currentUser ?: return ""
@@ -71,7 +71,7 @@ class ChatViewModel : ViewModel() {
             }
             "Carrito: ${productosCarrito.joinToString(", ")}"
         } else {
-            "Carrito vacio"
+            "Carrito vacío"
         }
 
         // Lista de la compra
@@ -98,7 +98,7 @@ class ChatViewModel : ViewModel() {
             }
             "Lista de la compra: ${productosLista.joinToString(", ")}"
         } else {
-            "Lista de la compra vacia"
+            "Lista de la compra vacía"
         }
 
         // Cupones del usuario
@@ -124,7 +124,7 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    // Envia un mensaje del usuario al asistente
+    // Envía un mensaje del usuario al asistente
     @RequiresApi(Build.VERSION_CODES.O)
     fun sendMessage(text: String, context: Context) {
         val userMessage = Mensaje(text, Mensaje.Sender.USER)
@@ -133,9 +133,9 @@ class ChatViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // Asegurar que el servicio de Groq este inicializado
+                // Asegurar que el servicio de Groq esté inicializado
                 initService(context)
-                // Obtener toda la informacion personalizada del usuario
+                // Obtener toda la información personalizada del usuario
                 val userContext = getUserContext()
                 // Llamar a Groq en un hilo de IO para no bloquear la UI
                 val reply = withContext(Dispatchers.IO) {
@@ -146,7 +146,7 @@ class ChatViewModel : ViewModel() {
                     _messages.value += Mensaje(reply, Mensaje.Sender.BOT)
                 } else {
                     _messages.value += Mensaje(
-                        "Lo siento, no pude obtener respuesta.",
+                        "Lo siento, no pude obtener respuesta :(.",
                         Mensaje.Sender.BOT
                     )
                 }

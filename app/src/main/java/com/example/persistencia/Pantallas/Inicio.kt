@@ -80,7 +80,7 @@ fun Inicio(navController: NavController) {
 
                         docRef.get().addOnSuccessListener { snapshot ->
                             if (!snapshot.exists()) {
-                                // Usuario nuevo: guardamos los datos básicos de Google
+                                // Usuario nuevo, guardar los datos básicos de Google
                                 val datosUsuario = hashMapOf<String, Any>(
                                     "uid" to user.uid,
                                     "nombre" to (user.displayName ?: ""),
@@ -96,7 +96,7 @@ fun Inicio(navController: NavController) {
                                         Toast.makeText(context, "Error al guardar datos: ${e.message}", Toast.LENGTH_LONG).show()
                                     }
                             } else {
-                                // Usuario ya existente: NO hacemos nada, solo navegamos
+                                // Usuario ya existente, se navega a la app
                                 navController.navigate(AppScreens.PantallaPrincipal.route)
                             }
                         }.addOnFailureListener { e ->
@@ -161,6 +161,7 @@ fun Inicio(navController: NavController) {
                         color = colors.primary
                     )
 
+                    // Introducir email
                     OutlinedTextField(
                         value = email,
                         onValueChange = { if (it.length < 254) email = it },
@@ -174,12 +175,14 @@ fun Inicio(navController: NavController) {
                         shape = RoundedCornerShape(16.dp)
                     )
 
+                    // Introducir contraseña
                     OutlinedSecureTextField(
                         state = contrasena,
                         label = { Text("Contraseña") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = colors.primary) },
+                        // Botón para mostrar/ocultar contraseña
                         trailingIcon = {
                             IconButton(onClick = { passVisible = !passVisible }) {
                                 Icon(

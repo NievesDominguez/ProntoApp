@@ -1,5 +1,7 @@
 package com.example.persistencia.Pantallas
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,10 +35,7 @@ import com.example.persistencia.Herramientas.fondoDegradado
 import com.example.persistencia.Modelos.Mensaje
 import kotlinx.coroutines.delay
 
-/**
- * Pantalla principal del chatbot.
- * Muestra el historial de mensajes, un campo de entrada y envía mensajes al ViewModel.
- */
+// Pantalla principal del chatbot
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Chatbot(
@@ -65,6 +64,7 @@ fun Chatbot(
     }
 
     // Función para enviar el mensaje. Limpia el input y llama al ViewModel
+    @RequiresApi(Build.VERSION_CODES.O)
     fun sendMessage() {
         if (inputText.isNotBlank() && !isLoading) {
             viewModel.sendMessage(inputText, context)

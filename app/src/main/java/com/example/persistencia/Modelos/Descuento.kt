@@ -10,15 +10,15 @@ import java.time.temporal.TemporalAdjusters
 
 @IgnoreExtraProperties
 data class Descuento(
-    val codigo: String? = null,
-    val nombre: String? = null,
-    val descripcion: String? = null,
-    val tipo: String? = null,
-    val ambito: String? = null,
-    val formula: Map<String, Any>? = null,
-    val fecha_inicio: String? = null,
-    val fecha_fin: String? = null,
-    val max_descuento: Double? = null
+    val codigo: String? = null,             // Código del descuento
+    val nombre: String? = null,             // Nombre del descuento
+    val descripcion: String? = null,        // Descripción del descuento
+    val tipo: String? = null,               // Tipo de descuento (oferta o cupón)
+    val ambito: String? = null,             // Si se aplica al carrito o a productos seleccionados
+    val formula: Map<String, Any>? = null,  // Fórmula usada para calcular el descuento
+    val fecha_inicio: String? = null,       // Inicio de vigencia del descuento
+    val fecha_fin: String? = null,          // Fin de vigencia del descuento
+    val max_descuento: Double? = null       // Máximo dinero que puede descontar el descuento
 )
 
 @RequiresApi(Build.VERSION_CODES.O)

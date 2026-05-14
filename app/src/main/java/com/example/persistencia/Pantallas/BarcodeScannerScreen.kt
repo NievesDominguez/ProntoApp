@@ -286,9 +286,6 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                             return@launch
                         }
                     }
-
-                    // Código no reconocido en base de datos
-                    //snackbarState = BarcodeSnackbarState.Error("Código no reconocido")
                 }
             }
         }
@@ -328,6 +325,7 @@ fun ProductoEncontradoSnackbar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
+                    // Imagen del producto
                     AsyncImage(
                         model = producto.imagenUrl,
                         contentDescription = "Imagen producto",
@@ -342,6 +340,7 @@ fun ProductoEncontradoSnackbar(
                             .weight(1f)
                             .padding(horizontal = 8.dp)
                     ) {
+                        // Nombre del producto
                         Text(
                             text = producto.nombre,
                             maxLines = 2,
@@ -349,11 +348,13 @@ fun ProductoEncontradoSnackbar(
                         )
                     }
 
+                    // Precio del producto
                     Text(
                         text = "${producto.precio} €",
                         modifier = Modifier.padding(end = 8.dp)
                     )
 
+                    // Botón para añadir al carrito
                     IconButton(onClick = onAddToCart) {
                         Icon(
                             Icons.Outlined.ShoppingCart,

@@ -340,7 +340,7 @@ fun Carrito(
                                 val precioOriginal = item.producto.precio * item.cantidad
                                 val hayDescuento = precioFinal < precioOriginal
 
-                                // Precio final del producto(s)
+                                // Precio final del producto o productos
                                 Text(
                                     text = "%.2f €".format(precioFinal),
                                     color = if (hayDescuento) MaterialTheme.colorScheme.onError else colors.onBackground,
@@ -394,20 +394,6 @@ fun Carrito(
                         // Botón para pagar
                         Button(
                             onClick = {
-//                                scope.launch {
-//                                    val clientSecret = crearPaymentIntent(total)
-//
-//                                    if (clientSecret != null) {
-//                                        paymentSheet.presentWithPaymentIntent(
-//                                            clientSecret,
-//                                            PaymentSheet.Configuration(
-//                                                merchantDisplayName = "Pronto"
-//                                            )
-//                                        )
-//                                    } else {
-//                                        Toast.makeText(context, "Error al iniciar pago", Toast.LENGTH_SHORT).show()
-//                                    }
-//                                }
                                 mostrarOpcionesEntrega = true
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -426,6 +412,7 @@ fun Carrito(
                 }
             }
 
+            // Muestra opciones de entrega de la compra
             if (mostrarOpcionesEntrega) {
                 val sheetState = rememberModalBottomSheetState()
                 ModalBottomSheet(
@@ -444,7 +431,7 @@ fun Carrito(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Opción 1: Comprar en supermercado
+                        // Comprar en supermercado
                         Button(
                             onClick = {
                                 mostrarOpcionesEntrega = false
@@ -463,7 +450,7 @@ fun Carrito(
                             Text("Comprar en tienda")
                         }
 
-                        // Opción 2: Envío a domicilio
+                        // Envío a domicilio
                         Button(
                             onClick = {
                                 // Consultar si el usuario tiene dirección
@@ -501,7 +488,7 @@ fun Carrito(
                             Text("Envío a domicilio")
                         }
 
-                        // Opción 3: Recoger en tienda
+                        // Recoger en tienda
                         Button(
                             onClick = {
                                 mostrarOpcionesEntrega = false
@@ -525,6 +512,7 @@ fun Carrito(
                 }
             }
 
+            // Advierte cuando el usuario no tiene dirección para realizar la entrega
             if (mostrarAdvertencia) {
                 AlertDialog(
                     onDismissRequest = { mostrarAdvertencia = false },

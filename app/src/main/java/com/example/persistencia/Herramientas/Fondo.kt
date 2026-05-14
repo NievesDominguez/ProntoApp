@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
+// Degradado del fondo
 @Composable
 fun Modifier.fondoDegradado(): Modifier {
     val colors = MaterialTheme.colorScheme // Colores del tema actual

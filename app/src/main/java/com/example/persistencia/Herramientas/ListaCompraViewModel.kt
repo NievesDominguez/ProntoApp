@@ -16,7 +16,6 @@ class ListaCompraViewModel(
     private val authProvider: () -> String? = { Firebase.auth.currentUser?.uid }
 ) : ViewModel() {
 
-    // Estados existentes
     private val _itemsLista = MutableStateFlow<List<ProductoLista>>(emptyList())
     val itemsLista: StateFlow<List<ProductoLista>> = _itemsLista.asStateFlow()
 
@@ -35,7 +34,7 @@ class ListaCompraViewModel(
     private val _ordenActual = MutableStateFlow("fecha")
     val ordenActual: StateFlow<String> = _ordenActual.asStateFlow()
 
-    // Nuevos estados para listas compartidas
+    // Estados para listas compartidas
     private val _listasUsuario = MutableStateFlow<List<ListaCompartida>>(emptyList())
     val listasUsuario: StateFlow<List<ListaCompartida>> = _listasUsuario.asStateFlow()
 
@@ -57,13 +56,13 @@ class ListaCompraViewModel(
         cargarListas()
     }
 
-    // Carga las listas del usuario (metadatos) y selecciona la activa según preferencia
+    // Carga las listas del usuario y selecciona la activa según preferencia
     fun cargarListas() {
         viewModelScope.launch {
             val userId = authProvider() ?: return@launch
             _isLoading.value = true
 
-            // Obtener metadatos de listas
+            // Obtener datos de las listas
             _listasUsuario.value = ListasRepository.getListasDeUsuario(userId, forceRefresh = true)
 
             // Determinar lista activa
@@ -120,7 +119,7 @@ class ListaCompraViewModel(
         }
     }
 
-    // Invita a un usuario por email a la lista activa. Retorna true si el email existe.
+    // Invita a un usuario por email a la lista activa. Devuelve true si el email existe.
     suspend fun invitarUsuario(email: String): Boolean {
         val listId = _listaActivaId.value ?: return false
         return ListasRepository.invitarUsuario(listId, email)
@@ -135,37 +134,42 @@ class ListaCompraViewModel(
         _isLoading.value = false
     }
 
-    // ============ Operaciones sobre items (mantienen compatibilidad) ============
+    // Añade un producto a la lista
     suspend fun addItem(idProducto: String, cantidad: Double = 1.0) {
         if (_listaActivaId.value == null) return
         ListasRepository.addItem(idProducto, cantidad)
         _itemsLista.value = ListasRepository.getItems(forceRefresh = true)
     }
 
+    // Elimina un producto de la lista
     suspend fun eliminarItem(id: String) {
         if (_listaActivaId.value == null) return
         ListasRepository.eliminarItem(id)
         _itemsLista.value = ListasRepository.getItems(forceRefresh = true)
     }
 
+    // Cambia el estado de compra de un producto de la lista
     suspend fun cambiarEstado(id: String, estado: Boolean) {
         if (_listaActivaId.value == null) return
         ListasRepository.cambiarEstado(id, estado)
         _itemsLista.value = ListasRepository.getItems(forceRefresh = true)
     }
 
+    // Actualiza la cantidad de un producto de la lista
     suspend fun actualizarCantidad(id: String, nuevaCantidad: Double) {
         if (_listaActivaId.value == null) return
         ListasRepository.actualizarCantidad(id, nuevaCantidad)
         _itemsLista.value = ListasRepository.getItems(forceRefresh = true)
     }
 
+    // Marca todos los productos de la lista como no comprados
     suspend fun desmarcarTodo() {
         if (_listaActivaId.value == null) return
         ListasRepository.desmarcarTodo()
         _itemsLista.value = ListasRepository.getItems(forceRefresh = true)
     }
 
+    // Elimina todos los productos de la lista
     suspend fun eliminarTodo() {
         if (_listaActivaId.value == null) return
         ListasRepository.eliminarTodo()
@@ -180,43 +184,56 @@ class ListaCompraViewModel(
         }
     }
 
-    // Generación de sugerencias (sin cambios)
+    // Generación de sugerencias
     fun generarSugerencias() {
         viewModelScope.launch {
+            // Activa el indicador de carga en la UI
             _isLoading.value = true
 
+            // Verifica que el usuario esté autenticado
             val userId = authProvider()
             if (userId == null) {
                 _isLoading.value = false
-                return@launch
+                return@launch  // Si no hay usuario, termina la ejecución
             }
 
+            // Obtiene los últimos 5 tickets de compra del usuario
             val ultimosTickets = TicketsRepository.getUltimosTickets(5)
+
+            // Calcula la frecuencia de compra de cada producto
             val frecuencia = mutableMapOf<String, Int>()
-            ultimosTickets.forEach { ticket ->
-                ticket.productos.forEach { prod ->
+            ultimosTickets.forEach { ticket -> // Itera sobre cada ticket
+                ticket.productos.forEach { prod -> // Itera sobre cada producto del ticket
+                    // Incrementa el contador de frecuencia del producto
                     frecuencia[prod.productoId] = frecuencia.getOrDefault(prod.productoId, 0) + 1
                 }
             }
 
+            // Obtiene los IDs de productos que ya están en la lista
             val idsEnLista = _itemsLista.value.map { it.id }.toSet()
+
+            // Filtra para sugerir solo productos que no están ya en la lista
             val idsSugeridos = frecuencia.keys.filter { it !in idsEnLista }
 
+            // Obtiene los productos frecuentes que tienen stock disponible, ordenados por frecuencia (max 10)
             val productosFrecuentes = idsSugeridos
                 .mapNotNull { ProductosRepository.getProducto(it) }
                 .filter { it.stock > 0 }
                 .sortedByDescending { frecuencia[it.id] ?: 0 }
                 .take(10)
 
+            // Identifica productos en la lista actual que están agotados (stock = 0)
             val productosAgotados = _itemsLista.value
                 .mapNotNull { item -> productosCatalogo.value.find { it.id == item.id } }
                 .filter { it.stock == 0 }
 
+            // Busca alternativas para los productos agotados
             val alternativasAgotados = mutableListOf<Producto>()
             val idsYaEnLista = _itemsLista.value.map { it.id }.toSet()
             val idsProcesados = mutableSetOf<String>()
 
             for (prodAgotado in productosAgotados) {
+                // Busca hasta 3 productos similares para cada producto agotado, excluyendo los que ya están en la lista o ya fueron procesados
                 val similares = ProductosRepository.getProductosSimilares(
                     productoReferencia = prodAgotado,
                     limite = 3,
@@ -226,7 +243,10 @@ class ListaCompraViewModel(
                 idsProcesados.addAll(similares.map { it.id })
             }
 
+            // Combina ambas fuentes de sugerencias y elimina duplicados por ID
             val todasSugerencias = (alternativasAgotados + productosFrecuentes).distinctBy { it.id }
+
+            // Actualiza el estado de sugerencias y desactiva el indicador de carga
             _sugerencias.value = todasSugerencias
             _isLoading.value = false
         }

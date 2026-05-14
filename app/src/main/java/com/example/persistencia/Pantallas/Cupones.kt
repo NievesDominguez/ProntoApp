@@ -1,6 +1,8 @@
 package com.example.persistencia.Pantallas
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,22 +36,27 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Cupones(navController: NavController) {
     val colors = MaterialTheme.colorScheme
 
+    // Modificador con fondo degradado
     val backgroundModifier = Modifier.fondoDegradado()
 
+    // Instancias de Firebase
     val db = FirebaseFirestore.getInstance()
     val usuario = FirebaseAuth.getInstance().currentUser
-    val uid: String = usuario?.uid ?: return
+    val uid: String = usuario?.uid ?: return  // Si no hay usuario, sale de la función
 
     val scope = rememberCoroutineScope()
 
+    // Estados para almacenar los cupones del usuario y todos los cupones disponibles
     var cuponesUsuario by remember { mutableStateOf<List<String>>(emptyList()) }
     var cupones by remember { mutableStateOf<List<Descuento>>(emptyList()) }
 
+    // Carga los cupones disponibles y los del usuario desde Firestore
     LaunchedEffect(uid) {
         val doc = db.collection("usuarios").document(uid).get().await()
         cuponesUsuario = doc.get("cupones") as? List<String> ?: emptyList()
@@ -74,6 +81,7 @@ fun Cupones(navController: NavController) {
                     titleContentColor = colors.onBackground
                 ),
                 navigationIcon = {
+                    // Botón para volver
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.Default.ArrowBackIosNew,
@@ -90,7 +98,9 @@ fun Cupones(navController: NavController) {
             modifier = backgroundModifier
                 .padding(padding)
         ) {
+            // Tres estados posibles: sin cupones, cargando, o lista de cupones
             when {
+                // Usuario no tiene cupones asignados
                 cuponesUsuario.isEmpty() && cupones.isNotEmpty() -> {
                     Text(
                         text = "No tienes cupones disponibles",
@@ -99,6 +109,7 @@ fun Cupones(navController: NavController) {
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
+                // Aún cargando los cupones
                 cupones.isEmpty() -> {
                     Text(
                         text = "Cargando cupones...",
@@ -107,6 +118,7 @@ fun Cupones(navController: NavController) {
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
+                // Muestra la lista de cupones
                 else -> {
                     LazyColumn(
                         modifier = Modifier
@@ -115,9 +127,11 @@ fun Cupones(navController: NavController) {
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         items(cupones) { desc ->
+                            // Solo muestra cupones que el usuario tiene asignados
                             if (desc.codigo in cuponesUsuario) {
                                 var cuponActivo by remember { mutableStateOf(false) }
 
+                                // Comprueba si el cupón está activo en el carrito
                                 LaunchedEffect(desc.codigo) {
                                     cuponActivo = CarritoRepository.comprobarCupon(desc.codigo)
                                 }
@@ -146,6 +160,7 @@ fun Cupones(navController: NavController) {
                                             fontSize = 15.sp,
                                             modifier = Modifier.weight(1f)
                                         )
+                                        // Switch para activar/desactivar el cupón
                                         Switch(
                                             checked = cuponActivo,
                                             onCheckedChange = { isChecked ->
@@ -158,6 +173,7 @@ fun Cupones(navController: NavController) {
                                                     }
                                                 }
                                             },
+                                            // Muestra un icono de check cuando está activo
                                             thumbContent = if (cuponActivo) {
                                                 {
                                                     Icon(

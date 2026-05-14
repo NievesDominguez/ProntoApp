@@ -48,10 +48,7 @@ import com.example.persistencia.Herramientas.LocalFlyToTargetState
 import com.example.persistencia.Herramientas.FlyToTargetOverlay
 
 
-/**  
- * Composable reutilizable: al pulsar atrás una vez muestra un Toast,  
- * al pulsar atrás otra vez en menos de 2 segundos cierra la app.
- */
+// Al pulsar atrás una vez muestra un Toast, al pulsar atrás otra vez en menos de 2 segundos cierra la app
 @Composable
 fun DoubleBackToExit() {
     val context = LocalContext.current
@@ -59,8 +56,8 @@ fun DoubleBackToExit() {
     var backPressedOnce by remember { mutableStateOf(false) }
 
     BackHandler {
+        // Si ya se pulsó una vez atrás, cierra la app
         if (backPressedOnce) {
-            // Cierra la app
             (context as? Activity)?.finish()
         } else {
             backPressedOnce = true

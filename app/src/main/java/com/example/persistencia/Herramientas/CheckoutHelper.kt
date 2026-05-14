@@ -59,6 +59,7 @@ object CheckoutHelper {
 
             Log.d("Checkout", "Cupones a eliminar: $cuponesAEliminar")
 
+            // Guardar el ticket
             val ticket = Ticket(
                 fecha = Timestamp.now(),
                 productos = productosTicket,
@@ -66,17 +67,19 @@ object CheckoutHelper {
                 total = totalConCupones,
                 metodoPago = "Stripe"
             )
-
             val ticketId = TicketsRepository.guardarTicket(ticket) ?: return@withContext null
 
+            // Vaciar carrito
             if (limpiarCarrito) {
                 CarritoRepository.vaciarCarrito()
             }
 
+            // Eliminar cupones usados
             for (codigo in cuponesAEliminar) {
                 UsuariosRepository.removeCupon(codigo)
             }
 
+            // Asignar nuevos cupones
             val dao = DescuentosDao()
             val cuponesFuturos = dao.getCuponesSemanaProxima()
             val codigosFuturos = cuponesFuturos.mapNotNull { it.codigo }
@@ -124,6 +127,7 @@ object CheckoutHelper {
         var totalConOfertas = subtotalOriginal
         val gruposPorOferta = productosCarrito.groupBy { it.producto.oferta }
 
+        // Buscar descuentos usados
         for ((codigoOferta, itemsGrupo) in gruposPorOferta) {
             if (codigoOferta == null) continue
             val descuento = todosDescuentosProducto.find { it.codigo == codigoOferta }
@@ -152,7 +156,7 @@ object CheckoutHelper {
             }
         }
 
-        // Aplicar cupones de total (fijo, porcentaje, maximo) excluyendo los ya procesados
+        // Aplicar cupones excluyendo los ya procesados
         var totalFinal = totalConOfertas
         for (cupon in cupones) {
             val tipoFormula = cupon.formula?.get("tipo") as? String

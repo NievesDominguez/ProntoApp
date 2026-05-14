@@ -17,14 +17,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 
-// Repositorio singleton para productos.
-// Centraliza todas las llamadas a ProductosDao y las cachea en memoria
-// para evitar llamadas redundantes a Firestore desde distintas pantallas.
-//
-// Usa un patron "stale-while-revalidate" con TTL:
-// - Si los datos tienen menos de TTL milisegundos, se devuelven del cache.
-// - Si han expirado, se vuelve a consultar Firestore.
-// - Se puede forzar la recarga con forceRefresh = true.
+// Repositorio singleton para productos
+// Centraliza todas las llamadas a ProductosDao y las cachea en memoria para evitar llamadas redundantes a Firestore desde distintas pantallas
 object ProductosRepository {
 
     private val dao = ProductosDao() // Unica instancia del DAO para no crearlo en cada pantalla
@@ -76,34 +70,6 @@ object ProductosRepository {
             val producto = dao.getProducto(id)
             producto?.let { cacheProductos[id] = it } // Guardar para futuras consultas
             return producto
-        }
-    }
-
-    // Filtra por categoria usando el cache si esta disponible
-    suspend fun getPorCategoria(categoria: String): List<Producto> {
-        mutex.withLock {
-            // Si ya tenemos todos los productos en cache, filtrar en memoria
-            cacheTodos?.let { todos ->
-                return todos.filter { it.categoria == categoria }
-            }
-            // Si no hay cache, ir a Firestore
-            return dao.getPorCategoria(categoria)
-        }
-    }
-
-    // Ordena por precio ascendente
-    suspend fun getOrdenPrecioAsc(): List<Producto> {
-        mutex.withLock {
-            cacheTodos?.let { return it.sortedBy { p -> p.precio } }
-            return dao.getOrdenPrecioAsc()
-        }
-    }
-
-    // Ordena por precio descendente
-    suspend fun getOrdenPrecioDesc(): List<Producto> {
-        mutex.withLock {
-            cacheTodos?.let { return it.sortedByDescending { p -> p.precio } }
-            return dao.getOrdenPrecioDesc()
         }
     }
 
@@ -351,7 +317,7 @@ object UsuariosRepository {
 
 
 // Repositorio singleton para tickets de compra
-// Se invalida tras guardar un nuevo ticket (compra completada)
+// Se invalida tras guardar un nuevo ticket
 object TicketsRepository {
     private val dao = TicketsDao()
 
@@ -450,7 +416,7 @@ object ListasRepository {
         }
     }
 
-    // Obtener listas donde estoy invitado (pendientes)
+    // Obtener listas con invitaciones pendientes para el usuario
     suspend fun getInvitacionesPendientes(userId: String): List<ListaCompartida> {
         return dao.getListasInvitado(userId)
     }
@@ -492,7 +458,7 @@ object ListasRepository {
         }
     }
 
-    // Invitar a usuario por email (buscar UID y agregar a invitados)
+    // Invitar a usuario por email
     suspend fun invitarUsuario(listId: String, email: String): Boolean {
         val uid = UsuariosDao().buscarUsuarioPorEmail(email) ?: return false
         dao.invitarUsuario(listId, uid)

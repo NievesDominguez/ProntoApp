@@ -84,6 +84,7 @@ fun Catalogo(navController: NavController) {
     var cuponesDisponibles by remember { mutableStateOf<List<Descuento>>(emptyList()) }
     var cuponesUsuario by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // Carga datos necesarios para el catálogo
     LaunchedEffect(Unit) {
         cargando = true
         productos = ProductosRepository.getTodos()
@@ -94,6 +95,7 @@ fun Catalogo(navController: NavController) {
         cargando = false // Finaliza la carga
     }
 
+    // Carga productos según los filtros, búsquedas y demás
     LaunchedEffect(textoBusqueda, productos, categoriaSeleccionada, ordenSeleccionado) {
         productosFiltrados = productos.filter {
             (categoriaSeleccionada == "Todos" || it.categoria == categoriaSeleccionada) &&
@@ -109,30 +111,31 @@ fun Catalogo(navController: NavController) {
         }
     }
 
+    // Volver al inicio del scroll
     LaunchedEffect(ordenSeleccionado) {
         gridState.scrollToItem(0)
     }
 
     val backgroundModifier = Modifier.fondoDegradado()
 
+    // Lista de categorías de productos
     val categoriasNav = listOf(
         NavigationItems("Todos", Lucide.Store, Lucide.Store),
-        NavigationItems("Bebidas", Lucide.Wine, Lucide.Wine),
-        NavigationItems("Textil", Lucide.Shirt, Lucide.Shirt),
-        NavigationItems("Aperitivos", Lucide.Popcorn, Lucide.Popcorn),
-
         NavigationItems("Frutas y Verduras", Lucide.Apple, Lucide.Apple),
-        NavigationItems("Panadería y Pastelería", Lucide.CakeSlice, Lucide.CakeSlice),
-        NavigationItems("Despensa", Lucide.Bean, Lucide.Bean),
-        NavigationItems("Conservas", Lucide.Cuboid, Lucide.Cuboid),
         NavigationItems("Carnicería", Lucide.Beef, Lucide.Beef),
         NavigationItems("Pescadería", Lucide.Fish, Lucide.Fish),
+        NavigationItems("Despensa", Lucide.Bean, Lucide.Bean),
+        NavigationItems("Panadería y Pastelería", Lucide.CakeSlice, Lucide.CakeSlice),
+        NavigationItems("Conservas", Lucide.Cuboid, Lucide.Cuboid),
         NavigationItems("Lácteos", Lucide.Milk, Lucide.Milk),
+        NavigationItems("Bebidas", Lucide.Wine, Lucide.Wine),
+        NavigationItems("Aperitivos", Lucide.Popcorn, Lucide.Popcorn),
         NavigationItems("Congelados", Lucide.Snowflake, Lucide.Snowflake),
-        NavigationItems("Dulces", Lucide.Candy, Lucide.Candy)
-
+        NavigationItems("Dulces", Lucide.Candy, Lucide.Candy),
+        NavigationItems("Textil", Lucide.Shirt, Lucide.Shirt)
     )
 
+    // Modal lateral con las categorías
     ModalNavigationDrawer(
                 drawerState = drawerState,
         drawerContent = {
@@ -147,6 +150,7 @@ fun Catalogo(navController: NavController) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+                // Lazycolumn scrollable
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -155,6 +159,7 @@ fun Catalogo(navController: NavController) {
                         NavigationDrawerItem(
                             label = { Text(item.title) },
                             selected = index == selectedItemIndex,
+                            // Al hacer click, filtra por categoría y cierra el modal
                             onClick = {
                                 selectedItemIndex = index
                                 categoriaSeleccionada = item.title
@@ -175,12 +180,14 @@ fun Catalogo(navController: NavController) {
             topBar = {
                 TopAppBar(
                     title = { Text("Catálogo", fontWeight = FontWeight.ExtraBold) },
+                    // Botón para abrir el modal
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, "Menú")
                         }
                     },
                     actions = {
+                        // Selector de orden
                         Box {
                             IconButton(onClick = { menuOrdenExpandido = true }) {
                                 Icon(Icons.Default.SwapVert, "Ordenar")
@@ -220,7 +227,7 @@ fun Catalogo(navController: NavController) {
         ) { padding ->
             Box(modifier = backgroundModifier.padding(padding)) {
 
-                // Capa de productos (Fondo)
+                // Capa de productos
                 Column(modifier = Modifier.fillMaxSize()) {
                     Spacer(modifier = Modifier.height(70.dp))
 
@@ -262,6 +269,7 @@ fun Catalogo(navController: NavController) {
                         .padding(horizontal = 16.dp, vertical = 5.dp)
                         .zIndex(10f)
                 ) {
+                    // Barra de búsqueda
                     OutlinedTextField(
                         value = textoBusqueda,
                         onValueChange = { textoBusqueda = it },
@@ -283,6 +291,7 @@ fun Catalogo(navController: NavController) {
                         singleLine = true
                     )
 
+                    // Muestra las sugerencias según la búsqueda
                     if (sugerencias.isNotEmpty()) {
                         Card(
                             modifier = Modifier
@@ -343,14 +352,11 @@ fun TarjetaProducto(
 ) {
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val daoCarrito = remember { CarritoDao() }
-    val daoLista = remember { ListasDao() }
     var expanded by remember { mutableStateOf(false) }
     val flyState = LocalFlyToTargetState.current
     var menuPosition by remember { mutableStateOf(Offset.Zero) }
 
-    // Determinar si el producto tiene oferta o cupón del usuario
+    // Determinar si el producto tiene oferta o cupón aplicables
     val esOferta = producto.oferta != null && ofertas.any { it.codigo == producto.oferta }
     val esCuponUsuario = producto.oferta != null
             && !esOferta
@@ -386,7 +392,7 @@ fun TarjetaProducto(
                         contentScale = ContentScale.Fit
                     )
 
-                    // Icono de descuento: secundario para ofertas, primario para cupones del usuario
+                    // Icono de descuento
                     if (esOferta) {
                         Icon(
                             imageVector = Icons.Default.LocalOffer,
@@ -398,7 +404,7 @@ fun TarjetaProducto(
                         )
                     } else if (esCuponUsuario) {
                         Icon(
-                            imageVector = Icons.Default.LocalOffer,
+                            imageVector = Lucide.TicketPercent,
                             contentDescription = "Cupón",
                             tint = colors.primary,
                             modifier = Modifier
@@ -416,6 +422,7 @@ fun TarjetaProducto(
                         .fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart
                 ) {
+                    // Nombre del producto
                     Text(
                         text = producto.nombre,
                         style = MaterialTheme.typography.bodyMedium,
@@ -429,6 +436,7 @@ fun TarjetaProducto(
                     )
                 }
 
+                // Precio del producto
                 Text(
                     text = "%.2f €".format(producto.precio),
                     style = MaterialTheme.typography.titleMedium,
@@ -437,7 +445,7 @@ fun TarjetaProducto(
                 )
             }
 
-            // Menú de opciones (Tres puntos)
+            // Menú de opciones
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -454,6 +462,7 @@ fun TarjetaProducto(
                 }
 
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    // Añadir al carrito
                     DropdownMenuItem(
                         text = { Text("Carrito", fontSize = 14.sp) },
                         leadingIcon = {
@@ -461,23 +470,21 @@ fun TarjetaProducto(
                         },
                         onClick = {
                             scope.launch {
-                                //daoCarrito.addCarrito(producto, 1.toDouble())
                                 CarritoRepository.addCarrito(producto, 1.0)
                                 flyState?.trigger(menuPosition, FlyTarget.CARRITO)
-                                //Toast.makeText(context, "Añadido", Toast.LENGTH_SHORT).show()
                                 expanded = false
                             }
                         }
                     )
+
+                    // Añadir a la lista
                     DropdownMenuItem(
                         text = { Text("Lista", fontSize = 14.sp) },
                         leadingIcon = { Icon(Icons.Outlined.ListAlt, null, Modifier.size(18.dp)) },
                         onClick = {
                             scope.launch {
-                                //daoLista.addItem(producto.id)
                                 ListasRepository.addItem(producto.id)
                                 flyState?.trigger(menuPosition, FlyTarget.LISTA)
-                                //Toast.makeText(context, "A la lista", Toast.LENGTH_SHORT).show()
                                 expanded = false
                             }
                         }
