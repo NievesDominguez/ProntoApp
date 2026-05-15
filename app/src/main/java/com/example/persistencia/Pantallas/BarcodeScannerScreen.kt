@@ -119,12 +119,13 @@ fun BarcodeScannerScreen(navController: NavHostController) {
                 is BarcodeSnackbarState.ProductoPeso -> {
                     ProductoEncontradoSnackbar(
                         producto = state.producto,
+                        pesoKg = state.pesoKg,  // Añadir este parámetro
                         onDismiss = { snackbarState = null },
                         onAddToCart = {
                             scope.launch {
                                 CarritoRepository.addCarrito(state.producto, state.pesoKg)
                                 addSnackbar = AddToCartSnackbarState(
-                                    "${state.producto.nombre} añadido al carrito",
+                                    "${state.producto.nombre} (${"%.3f".format(state.pesoKg)} kg) añadido al carrito",
                                     state.producto,
                                     state.pesoKg
                                 )
@@ -150,27 +151,64 @@ fun BarcodeScannerScreen(navController: NavHostController) {
 
         // Snackbar de añadido automático o manual con opción de deshacer
         addSnackbar?.let { state ->
-
-            Snackbar(
-                modifier = Modifier.padding(16.dp),
-                action = {
-                    TextButton(onClick = {
-                        scope.launch {
-
-                            // Si el producto es al peso se usa la cantidad real añadida
-                            val undoAmount =
-                                if (state.producto.al_peso == true) state.cantidad else 1.0
-
-                            CarritoRepository.addCarrito(state.producto, -undoAmount)
-                        }
+            val dismissState = rememberSwipeToDismissBoxState(
+                confirmValueChange = {
+                    if (it == SwipeToDismissBoxValue.StartToEnd ||
+                        it == SwipeToDismissBoxValue.EndToStart
+                    ) {
                         addSnackbar = null
-                    }) {
-                        Text("Deshacer")
+                        true
+                    } else {
+                        false
                     }
                 }
-            ) {
-                Text(state.texto)
+            )
+
+            // Auto-dismiss después de 4 segundos
+            LaunchedEffect(addSnackbar) {
+                kotlinx.coroutines.delay(4000)
+                addSnackbar = null
             }
+
+            SwipeToDismissBox(
+                state = dismissState,
+                backgroundContent = {},
+                content = {
+                    Snackbar(
+                        modifier = Modifier.padding(16.dp),
+                        action = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Botón X para cerrar
+                                IconButton(
+                                    onClick = { addSnackbar = null },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Cerrar",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                // Botón deshacer
+                                TextButton(onClick = {
+                                    scope.launch {
+                                        // Si el producto es al peso se usa la cantidad real añadida
+                                        val undoAmount =
+                                            if (state.producto.al_peso == true) state.cantidad else 1.0
+
+                                        CarritoRepository.addCarrito(state.producto, -undoAmount)
+                                    }
+                                    addSnackbar = null
+                                }) {
+                                    Text("Deshacer")
+                                }
+                            }
+                        }
+                    ) {
+                        Text(state.texto)
+                    }
+                }
+            )
         }
     }
 
@@ -297,6 +335,7 @@ fun BarcodeScannerScreen(navController: NavHostController) {
 @Composable
 fun ProductoEncontradoSnackbar(
     producto: Producto,
+    pesoKg: Double? = null,  // Añadir este parámetro opcional
     onDismiss: () -> Unit,
     onAddToCart: () -> Unit,
     onViewProduct: () -> Unit
@@ -346,11 +385,23 @@ fun ProductoEncontradoSnackbar(
                             maxLines = 2,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
+                        // Mostrar peso si es producto al peso
+                        if (pesoKg != null) {
+                            Text(
+                                text = "${"%.3f".format(pesoKg)} kg",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
 
-                    // Precio del producto
+                    // Precio del producto (calculado si es al peso)
+                    val precioMostrar = if (pesoKg != null) {
+                        producto.precio * pesoKg
+                    } else {
+                        producto.precio
+                    }
                     Text(
-                        text = "${producto.precio} €",
+                        text = "${"%.2f".format(precioMostrar)} €",
                         modifier = Modifier.padding(end = 8.dp)
                     )
 

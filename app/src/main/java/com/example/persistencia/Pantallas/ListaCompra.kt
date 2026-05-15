@@ -55,8 +55,6 @@ fun ListaCompra(navController: NavController) {
     }
 
     var textoBusqueda by remember { mutableStateOf("") }
-    var mostrarTotalCarrito by remember { mutableStateOf(false) }
-    var menuOrdenExpandido by remember { mutableStateOf(false) }
     var mostrarSugerencias by remember { mutableStateOf(false) }
 
     var showCrearListaDialog by remember { mutableStateOf(false) }
@@ -518,7 +516,7 @@ fun ListaCompra(navController: NavController) {
                         onValueChange = { textoBusqueda = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Añadir producto...") },
-                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, tint = colors.primary) },
                         trailingIcon = {
                             if (textoBusqueda.isNotEmpty()) {
                                 IconButton(onClick = { textoBusqueda = "" }) {

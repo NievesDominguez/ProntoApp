@@ -51,6 +51,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.persistencia.Herramientas.ProductosRepository
 import com.example.persistencia.Modelos.Producto
@@ -99,29 +100,29 @@ fun PantallaPrincipal(navController: NavController) {
         listOf(
             CarouselItem(
                 0,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Frescos.jpg",
-                "Oferta 1"
+                "https://res.cloudinary.com/ddofwf5aq/image/upload/v1778877976/Promo1_d3ignw.png",
+                "2ª unidad al 50% de descuento en productos de la marca Coca-Cola"
             ),
             CarouselItem(
                 1,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/DesayunoMerienda.jpg",
-                "Oferta 2"
+                "https://res.cloudinary.com/ddofwf5aq/image/upload/v1778877985/Promo2_wgmjpz.png",
+                "3x2 en tabletas de chocolate Milka"
             ),
             CarouselItem(
                 2,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/Lacteos.jpg",
-                "Oferta 3"
+                "https://res.cloudinary.com/ddofwf5aq/image/upload/v1778879266/Promo3_xtqe4t.png",
+                "Gratis 4 yogures naturales Danone por compras superiores a 40€"
             ),
-            CarouselItem(
-                3,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg",
-                "Oferta 4"
-            ),
-            CarouselItem(
-                4,
-                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg",
-                "Oferta 5"
-            )
+//            CarouselItem(
+//                3,
+//                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/ComidaPreparada.jpg",
+//                "Oferta 4"
+//            ),
+//            CarouselItem(
+//                4,
+//                "https://storage.googleapis.com/media.bckts.are.external.alcampo.es/PROMOCIONES%20EXCLUSIVAS%20ONLINE/2026/OFERTAS%20EXCLUSIVAS%20%28Folleto%2003%29/SinGluten.jpg",
+//                "Oferta 5"
+//            )
         )
     }
 
@@ -249,18 +250,24 @@ fun PantallaPrincipal(navController: NavController) {
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .padding(top = 16.dp, bottom = 16.dp),
-                    itemWidth = 186.dp,
-                    itemSpacing = 12.dp,
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                    itemWidth = 280.dp,
+                    itemSpacing = 16.dp,
+                    contentPadding = PaddingValues(horizontal = 24.dp)
                 ) { i ->
                     val item = carouselItems[i]
                     AsyncImage(
                         model = item.imgLink,
                         contentDescription = item.contentDescription,
                         modifier = Modifier
-                            .height(205.dp)
-                            .maskClip(MaterialTheme.shapes.extraLarge),
-                        contentScale = ContentScale.Crop
+                            .aspectRatio(1020f / 720f)
+                            .maskClip(MaterialTheme.shapes.extraLarge)
+                            .shadow(
+                                elevation = 8.dp,
+                                shape = MaterialTheme.shapes.extraLarge,
+                                ambientColor = Color.Black.copy(alpha = 0.15f),
+                                spotColor = Color.Black.copy(alpha = 0.15f)
+                            ),
+                        contentScale = ContentScale.Fit
                     )
                 }
 
@@ -283,8 +290,8 @@ fun PantallaPrincipal(navController: NavController) {
                     items(productosNuevos, key = { it.id }) { producto ->
                         Card(
                             modifier = Modifier
-                                .width(140.dp)
-                                .aspectRatio(1f)
+                                .width(130.dp)
+                                .height(170.dp)
                                 .clickable {
                                     navController.navigate(AppScreens.PantallaProducto.route + "/${producto.id}")
                                 },
@@ -292,47 +299,60 @@ fun PantallaPrincipal(navController: NavController) {
                             elevation = CardDefaults.cardElevation(1.dp),
                             colors = CardDefaults.cardColors(containerColor = colors.surface)
                         ) {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .padding(12.dp)) {
-                                Column(horizontalAlignment = Alignment.Start) {
-                                    // Contenedor de imagen
-                                    Box(
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(10.dp),
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                // Contenedor de imagen con altura fija
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(80.dp)
+                                        .padding(vertical = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = producto.imagenUrl,
+                                        contentDescription = producto.nombre,
                                         modifier = Modifier
-                                            //.weight(1f)
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        AsyncImage(
-                                            model = producto.imagenUrl,
-                                            contentDescription = producto.nombre,
-                                            modifier = Modifier.size(80.dp),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    }
+                                            .fillMaxWidth()
+                                            .height(80.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
 
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                                    // Texto que ocupa 1 o 2 líneas según su longitud
+                                // Contenedor del texto con altura fija para centrar verticalmente
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(32.dp),  // Altura aproximada para 2 líneas
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
                                     Text(
                                         text = producto.nombre,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = colors.onSurface,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Start
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Text(
-                                        text = "%.2f €".format(producto.precio),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Black,
-                                        color = colors.onSurface
+                                        textAlign = TextAlign.Start,
+                                        modifier = Modifier.fillMaxWidth()
                                     )
                                 }
+
+                                Spacer(modifier = Modifier.height(3.dp))
+
+                                // Precio
+                                Text(
+                                    text = "%.2f €".format(producto.precio),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = colors.onSurface
+                                )
                             }
                         }
                     }
